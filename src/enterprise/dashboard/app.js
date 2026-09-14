@@ -365,15 +365,16 @@ function fleetCard(p, isSelf) {
       <div class="fleet-line err-text">${esc(p?.err || "unreachable")}</div>
     </div>`;
   }
+  const live = !!p.linked;
   const bits = [
-    p.connected ? (p.mode || "?") : "offline",
-    fmtUp(p.uptimeSec),
+    live ? (p.mode || "?") : (p.connected ? "awaiting link" : "offline"),
+    p.uptimeSec ? fmtUp(p.uptimeSec) : "",
     p.user ? esc(p.user) : "",
     `${p.minis} minis`,
     `v${esc(p.version || "?")}`,
   ].filter(Boolean);
-  return `<div class="fleet-card ${p.connected ? "on" : "off"}">
-    <div class="fleet-name">${isSelf ? "● " : ""}${esc(p.name || "?")}<span class="dot ${p.connected ? "on" : "off"}"></span></div>
+  return `<div class="fleet-card ${live ? "on" : "off"}">
+    <div class="fleet-name">${isSelf ? "● " : ""}${esc(p.name || "?")}<span class="dot ${live ? "on" : "off"}"></span></div>
     <div class="fleet-line">${bits.join(" · ")}</div>
   </div>`;
 }

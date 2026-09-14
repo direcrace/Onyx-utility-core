@@ -353,7 +353,7 @@ export function startAdminHttp() {
         const self = selfSnapshot(snap.main, snap.minis, BOT_INFO.VERSION);
         self.name = localName;
         const all = [self, ...peers];
-        const connected = all.filter((p) => p.ok && p.connected).length;
+        const connected = all.filter((p) => p.ok && p.linked).length;
         const reachable = all.filter((p) => p.ok).length;
         const minisOn = all.reduce((a, p) => a + (p.ok ? p.minisOn : 0), 0);
         return json(res, 200, {
