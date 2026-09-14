@@ -1,0 +1,109 @@
+/**
+ * Auth State Factory
+ * Dual backend: better-sqlite3 (default) | Sequelize Postgres (when DATABASE_URL is postgres)
+ * Shared interface: { state, saveCreds }
+ */
+
+import config from "../../config.js";
+import { attachBotKv, seedBotKvFromEnv } from "./botKv.js";
+
+let initPromise = null;
+let activeBackend = null;
+
+async function initBackend() {
+  if (config.USE_POSTGRES) {
+    const { createPostgresSequelize, usePostgresAuthState } = await import(
+      "./authPostgres.js"
+    );
+    const sequelize = await createPostgresSequelize(config.DATABASE_URL);
+    await sequelize.authenticate();
+    activeBackend = await usePostgresAuthState(sequelize);
+    console.log("✅ Auth backend: Postgres (Sequelize)");
+  } else {
+    const { useBetterSqliteAuthState } = await import("./authSqlite.js");
+    activeBackend = await useBetterSqliteAuthState(config.SQLITE_PATH);
+    console.log(`✅ Auth backend: better-sqlite3 (${config.SQLITE_PATH})`);
+  }
+
+  if (activeBackend?.botKv) {
+    attachBotKv(activeBackend.botKv);
+    await seedBotKvFromEnv();
+  }
+
+  return activeBackend;
+}
+
+/**
+ * Initialize once and return Baileys-compatible auth state.
+ * @returns {Promise<{ state: object, saveCreds: Function }>}
+ */
+export async function useMultiDbAuthState() {
+  if (!initPromise) {
+    initPromise = initBackend();
+  }
+  const backend = await initPromise;
+  return {
+    state: backend.state,
+    saveCreds: backend.saveCreds,
+  };
+}
+
+/**
+ * Create an isolated auth session with its OWN database file.
+ * Used for sub-instances (per-number creds/keys) — never attaches BotKV.
+ * Falls back to sqlite regardless of the main DATABASE_URL backend.
+ * @param {string} dbPath absolute or relative path to the sub DB file
+ */
+export async function useStandaloneAuthState(dbPath) {
+  const { useStandaloneAuthState } = await import("./authSqlite.js");
+  return useStandaloneAuthState(dbPath);
+}
+
+/**
+ * Clear all auth state (logout / reset)
+ */
+export async function clearAuthState() {
+  if (!initPromise) {
+    await useMultiDbAuthState();
+  }
+  await initPromise;
+  if (activeBackend?.clearAuthState) {
+    await activeBackend.clearAuthState();
+    console.log("Cleared auth state");
+  }
+}
+
+/**
+ * Cheap creds existence check (no full table scan)
+ */
+export async function checkAuthCreds() {
+  if (!initPromise) {
+    await useMultiDbAuthState();
+  }
+  await initPromise;
+  const has =
+    typeof activeBackend.hasCreds === "function"
+      ? await activeBackend.hasCreds()
+      : false;
+
+  return {
+    valid: !!has,
+    hasCreds: !!has,
+  };
+}
+
+/**
+ * @deprecated Prefer checkAuthCreds
+ */
+export async function validateAuthState() {
+  const result = await checkAuthCreds();
+  return {
+    valid: result.hasCreds,
+    issues: result.hasCreds ? [] : ["No credentials found"],
+    stats: null,
+  };
+}
+
+export async function getAuthStateStats() {
+  return null;
+}

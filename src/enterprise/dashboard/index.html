@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0f14"/>
+<title>ONYX Dashboard</title>
+<link rel="icon" href="/favicon.svg"/>
+<link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">ONYX <span class="mut">UTILITY CORE</span></div>
+    <nav id="nav">
+      <button class="nav active" data-nav="overview">Overview</button>
+      <button class="nav" data-nav="minis">Minis</button>
+      <button class="nav" data-nav="remote">Remote</button>
+      <button class="nav" data-nav="flags">Flags</button>
+      <button class="nav" data-nav="logs">Logs</button>
+      <button class="nav" data-nav="audit">Audit</button>
+      <button class="nav" data-nav="terminal">Terminal</button>
+      <button class="nav" data-nav="settings">Settings</button>
+    </nav>
+    <div class="side-foot">
+      <div id="sStamp" class="mut"></div>
+      <div id="sCpu" class="mut"></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <span class="chip" title="main whatsapp connection"><span id="hMain" class="dot off"></span><b id="hMainTxt">—</b></span>
+      <span class="chip">mode <b id="hMode">?</b></span>
+      <span class="chip">up <b id="hUp">?</b></span>
+      <span class="chip">PID <b id="hPid">?</b></span>
+      <span class="chip">RSS <b id="hRss">?</b></span>
+      <span class="chip">heap <b id="hHeap">?</b></span>
+      <span class="chip">queue <b id="hQueue">?</b></span>
+      <span class="chip">flags <b id="hFlags">?</b></span>
+      <span class="chip" title="core panic monitor"><span id="hPanic" class="dot on"></span>panic</span>
+      <span class="chip" id="hRole" title="dashboard token tier">creator</span>
+      <span class="spacer"></span>
+      <span class="chip" id="hApi">—</span>
+      <button id="btnRefresh" title="refresh now">↻</button>
+    </header>
+
+    <div id="tokBox" class="tokbox" hidden>
+      <b>Missing auth token.</b> Paste <code>ADMIN_HTTP_TOKEN</code> and connect:
+      <input id="tokIn" type="password" placeholder="token" autocomplete="off"/>
+      <button id="btnTok" class="primary">Connect</button>
+    </div>
+
+    <main id="content">
+
+      <!-- ============================= OVERVIEW ============================= -->
+      <section id="sec-overview" class="sec active">
+        <div id="ovBody"></div>
+      </section>
+
+      <!-- =============================== MINIS ============================= -->
+      <section id="sec-minis" class="sec">
+        <div class="toolbar">
+          <input id="tNum" placeholder="+49… target number" style="width:170px"/>
+          <input id="tText" placeholder="test msg text" style="flex:1;min-width:160px"/>
+          <button id="btnSend" class="primary">Send test msg</button>
+          <span class="spacer"></span>
+          <span class="mut">via</span>
+          <select id="tVia"><option value="">main</option></select>
+        </div>
+        <div id="miBody"></div>
+      </section>
+
+      <!-- ============================= REMOTE ============================= -->
+      <section id="sec-remote" class="sec">
+        <div id="rcBody"></div>
+      </section>
+
+      <!-- =============================== FLAGS ============================= -->
+      <section id="sec-flags" class="sec">
+        <div class="toolbar">
+          <span class="chip">open <b id="flOpen">0</b></span>
+          <span class="chip">today <b id="flToday">0</b></span>
+          <span class="chip">week <b id="flWeek">0</b></span>
+          <span class="spacer"></span>
+          <select id="flRule"><option value="">all rules</option></select>
+          <select id="flSeverity"><option value="">all severities</option>
+            <option>info</option><option>mild</option><option>severe</option><option>critical</option>
+          </select>
+          <select id="flResolved"><option value="">all states</option><option value="0">open</option><option value="1">resolved</option></select>
+          <button id="btnResolveAll" class="danger" title="resolve all OPEN flags for all minis">resolve all</button>
+        </div>
+        <div id="flBody"></div>
+      </section>
+
+      <!-- =============================== LOGS ============================== -->
+      <section id="sec-logs" class="sec">
+        <div class="toolbar">
+          <input id="lgFilter" placeholder="filter…" style="width:180px"/>
+          <button id="btnPause">❚❚ pause</button>
+          <button id="btnClear">clear</button>
+          <span id="lgLive" class="live" hidden>● live</span>
+          <span class="mut" id="lgStat"></span>
+        </div>
+        <div id="lgBody"><div class="log scroller" id="ltLogs"></div></div>
+      </section>
+
+      <!-- =============================== AUDIT ============================= -->
+      <section id="sec-audit" class="sec">
+        <div class="toolbar">
+          <input id="auFilter" placeholder="action filter…" style="width:200px"/>
+          <button id="btnAudit" class="primary">refresh</button>
+          <span class="mut" id="auStat"></span>
+        </div>
+        <div id="auBody"></div>
+      </section>
+
+      <!-- ============================ TERMINAL ============================= -->
+      <section id="sec-terminal" class="sec">
+        <div class="term">
+          <div class="term-out" id="tmOut"><div class="log"><span class="prompt">onyx&gt;</span> type <b>help</b> and press Enter — or use the buttons below</div></div>
+          <div class="term-in">
+            <span class="prompt">onyx&gt;</span>
+            <input id="tmIn" autocomplete="off" spellcheck="false" placeholder="status · minis · logs 20 · help"/>
+            <button id="tmDanger" class="danger" title="panic/reboot/shutdown guard">arm danger</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================= SETTINGS ============================ -->
+      <section id="sec-settings" class="sec">
+        <div id="stBody"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- message-log media viewer (full bytes, served by /media/…, wiped on restart) -->
+<div id="mlPreview" hidden>
+  <div id="mlPrevDrag">
+    <button id="mlPrevClose" title="close" aria-label="close">✕</button>
+    <div id="mlPrevMedia"></div>
+    <div id="mlPrevMeta" class="mini mut"></div>
+  </div>
+</div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
