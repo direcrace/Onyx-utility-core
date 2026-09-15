@@ -65,7 +65,7 @@ function toast(html, cls) {
 // ===========================================================================
 
 async function apiGet(path) {
-  const r = await fetch(path, { headers: { Authorization: "Bearer " + TOK } });
+  const r = await fetch(apiPre() + path, { headers: { Authorization: "Bearer " + TOK } });
   if (r.status === 401) { showTok(); return null; }
   if (!r.ok) throw new Error("HTTP " + r.status);
   return r.json();
@@ -73,7 +73,7 @@ async function apiGet(path) {
 
 async function action(name, params) {
   const body = Object.assign({ action: name }, params || {});
-  const r = await fetch("/api/action", {
+  const r = await fetch(apiPre() + "/api/action", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOK },
     body: JSON.stringify(body),
@@ -153,6 +153,11 @@ function renderHeader() {
   pan.className = "dot " + (m.panic?.enabled ? "on" : "off");
   $("#sStamp").textContent = "v" + (D.version || "?") + " · " + new Date(D.generated_at || Date.now()).toLocaleTimeString();
   if (m.host) $("#sCpu").textContent = "cpu " + m.host.cpuPct + " / " + m.host.hostCpuPct + "% · mem " + m.host.mem.usedPct + "%";
+  const hi = $("#hInst");
+  if (hi) {
+    hi.hidden = !INSTANCE;
+    if (INSTANCE) hi.textContent = "viewing " + INSTANCE;
+  }
 }
 
 // ===========================================================================
@@ -357,10 +362,18 @@ function buildCharts(s) {
 
 let FLEET = null;
 let FLEET_AT = 0;
+let INSTANCE = ""; // "" = local; otherwise the fleet peer name being viewed
 
-function fleetCard(p, isSelf) {
+// Fleet switcher: server-side proxy prefix. All API + media calls go through
+// apiPre() so the whole dashboard "becomes" the selected instance.
+function apiPre() {
+  return INSTANCE ? `/api/proxy/${encodeURIComponent(INSTANCE)}` : "";
+}
+
+function fleetCard(p, key, isSelf) {
+  const sel = INSTANCE === key;
   if (!p || p.ok === false) {
-    return `<div class="fleet-card dead">
+    return `<div class="fleet-card dead ${sel ? "sel" : ""}">
       <div class="fleet-name">${esc(p?.name || "?")}<span class="dot off"></span></div>
       <div class="fleet-line err-text">${esc(p?.err || "unreachable")}</div>
     </div>`;
@@ -372,10 +385,11 @@ function fleetCard(p, isSelf) {
     p.user ? esc(p.user) : "",
     `${p.minis} minis`,
     `v${esc(p.version || "?")}`,
-  ].filter(Boolean);
-  return `<div class="fleet-card ${live ? "on" : "off"}">
+  ].filter(Boolean).join(" · ");
+  const click = sel ? "" : ` data-act="fleetSwitch" data-name="${escAttr(key)}"`;
+  return `<div class="fleet-card ${live ? "on" : "off"} ${sel ? "sel" : ""}"${click} title="${sel ? "" : "open this instance's dashboard"}">
     <div class="fleet-name">${isSelf ? "● " : ""}${esc(p.name || "?")}<span class="dot ${live ? "on" : "off"}"></span></div>
-    <div class="fleet-line">${bits.join(" · ")}</div>
+    <div class="fleet-line">${bits}</div>
   </div>`;
 }
 
@@ -383,7 +397,7 @@ function paintFleet() {
   const el = $("#fleetPanel");
   if (!el || !FLEET) return;
   const c = FLEET.combined || {};
-  const peerCards = (FLEET.peers || []).map((p) => fleetCard(p, false)).join("");
+  const peerCards = (FLEET.peers || []).map((p) => fleetCard(p, p.name, false)).join("");
   el.innerHTML =
     `<div class="fleet-head">
        <span class="fleet-title">FLEET</span>
@@ -392,7 +406,14 @@ function paintFleet() {
        ${c.reachable ? `<span class="mini">${c.connected}/${c.reachable} online · ${c.minis} minis · ${c.minisOn} active</span>` : ""}
        <button class="mini" data-act="fleetRefresh" title="refresh fleet">↻</button>
      </div>
-     <div class="fleet-grid">${fleetCard(FLEET.self, true)}${peerCards}</div>`;
+     <div class="fleet-grid">${fleetCard(FLEET.self, "", true)}${peerCards}</div>`;
+}
+
+// Point the whole dashboard at another fleet instance (proxy) or back to local.
+async function switchInstance(name) {
+  INSTANCE = name && name !== "you" ? name : "";
+  paintFleet();
+  await refresh();
 }
 
 async function ensureFleet(force) {
@@ -976,7 +997,7 @@ function escAttr(s) {
 
 async function mlBlob(key) {
   if (mlBlobs.has(key)) return mlBlobs.get(key);
-  const r = await fetch("/media/" + key, { headers: { Authorization: "Bearer " + TOK } });
+  const r = await fetch(apiPre() + "/media/" + key, { headers: { Authorization: "Bearer " + TOK } });
   if (!r.ok) throw new Error("media unavailable");
   const url = URL.createObjectURL(await r.blob());
   const mime = r.headers.get("content-type") || "";
@@ -1584,13 +1605,15 @@ async function refresh() {
 // ===========================================================================
 
 document.addEventListener("click", async (e) => {
-  const b = e.target.closest ? e.target.closest("button[data-act]") : null;
+  const b = e.target.closest ? e.target.closest("[data-act]") : null;
   if (!b) return;
   const act = b.getAttribute("data-act");
   const num = b.getAttribute("data-num") || "";
   const id = b.getAttribute("data-id") || "";
 
   if (act === "fleetRefresh") { ensureFleet(true); }
+  else if (act === "fleetSwitch") { switchInstance(b.getAttribute("data-name") || ""); }
+  else if (act === "instLocal") { switchInstance(""); }
   else if (act === "detail") { selMini = num; renderMinis(); }
   else if (act === "remove" && confirm("REMOVE " + num + "? Logs the socket out and deletes the session. Continue?")) {
     await action("minis.remove", { number: num });

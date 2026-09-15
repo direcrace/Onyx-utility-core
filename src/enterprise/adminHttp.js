@@ -369,6 +369,71 @@ export function startAdminHttp() {
         });
       }
 
+      // ----- Fleet instance switcher ------------------------------------
+      // "Same dashboard, switched main": this daemon forwards requests to the
+      // chosen instance using that instance's admin token (kept server-side,
+      // never shipped to the browser). Every panel then shows that instance
+      // exactly as if it were the local one.
+      if (path.startsWith("/api/proxy/")) {
+        const { fleetPeers } = await import("./fleet.js");
+        const segs = path.slice("/api/proxy/".length).split("/").filter(Boolean);
+        const name = segs[0] ? decodeURIComponent(segs[0]) : "";
+        const sub = segs[1] || "";
+        const peer = fleetPeers().find((p) => p.name === name);
+        if (!peer) return json(res, 404, { error: "unknown_fleet_instance" });
+        const hdr = { Authorization: `Bearer ${peer.token}` };
+        const base = `http://${peer.host}:${peer.port}`;
+        const proxyGet = async () => {
+          try {
+            const r = await fetch(`${base}/api/${sub}`, { headers: hdr });
+            if (!r.ok) return json(res, r.status, { error: "peer_http_" + r.status });
+            return json(res, 200, await r.json());
+          } catch (e) {
+            return json(res, 502, { error: "peer_unreachable", detail: e?.message });
+          }
+        };
+        if (sub === "action") {
+          if (req.method !== "POST") return json(res, 405, { error: "method_not_allowed" });
+          const body = await readBody(req);
+          try {
+            const r = await fetch(`${base}/api/action`, {
+              method: "POST",
+              headers: { ...hdr, "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const j = await r.json().catch(() => ({}));
+            return json(res, r.status || 502, j);
+          } catch (e) {
+            return json(res, 502, { error: "peer_unreachable", detail: e?.message });
+          }
+        }
+        if (sub === "media") {
+          if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" });
+          const key = decodeURIComponent(segs.slice(2).join("/"));
+          try {
+            const r = await fetch(`${base}/media/${encodeURIComponent(key)}`, { headers: hdr });
+            if (!r.ok) return json(res, r.status, { error: "peer_media_" + r.status });
+            res.writeHead(200, {
+              "Content-Type": r.headers.get("content-type") || "application/octet-stream",
+              "Content-Length": r.headers.get("content-length") || undefined,
+              "Cache-Control": "no-store",
+              "X-Media-Name": r.headers.get("x-media-name") || "",
+            });
+            if (r.body) {
+              for await (const chunk of r.body) res.write(chunk);
+            }
+            return res.end();
+          } catch (e) {
+            return json(res, 502, { error: "peer_unreachable", detail: e?.message });
+          }
+        }
+        const ALLOWED_PROXY = new Set(["dashboard", "stats", "bans", "help", "status", "fleet"]);
+        if (req.method !== "GET" || !ALLOWED_PROXY.has(sub)) {
+          return json(res, 404, { error: "not_found" });
+        }
+        return proxyGet();
+      }
+
       if (path === "/api/stats") {
         return json(res, 200, await getStats());
       }
