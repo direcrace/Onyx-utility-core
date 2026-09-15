@@ -411,9 +411,25 @@ function paintFleet() {
 
 // Point the whole dashboard at another fleet instance (proxy) or back to local.
 async function switchInstance(name) {
-  INSTANCE = name && name !== "you" ? name : "";
-  paintFleet();
-  await refresh();
+  const next = name && name !== "you" ? name : "";
+  if (next === INSTANCE) return;
+  INSTANCE = next;
+  // "ay, bot view is being changed" — fade the whole panel out, swap, fade back.
+  document.body.classList.add("inst-switching");
+  const hi = $("#hInst");
+  if (hi) {
+    hi.classList.remove("flash");
+    void hi.offsetWidth; // restart the animation even when switching rapidly
+    hi.classList.add("flash");
+  }
+  try {
+    paintFleet();
+    await refresh();
+  } finally {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.body.classList.remove("inst-switching");
+    }));
+  }
 }
 
 async function ensureFleet(force) {

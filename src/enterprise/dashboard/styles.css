@@ -360,6 +360,15 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
 }
 .chip.inst[data-act] { cursor: pointer; }
 .chip.inst[data-act]:hover { background: var(--accent); color: #fff; }
+.chip.inst.flash { animation: instFlash .6s ease; }
+
+#content { transition: opacity .16s ease, transform .16s ease; }
+body.inst-switching #content { opacity: .12; transform: translateX(-8px); }
+
+@keyframes instFlash {
+  0% { background: var(--accent); color: #fff; transform: scale(1.08); }
+  100% { background: transparent; transform: scale(1); }
+}
 
 .ov-clock {
   text-align: center;
