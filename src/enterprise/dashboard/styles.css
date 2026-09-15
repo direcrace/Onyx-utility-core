@@ -362,8 +362,12 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
 .chip.inst[data-act]:hover { background: var(--accent); color: #fff; }
 .chip.inst.flash { animation: instFlash .6s ease; }
 
-#content { transition: opacity .16s ease, transform .16s ease; }
-body.inst-switching #content { opacity: .12; transform: translateX(-8px); }
+#content { transition: none; }
+body.inst-switching #content { animation: instOut .2s ease forwards; }
+body.inst-in #content { animation: instIn .28s ease; }
+
+@keyframes instOut { to { opacity: .08; transform: translateX(-10px); } }
+@keyframes instIn { from { opacity: .08; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
 
 @keyframes instFlash {
   0% { background: var(--accent); color: #fff; transform: scale(1.08); }

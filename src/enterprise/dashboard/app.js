@@ -410,11 +410,17 @@ function paintFleet() {
 }
 
 // Point the whole dashboard at another fleet instance (proxy) or back to local.
+// The panel first fades OUT (held SWITCH_HOLD ms so the animation actually
+// plays even when the localhost fetch returns instantly), swaps data, then
+// fades back in. A seq token makes rapid clicks resolve in order.
+const SWITCH_HOLD = 220;
+let switchSeq = 0;
 async function switchInstance(name) {
   const next = name && name !== "you" ? name : "";
   if (next === INSTANCE) return;
   INSTANCE = next;
-  // "ay, bot view is being changed" — fade the whole panel out, swap, fade back.
+  const seq = ++switchSeq;
+  document.body.classList.remove("inst-in");
   document.body.classList.add("inst-switching");
   const hi = $("#hInst");
   if (hi) {
@@ -423,12 +429,17 @@ async function switchInstance(name) {
     hi.classList.add("flash");
   }
   try {
+    await new Promise((r) => setTimeout(r, SWITCH_HOLD));
+    if (seq !== switchSeq) return;
     paintFleet();
     await refresh();
   } finally {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.body.classList.remove("inst-switching");
-    }));
+    if (seq !== switchSeq) return;
+    document.body.classList.remove("inst-switching");
+    document.body.classList.add("inst-in");
+    setTimeout(() => {
+      if (seq === switchSeq) document.body.classList.remove("inst-in");
+    }, 350);
   }
 }
 
