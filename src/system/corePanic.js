@@ -38,6 +38,7 @@ import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { kvGet, kvSet } from "../database/botKv.js";
+import { isWatchEnabled } from "./watchSwitch.js";
 
 const CFG = {
   enabled: process.env.CORE_PANIC !== "off",
@@ -64,6 +65,8 @@ let watchdogChild = null;
 let panicked = false;
 let panicGrace = false;
 let bootedAt = Date.now();
+let startedOnce = false;
+let stoppedBySwitch = false;
 
 const incoming = [];
 const sends = [];
@@ -136,7 +139,8 @@ function sendBurst() {
  */
 export function getCorePanicStatus() {
   return {
-    enabled: CFG.enabled,
+    enabled: CFG.enabled && isWatchEnabled("corepanic"),
+    runtimeSwitch: isWatchEnabled("corepanic"),
     panicked,
     panicGrace,
     elDelayMs: CFG.elDelayMs,
@@ -321,6 +325,7 @@ function heartbeatPath() {
 
 async function spawnWatchdog() {
   if (!CFG.watchdog || watchdogChild) return;
+  if (!isWatchEnabled("corepanic")) return;
   const wdPath = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
     "watchdog.js"
@@ -357,34 +362,48 @@ export async function startCorePanicMonitor() {
     console.log("💤 Core panic monitor disabled (CORE_PANIC=off).");
     return;
   }
+  if (startedOnce && !stoppedBySwitch) return;
+
+  const { loadWatchSwitch } = await import("./watchSwitch.js");
+  await loadWatchSwitch().catch(() => {});
+  if (!isWatchEnabled("corepanic")) {
+    console.log("💤 Core panic monitor disabled (watch switch off).");
+    return;
+  }
 
   // Crash guards: log fatal errors, and panic if the runtime is also overloaded.
-  process.on("unhandledRejection", (err) => {
-    try {
-      import("../utils/logGroup.js").then(({ systemLog }) =>
-        systemLog("error", "Unhandled promise rejection", err)
-      );
-    } catch { /* ignore */ }
-  });
-
-  process.on("uncaughtException", (err) => {
-    console.error("☢️ Uncaught exception:", err?.message || err);
-    try {
-      import("../utils/logGroup.js").then(({ systemLog }) =>
-        systemLog("error", "Uncaught exception", err)
-      );
-    } catch { /* ignore */ }
-    measureEventLoopDelay().then((elDelayMs) => {
-      const metrics = { elDelayMs, heapMb: heapMb(), rate: messageRate(), burst: sendBurst() };
-      if (!inGrace && (metrics.heapMb >= CFG.memoryMb || metrics.rate >= CFG.msgRatePerMin)) {
-        triggerPanic(metrics, { hard: true, source: "uncaught_exception" }).catch(() =>
-          setTimeout(() => process.exit(1), 1500)
+  // Only attach once — re-arming after #syswatch off must not stack handlers.
+  if (!startedOnce) {
+    process.on("unhandledRejection", (err) => {
+      try {
+        import("../utils/logGroup.js").then(({ systemLog }) =>
+          systemLog("error", "Unhandled promise rejection", err)
         );
-      } else {
-        setTimeout(() => process.exit(1), 2000);
-      }
+      } catch { /* ignore */ }
     });
-  });
+
+    process.on("uncaughtException", (err) => {
+      console.error("☢️ Uncaught exception:", err?.message || err);
+      try {
+        import("../utils/logGroup.js").then(({ systemLog }) =>
+          systemLog("error", "Uncaught exception", err)
+        );
+      } catch { /* ignore */ }
+      measureEventLoopDelay().then((elDelayMs) => {
+        const metrics = { elDelayMs, heapMb: heapMb(), rate: messageRate(), burst: sendBurst() };
+        if (!inGrace && (metrics.heapMb >= CFG.memoryMb || metrics.rate >= CFG.msgRatePerMin)) {
+          triggerPanic(metrics, { hard: true, source: "uncaught_exception" }).catch(() =>
+            setTimeout(() => process.exit(1), 1500)
+          );
+        } else {
+          setTimeout(() => process.exit(1), 2000);
+        }
+      });
+    });
+  }
+
+  startedOnce = true;
+  stoppedBySwitch = false;
 
   let inGrace = false;
   let lastPanicTs = null;
@@ -410,6 +429,7 @@ export async function startCorePanicMonitor() {
 
   const tick = async () => {
     if (panicked) return;
+    if (!isWatchEnabled("corepanic")) return;
     // Post-boot settle window: skip checks entirely (backlog replay looks
     // like a flood). A real wedge during settle is still caught by the watchdog.
     if (Date.now() - bootedAt < CFG.settleMs) return;
@@ -479,4 +499,28 @@ export async function forceCorePanic({ detail } = {}, source = "manual") {
     },
     { source }
   );
+}
+
+/**
+ * Tear down the core-panic monitor + force-kill watchdog (runtime `#syswatch off`).
+ * Idempotent; startCorePanicMonitor() can be called again to re-arm.
+ */
+export function stopCorePanicMonitor() {
+  stoppedBySwitch = true;
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  if (watchdogChild) {
+    try {
+      watchdogChild.kill("SIGKILL");
+    } catch { /* ignore */ }
+    watchdogChild = null;
+    console.log("🐶 Core panic watchdog stopped (watch switch off).");
+  }
+  console.log("💤 Core panic monitor stopped (watch switch off).");
 }

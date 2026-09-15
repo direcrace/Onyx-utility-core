@@ -32,6 +32,7 @@
 
 import os from "os";
 import fs from "fs/promises";
+import { isWatchEnabled } from "./watchSwitch.js";
 
 const CFG = {
   intervalMs: Math.max(5000, Number(process.env.SYSTEM_WATCH_INTERVAL_MS) || 15_000),
@@ -176,7 +177,8 @@ export function hostSnapshot() {
  */
 export function getSystemWatchStatus() {
   return {
-    enabled: running,
+    enabled: running && isWatchEnabled("systemwatch"),
+    runtimeSwitch: isWatchEnabled("systemwatch"),
     intervalMs: CFG.intervalMs,
     cpuWarn: CFG.cpuWarn,
     cpuPanic: CFG.cpuPanic,
@@ -316,6 +318,7 @@ async function evaluate(snapshot) {
 
 async function runSample() {
   if (!running) return;
+  if (!isWatchEnabled("systemwatch")) return;
   let snapshot = null;
   try {
     snapshot = await hostSnapshot();
@@ -366,10 +369,16 @@ async function runSample() {
 /**
  * Start the host health monitor. Idempotent.
  */
-export function startSystemMonitor() {
+export async function startSystemMonitor() {
   if (running) return;
   if (process.env.SYSTEM_WATCH === "off") {
     console.log("💤 System monitor disabled (SYSTEM_WATCH=off).");
+    return;
+  }
+  const { loadWatchSwitch } = await import("./watchSwitch.js");
+  await loadWatchSwitch().catch(() => {});
+  if (!isWatchEnabled("systemwatch")) {
+    console.log("💤 System monitor disabled (watch switch off).");
     return;
   }
   running = true;

@@ -299,6 +299,73 @@ command(
 
 command(
   {
+    pattern: "syswatch",
+    fromMe: false,
+    desc: "Toggle/status the system-watch + core-panic monitors (owner). Usage: #syswatch [on|off|status]",
+    type: "owner",
+    dontAddCommandList: true,
+  },
+  async (message, conn) => {
+    if (!(await requireControl(conn, message))) return;
+    const raw = (getCommandArgs(message.body, "syswatch") || "status").trim().toLowerCase();
+    const action = ["on", "off", "status"].includes(raw) ? raw : "status";
+
+    const { setWatchEnabled, getWatchSwitchInfo } = await import("../system/watchSwitch.js");
+    const { getSystemWatchStatus, startSystemMonitor, stopSystemMonitor } = await import(
+      "../system/systemWatch.js"
+    );
+    const { getCorePanicStatus, startCorePanicMonitor, stopCorePanicMonitor } = await import(
+      "../system/corePanic.js"
+    );
+
+    if (action === "on" || action === "off") {
+      const on = action === "on";
+      await setWatchEnabled(on);
+      if (on) {
+        startSystemMonitor();
+        await startCorePanicMonitor().catch(() => {});
+        await replyOk(
+          conn,
+          message,
+          await tr(
+            "🟢 System-watch *ON* — host monitor + core-panic + watchdog re-armed.",
+            "🟢 System-Watch *EIN* — Host-Monitor + Core-Panic + Watchdog aktiviert."
+          )
+        );
+      } else {
+        stopSystemMonitor();
+        stopCorePanicMonitor();
+        await replyOk(
+          conn,
+          message,
+          await tr(
+            "🟠 System-watch *OFF* — no more automatic self-kills. Manual #corepanic still works. Survives restarts.",
+            "🟠 System-Watch *AUS* — keine automatischen Selbst-Abschaltungen mehr. Manuelles #corepanic funktioniert weiter. Übersteht Neustarts."
+          )
+        );
+      }
+      return;
+    }
+
+    const sw = getSystemWatchStatus();
+    const cp = getCorePanicStatus();
+    const info = getWatchSwitchInfo();
+    const lines = [
+      `🛡️ *System-watch*`,
+      `Switch: ${info.enabled ? "ON" : "OFF"}` +
+        (info.mode ? ` (persisted "${info.mode}")` : " (env default)"),
+      `Host monitor: ${sw.enabled ? "running" : "stopped"} (interval ${sw.intervalMs / 1000}s)`,
+      `Core panic: ${
+        cp.enabled ? "armed" : cp.panicked ? "panicked" : "disabled"
+      } · watchdog ${info.enabled ? "active" : "off"}`,
+      `Use #syswatch on|off to change (owner).`,
+    ];
+    await replyOk(conn, message, lines.join("\n"));
+  }
+);
+
+command(
+  {
     pattern: "corepanic",
     fromMe: false,
     desc: "Trigger a core panic (owner). Forces pm2 stop now.",
