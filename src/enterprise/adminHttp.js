@@ -378,7 +378,12 @@ export function startAdminHttp() {
         const { fleetPeers } = await import("./fleet.js");
         const segs = path.slice("/api/proxy/".length).split("/").filter(Boolean);
         const name = segs[0] ? decodeURIComponent(segs[0]) : "";
-        const sub = segs[1] || "";
+        // The dashboard prefixes its API paths with "/api/" — accept both
+        // `/api/proxy/<name>/<sub>` (short) and `/api/proxy/<name>/api/<sub>`
+        // (what the switcher actually sends) so nothing 404s.
+        let idx = 1;
+        if (segs[1] === "api") idx = 2;
+        const sub = segs[idx] || "";
         const peer = fleetPeers().find((p) => p.name === name);
         if (!peer) return json(res, 404, { error: "unknown_fleet_instance" });
         const hdr = { Authorization: `Bearer ${peer.token}` };
@@ -409,7 +414,7 @@ export function startAdminHttp() {
         }
         if (sub === "media") {
           if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" });
-          const key = decodeURIComponent(segs.slice(2).join("/"));
+          const key = decodeURIComponent(segs.slice(idx + 1).join("/"));
           try {
             const r = await fetch(`${base}/media/${encodeURIComponent(key)}`, { headers: hdr });
             if (!r.ok) return json(res, r.status, { error: "peer_media_" + r.status });
