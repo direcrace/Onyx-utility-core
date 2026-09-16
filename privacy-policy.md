@@ -180,4 +180,4 @@ We may update this policy as the Bot's features change. Material changes will be
 ## 13. Contact
 
 Questions about this policy or your data can be sent to:
-+49 160 95344704 (WhatsApp) · discord: directorace · email: teamtestdevteam@gmx.net
+ (WhatsApp NOT included ) · discord: directorace · email: teamtestdevteam@gmx.net
