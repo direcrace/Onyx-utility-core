@@ -1,23 +1,13 @@
-/**
- * Message Utility Functions
- * Helper functions for message operations + UX feel helpers
- */
+
 
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, UX } from "../config/constants.js";
 
-/**
- * Pick English vs German based on the current global language (for inline strings).
- * Returns `de` when the bot language is German and a German variant is given.
- */
 export async function tr(en, de) {
   const { getLang } = await import("./i18n.js");
   const lang = await getLang();
   return lang === "de" && de !== undefined ? de : en;
 }
 
-/**
- * Send a text message with optional quote / mentions
- */
 export async function sendMessage(conn, jid, text, options = {}) {
   const messageOptions =
     typeof text === "string" ? { text } : { ...text };
@@ -37,9 +27,6 @@ export async function sendMessage(conn, jid, text, options = {}) {
   return await conn.sendMessage(jid, messageOptions, sendOptions);
 }
 
-/**
- * Reply to a message
- */
 export async function reply(conn, message, text, options = {}) {
   return await sendMessage(conn, message.from, text, {
     ...options,
@@ -50,36 +37,27 @@ export async function reply(conn, message, text, options = {}) {
   });
 }
 
-/**
- * Send an error message
- */
 export async function sendError(conn, jid, error) {
   const { t } = await import("./i18n.js");
   let text = error;
   try {
     const translated = await t(error);
     if (translated && translated !== error) text = translated;
-  } catch { /* ignore */ }
+  } catch {  }
   if (text === error) text = ERROR_MESSAGES[error] || error || ERROR_MESSAGES.FAILED;
   return await sendMessage(conn, jid, text);
 }
 
-/**
- * React-ack on the user's command message (instant feedback)
- */
 export async function ackCommand(conn, message, emoji = UX.ACK_REACT) {
   try {
     await conn.sendMessage(message.from, {
       react: { text: emoji, key: message.key },
     });
   } catch {
-    // Non-fatal — some chats block reactions
+
   }
 }
 
-/**
- * Brief composing presence around async work
- */
 export async function withTyping(conn, jid, fn, { timeoutMs = 15_000 } = {}) {
   let cleared = false;
   const clear = async () => {
@@ -88,14 +66,14 @@ export async function withTyping(conn, jid, fn, { timeoutMs = 15_000 } = {}) {
     try {
       await conn.sendPresenceUpdate("paused", jid);
     } catch {
-      /* ignore */
+
     }
   };
 
   try {
     await conn.sendPresenceUpdate("composing", jid);
   } catch {
-    /* ignore */
+
   }
 
   const timer = setTimeout(clear, timeoutMs);
@@ -107,9 +85,6 @@ export async function withTyping(conn, jid, fn, { timeoutMs = 15_000 } = {}) {
   }
 }
 
-/**
- * Friendly success reply
- */
 export async function replyOk(conn, message, text, options = {}) {
   const body =
     text === undefined || text === null
@@ -120,9 +95,6 @@ export async function replyOk(conn, message, text, options = {}) {
   return reply(conn, message, body, options);
 }
 
-/**
- * Friendly failure reply
- */
 export async function replyFail(conn, message, text, options = {}) {
   const body =
     text === undefined || text === null
@@ -133,18 +105,12 @@ export async function replyFail(conn, message, text, options = {}) {
   return reply(conn, message, body, options);
 }
 
-/**
- * Extract command arguments from message body
- */
 export function getCommandArgs(body, pattern) {
   const regex = new RegExp(`${pattern}\\s+(.*)`, "is");
   const match = body.match(regex);
   return match ? match[1].trim() : null;
 }
 
-/**
- * Format uptime to readable string
- */
 export function formatUptime(ms) {
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -160,9 +126,6 @@ export function formatUptime(ms) {
   return parts.join(" ") || "0s";
 }
 
-/**
- * Create quoted message object
- */
 export function createQuote(message) {
   return {
     key: message.key,
@@ -170,16 +133,10 @@ export function createQuote(message) {
   };
 }
 
-/**
- * Extract mentions from message
- */
 export function getMentions(message) {
   return message.message?.contextInfo?.mentionedJid || [];
 }
 
-/**
- * Get quoted message participant
- */
 export function getQuotedParticipant(message) {
   return message.message?.contextInfo?.participant || null;
 }

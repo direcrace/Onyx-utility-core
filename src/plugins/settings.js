@@ -1,6 +1,4 @@
-/**
- * Owner-only global settings: anticall, alwaysonline
- */
+
 
 import { command } from "../plugins.js";
 import { replyOk, getCommandArgs, tr } from "../utils/message.js";
@@ -24,7 +22,7 @@ command(
     let val;
     if (args === "on" || args === "off") { val = args === "on"; await kvSet("alwaysonline_global", val); }
     else { const cur = await kvGet("alwaysonline_global"); val = !cur; await kvSet("alwaysonline_global", val); }
-    if (val) { try { await conn.sendPresenceUpdate("available"); } catch { /* ignore */ } }
+    if (val) { try { await conn.sendPresenceUpdate("available"); } catch {  } }
     await replyOk(conn, message, await tr(`Always-online: *${val ? "ON" : "OFF"}*`, `Immer-online: *${val ? "AN" : "AUS"}*`));
   }
 );

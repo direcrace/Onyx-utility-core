@@ -1,22 +1,15 @@
-/**
- * Command Registry and Builder
- * Manages command registration and pattern matching
- */
+
 
 import { BOT_INFO } from "./config/constants.js";
 
 const commands = [];
-/** First-token → command index for O(1)-ish lookup */
+
 const commandIndex = new Map();
 
-/** Build a command match regex for a given prefix + command name. */
 function buildPattern(prefix, name) {
   return new RegExp(`(${prefix})( ?${name}(?=\\b|$))(.*)`, "is");
 }
 
-/**
- * Command builder class for fluent API
- */
 class CommandBuilder {
   constructor() {
     this.config = {
@@ -81,7 +74,7 @@ class CommandBuilder {
     commands.push(this.config);
     if (this.config.patternName) {
       const key = this.config.patternName.toLowerCase();
-      // First registered wins for index; regex fallback still finds later ones
+
       if (!commandIndex.has(key)) {
         commandIndex.set(key, this.config);
       }
@@ -90,9 +83,6 @@ class CommandBuilder {
   }
 }
 
-/**
- * Register a command
- */
 export const command = (commandInfo, func) => {
   const builder = new CommandBuilder();
 
@@ -134,9 +124,6 @@ export function getCommandsByType(type) {
   return commands.filter((cmd) => cmd.type === type);
 }
 
-/**
- * Extract first token after prefix for index lookup
- */
 function extractCommandToken(text) {
   if (!text) return null;
   const prefix = BOT_INFO.PREFIX;
@@ -146,9 +133,6 @@ function extractCommandToken(text) {
   return match ? match[1].toLowerCase() : null;
 }
 
-/**
- * Find command by pattern match (index first, then regex scan)
- */
 export function findCommand(text) {
   const token = extractCommandToken(text);
   if (token) {
@@ -160,17 +144,10 @@ export function findCommand(text) {
   return commands.find((cmd) => cmd.pattern && cmd.pattern.test(text)) || null;
 }
 
-/**
- * Commands for menu (respects dontAddCommandList)
- */
 export function getMenuCommands() {
   return commands.filter((cmd) => !cmd.dontAddCommandList && cmd.patternName);
 }
 
-/**
- * Recompile every registered command's match regex with the current prefix.
- * Call after a runtime prefix change (and optionally after loadRuntimeConfig).
- */
 export function rebuildCommandPatterns() {
   for (const cmd of commands) {
     if (cmd.patternName) {

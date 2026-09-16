@@ -16,7 +16,7 @@ auth_info/
 baileys_auth_info/
 
 # Backups & temp
-**/x-asena-backups/
+**/onyx-backups/
 *.backup.json
 tmp/
 temp/

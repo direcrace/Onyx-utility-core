@@ -1,6 +1,4 @@
-/**
- * Search & info commands: movie, anime, lyrics, github, translate, QR code
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyFail, getCommandArgs, withTyping, tr } from "../utils/message.js";
@@ -126,7 +124,7 @@ command(
       if (!text) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}img <query>\``, `Benutzung: \`${BOT_INFO.PREFIX}img <suche>\``)); return; }
 
       let urls = [];
-      try { urls = await fetchPinterestPinImages(text); } catch { /* handle below */ }
+      try { urls = await fetchPinterestPinImages(text); } catch {  }
       if (!urls.length) { await replyFail(conn, message, await tr("No Pinterest results for that query.", "Keine Pinterest-Ergebnisse für diese Suche.")); return; }
 
       const url = urls[Math.floor(Math.random() * urls.length)];
@@ -217,7 +215,7 @@ async function langTag() {
     const { getLang } = await import("../utils/i18n.js");
     const l = await getLang();
     if (l === "de") return "de";
-  } catch { /* ignore */ }
+  } catch {  }
   return "en";
 }
 
@@ -363,9 +361,6 @@ async function pinterestCookies() {
   return setCookies.join("; ");
 }
 
-/**
- * Pinterest legacy search API — returns real i.pinimg.com image URLs
- */
 export async function fetchPinterestPinImages(query) {
   const cookies = await pinterestCookies();
   const csrf = (cookies.match(/csrftoken=([^;]+)/) || [])[1] || "";

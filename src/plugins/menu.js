@@ -1,6 +1,4 @@
-/**
- * Menu / Help Command — image + section-based layout
- */
+
 
 import { command, getMenuCommands } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";
@@ -44,7 +42,7 @@ async function buildMenuText() {
   ];
 
   let mode = "public";
-  try { mode = await getMode(); } catch { /* ignore */ }
+  try { mode = await getMode(); } catch {  }
 
   let uptime = "N/A";
   try {
@@ -52,7 +50,7 @@ async function buildMenuText() {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     uptime = h > 0 ? `${h}h ${m}m` : `${m}m`;
-  } catch { /* ignore */ }
+  } catch {  }
 
   let text = `┌──────────────────────┐\n`;
   text += `│  *${BOT_INFO.NAME}*\n`;
@@ -128,7 +126,6 @@ command(
       return;
     }
 
-    // Must be group admin (or privileged) to touch the kill-switch.
     let meta = groupCache.get(message.from);
     if (!meta) {
       try { meta = await conn.groupMetadata(message.from); groupCache.set(message.from, meta); } catch { meta = null; }

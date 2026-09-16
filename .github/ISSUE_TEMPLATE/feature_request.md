@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for X-Asena
+about: Suggest an idea for Onyx Utility Core
 title: "[feat] "
 labels: enhancement
 assignees: ""

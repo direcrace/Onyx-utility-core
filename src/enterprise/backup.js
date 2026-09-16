@@ -1,6 +1,4 @@
-/**
- * Session / BotKV backup export (owner-only)
- */
+
 
 import fs from "fs/promises";
 import path from "path";
@@ -9,10 +7,6 @@ import crypto from "crypto";
 import { kvGet } from "../database/botKv.js";
 import config from "../../config.js";
 
-/**
- * Export a JSON backup of BotKV keys + auth hint (not raw signal keys by default for size/safety).
- * Full auth dump optional via includeAuth.
- */
 export async function createBackup({ includeAuth = false } = {}) {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const payload = {
@@ -45,11 +39,11 @@ export async function createBackup({ includeAuth = false } = {}) {
   }
 
   if (includeAuth && !config.USE_POSTGRES) {
-    // Copy sqlite file path reference only — actual copy below
+
     payload.authDbPath = config.SQLITE_PATH;
   }
 
-  const dir = path.join(os.tmpdir(), "x-asena-backups");
+  const dir = path.join(os.tmpdir(), "onyx-backups");
   await fs.mkdir(dir, { recursive: true });
   const jsonPath = path.join(dir, `backup-${stamp}.json`);
   await fs.writeFile(jsonPath, JSON.stringify(payload, null, 2), "utf8");

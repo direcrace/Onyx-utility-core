@@ -1,8 +1,4 @@
-/**
- * In-memory per-chat game sessions (tic-tac-toe, guess, hangman) + pure logic.
- * Turn moves can arrive as plain messages — they are routed here before the
- * chatbot sees them, and only consumed when they match a valid move shape.
- */
+
 
 import { normalizeNumber } from "./access.js";
 import { tr } from "./message.js";
@@ -54,8 +50,6 @@ function mentionText(jid) {
   return jid && jid.includes("@") ? `@${jid.split("@")[0]}` : "?";
 }
 
-// ---------- tic-tac-toe ----------
-
 const TTT_LINES = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8],
   [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -71,7 +65,7 @@ export function tttWinner(board) {
 
 export function parseTttMove(input) {
   const s = String(input || "").replace(/\s+/g, "").toLowerCase();
-  if (/^[1-9]$/.test(s)) return { idx: 9 - Number(s), label: s }; // keypad 7-8-9 top
+  if (/^[1-9]$/.test(s)) return { idx: 9 - Number(s), label: s };
   let m = s.match(/^([a-c])([1-3])$/);
   if (m) return { idx: (Number(m[2]) - 1) * 3 + (m[1].charCodeAt(0) - 97), label: `${m[1]}${m[2]}` };
   m = s.match(/^([1-3])([a-c])$/);
@@ -106,14 +100,10 @@ export function botTttMove(board) {
   return tryWin("o") ?? tryWin("x") ?? (open.includes(4) ? 4 : open[Math.floor(Math.random() * open.length)]);
 }
 
-// ---------- guess ----------
-
 export function guessHint(target, guess) {
   if (guess === target) return "win";
   return guess < target ? "higher" : "lower";
 }
-
-// ---------- hangman ----------
 
 const HANGMAN_WORDS = [
   "apple", "banana", "orange", "grape", "lemon", "cherry", "melon",
@@ -135,12 +125,6 @@ export function renderHangman(word, letters, fulls) {
   return `\`${visible}\`\n❌ ${wrong.join(" ") || "—"} · 💡 ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left`;
 }
 
-// ---------- turn routing ----------
-
-/**
- * Routes a non-command message to an active game in that chat.
- * Returns true when the message was consumed by the game.
- */
 export async function routeGameTurn({ message, conn }) {
   expireSessions();
   const s = validSession(message.from);

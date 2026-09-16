@@ -1,7 +1,4 @@
-/**
- * Per-group settings stored in BotKV (JSON blob per group)
- * Extended for control-freak admin features
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 
@@ -90,7 +87,6 @@ export async function toggleGroupFlag(jid, flag, value) {
   return cur;
 }
 
-/** Warn counts: warns:{group}:{userNorm} */
 export async function getWarns(groupJid, userNorm) {
   const n = await kvGet(`warns:${groupJid}:${userNorm}`);
   return typeof n === "number" ? n : parseInt(n, 10) || 0;
@@ -112,7 +108,6 @@ export async function resetWarns(groupJid, userNorm) {
   return 0;
 }
 
-/** Ban list management */
 export async function isBanned(groupJid, userNorm) {
   const settings = await getGroupSettings(groupJid);
   const banned = settings.banned || [];

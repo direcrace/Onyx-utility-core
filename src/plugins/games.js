@@ -1,8 +1,4 @@
-/**
- * Games: no-signup coin economy (#job, #daily, #rob, #gamble, #bal, #rich)
- * and arcade games (#dice, #coin, #rps, #ttt, #guess, #hangman).
- * Wallets are implicit — a wallet exists the moment someone earns.
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, getMentions, getQuotedParticipant, tr } from "../utils/message.js";
@@ -34,8 +30,6 @@ async function gameActive(conn, message) {
   await replyFail(conn, message, await tr(`A *${s.kind}* game is already running here. \`#stopgame\` to end it.`, `Hier läuft bereits ein *${s.kind}*-Spiel. \`#stopgame\` zum Beenden.`));
   return true;
 }
-
-// ---------- economy ----------
 
 command(
   { pattern: "job", fromMe: false, desc: "Work a shift & earn coins", type: "fun" },
@@ -179,8 +173,6 @@ command(
   }
 );
 
-// ---------- pick-up games ----------
-
 command(
   { pattern: "dice", fromMe: false, desc: "Roll a die (optional sides)", type: "fun" },
   async (message, conn) => {
@@ -220,8 +212,6 @@ command(
     await reply(conn, message, await tr(en, de));
   }
 );
-
-// ---------- turn-based games ----------
 
 command(
   { pattern: "ttt", fromMe: false, desc: "Tic-tac-toe: #ttt vs bot, #ttt @friend for PvP", type: "fun" },

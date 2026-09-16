@@ -1,6 +1,4 @@
-/**
- * Group Mention Command
- */
+
 
 import { command } from "../plugins.js";
 import { sendMessage, getCommandArgs, sendError, withTyping, tr } from "../utils/message.js";

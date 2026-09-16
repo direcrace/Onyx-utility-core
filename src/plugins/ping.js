@@ -1,6 +1,4 @@
-/**
- * Ping Command — latency, uptime, memory, socket state
- */
+
 
 import { command } from "../plugins.js";
 import { reply, tr } from "../utils/message.js";

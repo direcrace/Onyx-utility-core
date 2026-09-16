@@ -1,11 +1,8 @@
-/**
- * Anti-spam / anti-link helpers + mute checks
- */
+
 
 import { normalizeNumber } from "./access.js";
 import { getGroupSettings } from "./groupSettings.js";
 
-/** senderKey → timestamps[] */
 const spamBuckets = new Map();
 
 const URL_RE =
@@ -16,9 +13,6 @@ export function extractLinks(text) {
   return text.match(URL_RE) || [];
 }
 
-/**
- * Returns true if this message should be treated as spam
- */
 export function checkSpam(senderKey, limit = 5, windowMs = 8000) {
   const now = Date.now();
   let arr = spamBuckets.get(senderKey) || [];
@@ -39,12 +33,6 @@ export function isUserMuted(settings, message) {
   return muted.some((m) => candidates.includes(normalizeNumber(m)));
 }
 
-/**
- * Detect "mention everyone" abuse:
- * - groupMentions (Baileys @everyone)
- * - very large mentionedJid lists
- * - explicit @everyone / @all / @here text
- */
 export function hasEveryoneMention(message) {
   if (!message) return false;
   const ctx = message.rawMessage?.contextInfo;
@@ -72,7 +60,7 @@ export async function shouldBlockGroupMessage(message, conn) {
 
   if (settings.antilink && message.body && !message.key?.fromMe) {
     const links = extractLinks(message.body);
-    // Allow commands that are just the bot prefix + word without raw links... still block if URL present
+
     if (links.length) {
       return { block: true, reason: "ANTILINK", settings, deleteMsg: true };
     }
@@ -95,6 +83,6 @@ export async function tryDeleteMessage(conn, message) {
   try {
     await conn.sendMessage(message.from, { delete: message.key });
   } catch {
-    /* may lack admin */
+
   }
 }

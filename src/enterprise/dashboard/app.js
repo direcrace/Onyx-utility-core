@@ -1,11 +1,4 @@
-/**
- * ONYX Dashboard — single-page operator console.
- * Talks only to the admin API:
- *   GET  /api/dashboard   aggregated snapshot (every 1 s unless hidden)
- *   POST /api/action      { action, ...params }
- *   GET  /audit           recent audit entries
- *   GET  /api/events      SSE live console log stream
- */
+
 
 const TOK0 = new URLSearchParams(location.search).get("token") || "";
 let TOK = TOK0 || sessionStorage.getItem("dcToken") || "";
@@ -23,13 +16,12 @@ const fmtUp = (sec) => {
 const fmtT = (ts) => (ts ? new Date(ts).toLocaleString() : "—");
 const fmtTime = (ts) => (ts ? new Date(ts).toLocaleTimeString() : "—");
 
-let D = null; // latest /api/dashboard payload
+let D = null;
 let active = "overview";
 let selMini = "";
-let AU = null; // audit cache
+let AU = null;
 let refreshing = false;
 
-// ---- logs ---------------------------------------------------------------
 let logsPaused = false;
 let logFilter = "";
 let logSince = 0;
@@ -37,12 +29,10 @@ let streamOpen = false;
 let es = null;
 const LOG = [];
 
-// ---- terminal -----------------------------------------------------------
 let termHist = [];
 let termIdx = -1;
 let dangerArmed = false;
 
-// ---- role (creator | operator) ------------------------------------------
 let ROLE = "creator";
 
 function toast(html, cls) {
@@ -59,10 +49,6 @@ function toast(html, cls) {
     t.className = "toast fade";
   }, 4600);
 }
-
-// ===========================================================================
-// API helpers
-// ===========================================================================
 
 async function apiGet(path) {
   const r = await fetch(apiPre() + path, { headers: { Authorization: "Bearer " + TOK } });
@@ -87,13 +73,6 @@ async function action(name, params) {
   return j;
 }
 
-/**
- * Run an action with the remote-control safeguard flow:
- *   1. optional client confirm dialog first,
- *   2. if the server answers {confirm:true} (operator must arm), re-confirm,
- *      arm the action (rc.arm) and retry once.
- * Returns the final response (ok / confirm / locked).
- */
 async function doAction(name, params, opts = {}) {
   if (opts.confirm && !window.confirm(opts.text || `Run ${name}?`)) return null;
   let j = await action(name, params);
@@ -113,10 +92,6 @@ function showTok() {
   $("#tokBox").hidden = false;
   $("#tokIn").focus();
 }
-
-// ===========================================================================
-// Header
-// ===========================================================================
 
 function renderHeader() {
   const m = D?.main;
@@ -160,14 +135,10 @@ function renderHeader() {
   }
 }
 
-// ===========================================================================
-// Sparklines + bars
-// ===========================================================================
-
 function sparkline(values, color, w = 300, h = 60) {
   if (!values || !values.length) return '<svg viewBox="0 0 300 60"></svg>';
-  if (values.length > 300) values = values.slice(-300); // keep 1 px/pt at 1 s cadence
-  if (values.length === 1) values = [values[0], values[0]]; // flat line
+  if (values.length > 300) values = values.slice(-300);
+  if (values.length === 1) values = [values[0], values[0]];
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
@@ -199,13 +170,7 @@ function bars(data) {
     .join("");
 }
 
-// ===========================================================================
-// Overview — live. Values update in place (no page rebuild) every refresh;
-// changed numbers flash and show ▲/▼ deltas like a stock ticker. Charts
-// rebuild only when a new sample point lands (every STATS_SAMPLE_MS).
-// ===========================================================================
-
-const PREV = {}; // last rendered values, keyed per metric
+const PREV = {};
 
 function tickNum(id, key, num, display, minDelta = 1) {
   const val = $("#" + id);
@@ -263,7 +228,6 @@ const ovGroup = (title, accent, gid, items) =>
      <div class="cards">${items}</div>
    </div>`;
 
-// static face tick marks for the analog clock
 const OV_TICKS = (() => {
   let s = "";
   for (let i = 0; i < 12; i++) {
@@ -278,7 +242,6 @@ const OV_TICKS = (() => {
   return s;
 })();
 
-// spin the analog clock hands to `now` and set the digital readout beneath
 function renderClock() {
   const now = new Date();
   const h = now.getHours() % 12;
@@ -362,10 +325,8 @@ function buildCharts(s) {
 
 let FLEET = null;
 let FLEET_AT = 0;
-let INSTANCE = ""; // "" = local; otherwise the fleet peer name being viewed
+let INSTANCE = "";
 
-// Fleet switcher: server-side proxy prefix. All API + media calls go through
-// apiPre() so the whole dashboard "becomes" the selected instance.
 function apiPre() {
   return INSTANCE ? `/api/proxy/${encodeURIComponent(INSTANCE)}` : "";
 }
@@ -409,10 +370,6 @@ function paintFleet() {
      <div class="fleet-grid">${fleetCard(FLEET.self, "", true)}${peerCards}</div>`;
 }
 
-// Point the whole dashboard at another fleet instance (proxy) or back to local.
-// The panel first fades OUT (held SWITCH_HOLD ms so the animation actually
-// plays even when the localhost fetch returns instantly), swaps data, then
-// fades back in. A seq token makes rapid clicks resolve in order.
 const SWITCH_HOLD = 220;
 let switchSeq = 0;
 async function switchInstance(name) {
@@ -425,7 +382,7 @@ async function switchInstance(name) {
   const hi = $("#hInst");
   if (hi) {
     hi.classList.remove("flash");
-    void hi.offsetWidth; // restart the animation even when switching rapidly
+    void hi.offsetWidth;
     hi.classList.add("flash");
   }
   try {
@@ -487,14 +444,12 @@ function renderOverview() {
   setAccess("ov-g-minis", minis.length ? "healthy" : "none", "attention", minis.length > 0 && suspCount === 0 && onCount === minis.length);
   setAccess("ov-g-errs", "nominal", "spike", !m.panic?.panicked && (m.metrics?.errors_last_min ?? 0) < 8);
 
-  // MAIN
   tickHtml("ov-status", "status",
     `<span class="dot ${m.connected ? "on" : "off"}"></span>${m.connected ? "connected" : "DISCONNECTED"}`);
   tickHtml("ov-mode", "mode", `${m.mode || "?"} <span class="mut2">/ ${esc(h.pm2App || "?")}</span>`);
   tickText("ov-uptime", "uptime", fmtUp(m.uptimeSec));
   tickText("ov-pid", "pid", String(m.pid ?? "—"));
 
-  // MESSAGING
   tickNum("ov-min", "in", L.totals?.in ?? 0, `${L.totals?.in ?? 0}`);
   tickNum("ov-mout", "out", L.totals?.out ?? 0, `${L.totals?.out ?? 0}`);
   tickNum("ov-fails", "fails", L.totals?.fails ?? 0, `${L.totals?.fails ?? 0}`);
@@ -503,7 +458,6 @@ function renderOverview() {
   tickNum("ov-cmds", "cmds", mt.commands ?? 0, `${mt.commands ?? 0}`);
   tickNum("ov-errm", "errm", m.metrics?.errors_last_min ?? 0, `${m.metrics?.errors_last_min ?? 0}`);
 
-  // SYSTEM
   tickNum("ov-cpub", "cpub", h.cpuPct ?? 0, `${(h.cpuPct ?? 0).toFixed(1)}%`, 0.5);
   tickNum("ov-cpuh", "cpuh", h.hostCpuPct ?? 0, `${(h.hostCpuPct ?? 0).toFixed(1)}%`, 0.5);
   tickNum("ov-ram", "ram", h.mem?.usedPct ?? 0, `${h.mem?.usedPct ?? 0}%`);
@@ -511,13 +465,11 @@ function renderOverview() {
   tickNum("ov-heap", "heap", m.heapMb ?? 0, `${m.heapMb ?? 0} MB`);
   tickNum("ov-disk", "disk", h.disk?.freeMb ?? 0, `${h.disk ? (h.disk.freeMb / 1024).toFixed(1) : "?"} GB`, 256);
 
-  // MINIS
   tickNum("ov-minis-total", "minisTotal", minis.length, `${minis.length}`);
   tickNum("ov-minis-on", "minisOn", onCount, `${onCount}`);
   tickNum("ov-minis-susp", "minisSusp", suspCount, `${suspCount}`);
   tickNum("ov-minis-flags", "minisFlags", D.flagsTotal ?? 0, `${D.flagsTotal ?? 0}`);
 
-  // ERRORS
   const pn = m.panic || {};
   const panicLabel = pn.panicked ? "🔴 TRIGGERED" : pn.enabled ? (pn.panicGrace ? "⏳ grace" : "🟢 armed") : "⚪ off";
   tickHtml("ov-panic", "panic", panicLabel);
@@ -525,7 +477,6 @@ function renderOverview() {
   tickNum("ov-avgjob", "avgjob", m.metrics?.avg_job_ms ?? 0, `${m.metrics?.avg_job_ms ?? 0} ms`);
   tickNum("ov-msgfails", "msgfails", L.totals?.fails ?? 0, `${L.totals?.fails ?? 0}`);
 
-  // Charts — rebuild only when a new sample arrived
   const s = D.stats?.series || [];
   const chartsEl = $("#ovCharts");
   if (chartsEl) {
@@ -541,7 +492,6 @@ function renderOverview() {
     }
   }
 
-  // Flags bars — rebuild only when the set changes
   const fl = D.flags || {};
   const barsEl = $("#ovFlagsBars");
   const fk = JSON.stringify(fl.byRule || []);
@@ -551,14 +501,9 @@ function renderOverview() {
   }
 }
 
-// ===========================================================================
-// Minis
-// ===========================================================================
-
 function renderMinis() {
   const minis = D?.minis || [];
 
-  // keep the "via" selector in sync
   const via = $("#tVia");
   const prev = via.value || "";
   via.innerHTML =
@@ -612,7 +557,6 @@ function renderMinis() {
   renderMiniDetail();
 }
 
-// --- self-service invite links (Minis tab, creator tier) ---------------------
 let INVITES = [];
 let INVITES_AT = 0;
 let INVITES_SIG = "";
@@ -628,7 +572,7 @@ function fallbackCopy(t) {
   ta.style.opacity = "0";
   document.body.appendChild(ta);
   ta.select();
-  try { document.execCommand("copy"); } catch { /* ignore */ }
+  try { document.execCommand("copy"); } catch {  }
   ta.remove();
 }
 
@@ -695,10 +639,6 @@ function renderMiniDetail() {
     </div>${recs || '<div class="mini">no flags for this mini.</div>'}`;
 }
 
-// ===========================================================================
-// Flags
-// ===========================================================================
-
 function renderFlags() {
   const fl = D?.flags;
   if (!fl) return;
@@ -747,10 +687,6 @@ function renderFlags() {
       : '<div class="mini">no flags match the filters.</div>') +
     `</div>`;
 }
-
-// ===========================================================================
-// Logs (SSE)
-// ===========================================================================
 
 function logLine(e) {
   if (e?.ts && e.ts < logSince) return;
@@ -803,7 +739,7 @@ function renderLogs(forceScroll) {
 }
 
 async function openLogStream() {
-  if (es) { try { es.close(); } catch { /* ignore */ } es = null; }
+  if (es) { try { es.close(); } catch {  } es = null; }
   if (!TOK) return;
   const back = await action("logs.tail", { n: 150 });
   if (back?.ok && back.data) {
@@ -813,15 +749,11 @@ async function openLogStream() {
   }
   es = new EventSource("/api/events?token=" + encodeURIComponent(TOK));
   es.onmessage = (ev) => {
-    try { logLine(JSON.parse(ev.data)); } catch { /* ignore */ }
+    try { logLine(JSON.parse(ev.data)); } catch {  }
   };
   es.onopen = () => setLive(true);
   es.onerror = () => setLive(false);
 }
-
-// ===========================================================================
-// Audit
-// ===========================================================================
 
 async function renderAudit() {
   const q = $("#auFilter").value.trim().toLowerCase();
@@ -841,10 +773,6 @@ async function renderAudit() {
       : '<div class="mini">no audit entries.</div>') +
     `</div>`;
 }
-
-// ===========================================================================
-// Terminal
-// ===========================================================================
 
 function termOut(html, cls) {
   const out = $("#tmOut");
@@ -868,25 +796,12 @@ async function termRun(line) {
   termOut(esc(text), j?.ok ? "out" : "error");
 }
 
-// ===========================================================================
-// Remote — main-bot controls + the remote-control watchdog, mirroring the
-// mini row buttons but applied to the MAIN bot, guarded like the minis are.
-// ===========================================================================
+let LAST_PAIR = null;
 
-// ===========================================================================
-// Remote control — everything, in one place
-// ===========================================================================
-
-let LAST_PAIR = null; // {num, code} | {num, error}
-
-// --- "send as bot" composer state (survives the every-second re-render) ------
 let rcCompose = { chat: "", via: "", body: "" };
-let CHATS = []; // cached list from chats.list
+let CHATS = [];
 let CHATS_AT = 0;
 
-/** True while the user is interacting with a form control or any scrollable
- *  remote region (composer picker, message log) — skip the rebuild so the
- *  open dropdown / scroll position isn't destroyed every second. */
 function uiBusy() {
   const ae = document.activeElement;
   if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.tagName === "SELECT" || ae.isContentEditable)) return true;
@@ -908,8 +823,7 @@ async function ensureChats(force) {
   }
 }
 
-// --- temporal message log (RAM only, never persisted) ------------------------
-let RMESS = []; // newest-first
+let RMESS = [];
 let RMESS_AT = 0;
 let RMESS_SIG = "";
 
@@ -963,9 +877,6 @@ function msgGroupLabel(m) {
   return sess + `${m.kind === "group" ? "group" : "dm"} · <code>${num}</code>`;
 }
 
-// --- message log drill-down state -------------------------------------------
-//   view: "home" (collection cards) → "list" (chats of one collection) →
-//         "msgs" (one chat's messages). Survives Remote re-renders.
 let ML = { view: "home", coll: "group", jid: "" };
 
 function msgKey(m) {
@@ -1015,8 +926,7 @@ function mlRowHtml(m) {
   </div>`;
 }
 
-// --- media viewer (full bytes, fetched with the auth token as a blob) ------
-const mlBlobs = new Map(); // media key -> { url, mime, name } (kept across re-renders)
+const mlBlobs = new Map();
 
 function escAttr(s) {
   return esc(s).replace(/"/g, "&quot;");
@@ -1029,12 +939,12 @@ async function mlBlob(key) {
   const url = URL.createObjectURL(await r.blob());
   const mime = r.headers.get("content-type") || "";
   let name = "";
-  try { name = decodeURIComponent(r.headers.get("x-media-name") || ""); } catch { /* ignore */ }
+  try { name = decodeURIComponent(r.headers.get("x-media-name") || ""); } catch {  }
   const out = { url, mime, name };
   mlBlobs.set(key, out);
   if (mlBlobs.size > 120) {
     const k0 = mlBlobs.keys().next().value;
-    try { URL.revokeObjectURL(mlBlobs.get(k0).url); } catch { /* ignore */ }
+    try { URL.revokeObjectURL(mlBlobs.get(k0).url); } catch {  }
     mlBlobs.delete(k0);
   }
   return out;
@@ -1154,10 +1064,6 @@ function rcLockInfo(a) {
   return left > 0 ? ` · <span class="warn-text">locked ${left} min</span>` : "";
 }
 
-// ===========================================================================
-// Remote control
-// ===========================================================================
-
 function rcSig() {
   const m = D?.main || {};
   const q = m.queue || {};
@@ -1202,8 +1108,6 @@ function renderRemote() {
   if (body.dataset.sig === sig && body.childElementCount) return;
   body.dataset.sig = sig;
 
-  // Pin the message-log scroll position across rebuilds (newest-first, so a
-  // new row only grows the top) — kills the "list jumps to the top" bug.
   const prevScroll = $(".msglog .ml-scroll");
   const mlKey = ML.view + "|" + ML.coll + "|" + ML.jid;
   const mlPrevKey = prevScroll?.dataset.mlkey || "";
@@ -1553,10 +1457,6 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// ===========================================================================
-// Settings
-// ===========================================================================
-
 function renderSettings() {
   const prevBansScroll = document.getElementById("bansList")?.scrollTop ?? 0;
   const m = D?.main || {};
@@ -1597,10 +1497,6 @@ function renderSettings() {
   if (bansList) bansList.scrollTop = prevBansScroll;
 }
 
-// ===========================================================================
-// Navigation / render dispatch
-// ===========================================================================
-
 function renderActive() {
   if (active === "overview") renderOverview();
   else if (active === "minis") renderMinis();
@@ -1611,7 +1507,7 @@ function renderActive() {
 }
 
 async function refresh() {
-  if (refreshing) return; // don't stack up when a fetch is still in flight
+  if (refreshing) return;
   refreshing = true;
   try {
     const j = await apiGet("/api/dashboard");
@@ -1626,10 +1522,6 @@ async function refresh() {
     refreshing = false;
   }
 }
-
-// ===========================================================================
-// Delegated actions
-// ===========================================================================
 
 document.addEventListener("click", async (e) => {
   const b = e.target.closest ? e.target.closest("[data-act]") : null;
@@ -1699,7 +1591,6 @@ document.addEventListener("click", async (e) => {
   else if (act === "panic.test") { await action("panic.test", { reason: "web-console" }); termOut("panic triggered — bot is stopping.", "warn"); }
 });
 
-// Ctrl+Enter in the ban box bans all listed numbers (Enter alone = newline).
 document.addEventListener("keydown", async (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.key !== "Enter") return;
   const t = e.target;
@@ -1708,7 +1599,6 @@ document.addEventListener("keydown", async (e) => {
   document.querySelector('#stBody button[data-act="banadd"]')?.click();
 });
 
-// message-log drill-down: collection cards → chat list → one chat's messages.
 document.addEventListener("click", (e) => {
   const wrap = e.target.closest ? e.target.closest(".mlthumb-wrap[data-mkey]") : null;
   if (wrap) {
@@ -1746,12 +1636,10 @@ document.addEventListener("click", (e) => {
   renderRemote();
 });
 
-// Esc closes the media preview
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeMlPreview();
 });
 
-// nav
 document.querySelector("#nav").addEventListener("click", (e) => {
   const btn = e.target.closest(".nav");
   if (!btn) return;
@@ -1764,10 +1652,8 @@ document.querySelector("#nav").addEventListener("click", (e) => {
   renderActive();
 });
 
-// header buttons
 $("#btnRefresh").addEventListener("click", refresh);
 
-// token box
 $("#btnTok").addEventListener("click", () => {
   TOK = ($("#tokIn").value || "").trim();
   if (!TOK) { alert("enter a token"); return; }
@@ -1777,7 +1663,6 @@ $("#btnTok").addEventListener("click", () => {
 });
 if (!TOK) showTok();
 
-// send test
 $("#btnSend").addEventListener("click", async () => {
   const num = ($("#tNum").value || "").replace(/\D/g, "");
   const text = ($("#tText").value || "🔧 Dev console test message.").trim();
@@ -1788,7 +1673,6 @@ $("#btnSend").addEventListener("click", async () => {
   if (det) det.innerHTML = `<div class="mini ${j.ok ? "ok" : "err"}">${esc(j.ok ? "sent via " + (via || "main") + " → " + num : j.error)}</div>`;
 });
 
-// logs toolbar
 $("#lgFilter").addEventListener("input", (e) => { logFilter = e.target.value.toLowerCase().trim(); renderLogs(); });
 $("#btnPause").addEventListener("click", () => {
   logsPaused = !logsPaused;
@@ -1797,7 +1681,6 @@ $("#btnPause").addEventListener("click", () => {
 });
 $("#btnClear").addEventListener("click", () => { LOG.length = 0; renderLogs(true); });
 
-// flags + audit toolbars
 $("#flRule").addEventListener("change", renderFlags);
 $("#flSeverity").addEventListener("change", renderFlags);
 $("#flResolved").addEventListener("change", renderFlags);
@@ -1811,7 +1694,6 @@ $("#btnResolveAll").addEventListener("click", async () => {
 $("#btnAudit").addEventListener("click", renderAudit);
 $("#auFilter").addEventListener("keydown", (e) => { if (e.key === "Enter") renderAudit(); });
 
-// terminal
 const tmIn = $("#tmIn");
 tmIn.addEventListener("keydown", (e) => {
   const max = termHist.length;
@@ -1847,15 +1729,13 @@ $("#tmDanger").addEventListener("click", () => {
   $("#tmDanger").classList.toggle("armed", dangerArmed);
 });
 
-// ---- boot ---------------------------------------------------------------
 let booted = false;
 function boot() {
-  if (booted) return; // one ticker loop, one stream
+  if (booted) return;
   booted = true;
   refresh();
   openLogStream();
-  // Live every second while visible; slow heartbeat while in a background tab
-  // so the page never freezes for long. Refresh instantly on focus.
+
   const tick = () => {
     const delay = document.hidden ? 10_000 : 1_000;
     setTimeout(() => {
@@ -1869,4 +1749,4 @@ function boot() {
   });
 }
 
-if (TOK) boot(); // token already known? start live without waiting for the token box.
+if (TOK) boot();

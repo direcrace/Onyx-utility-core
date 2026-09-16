@@ -1,9 +1,4 @@
-/**
- * Terminal Input Handler — classic shortcuts + Dev Console commands.
- * Shortcuts: Q logout · R restart · A wipe auth DB
- * Dev:      status · minis · minis suspend/unsuspend/remove/respawn ·
- *           flags · flags clear · logs · panic · reboot · shutdown · help
- */
+
 
 import { clearAuthState } from "../database/authState.js";
 import config from "../../config.js";
@@ -105,12 +100,10 @@ const DEV_HELP = `\n[dev-console] available commands:
 async function devCommand(line) {
   const c = line.trim().split(/\s+/)[0]?.toLowerCase();
 
-  // Special TTY-only shortcuts (not available via web terminal)
   if (c === "q")  return logout();
   if (c === "a")  return wipeConfirm();
   if (c === "r")  return restart();
 
-  // Everything else is shared with the web terminal
   try {
     const { runDevCommandText } = await import("../enterprise/devTerm.js");
     const res = await runDevCommandText(line);
@@ -158,7 +151,7 @@ export function initTerminalHandler() {
       try {
         await connection.end();
       } catch {
-        /* ignore */
+
       }
     }
     process.exit(0);

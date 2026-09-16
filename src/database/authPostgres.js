@@ -1,7 +1,4 @@
-/**
- * Sequelize Postgres Auth State
- * Lazy-loaded only when DATABASE_URL is a Postgres URL.
- */
+
 
 import { Mutex } from "async-mutex";
 import { DataTypes, Op } from "sequelize";
@@ -14,7 +11,6 @@ const RETRY_CONFIG = {
   backoffMultiplier: 1.5,
 };
 
-/** Single serial write mutex (bounded vs unbounded per-key Map) */
 const writeMutex = new Mutex();
 
 async function retryOperation(operation, context = "") {
@@ -42,9 +38,6 @@ async function retryOperation(operation, context = "") {
   throw lastError;
 }
 
-/**
- * Create Sequelize instance for Postgres
- */
 export async function createPostgresSequelize(databaseUrl) {
   const { Sequelize } = await import("sequelize");
   return new Sequelize(databaseUrl, {
@@ -57,9 +50,6 @@ export async function createPostgresSequelize(databaseUrl) {
   });
 }
 
-/**
- * @param {import('sequelize').Sequelize} sequelize
- */
 export async function usePostgresAuthState(sequelize) {
   const AuthStateDB = sequelize.define(
     "AuthState",

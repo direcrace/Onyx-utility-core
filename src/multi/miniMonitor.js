@@ -1,26 +1,4 @@
-/**
- * Onyx Mini ToS monitor — always-on enforcement for linked sub-sessions.
- *
- * Watches the *outbound* activity of a linked account (messages the account
- * sends through its Own phone / devices, seen as `key.fromMe` by the sub
- * socket) and evaluates it against ToS trigger rules: spam/bulk patterns,
- * mass mentions, phishing URLs, harassment and illegal-content wordlists.
- *
- * Verdicts:
- *   continue — nothing happened (default)
- *   block    — (reserved; outbound messages aren't processed further anyway)
- *   suspend  — the linked session is immediately terminated (auto-enforcement)
- *
- * Flags are persisted in BotKV under `mini_flags` (+ number key), and old
- * records are auto-purged after MINI_FLAG_RETENTION_DAYS (default 30) to match
- * the GDPR retention cap documented in the Privacy Policy. Config knobs:
- *
- *   MINI_MONITOR              = "off" to disable monitoring
- *   MINI_FLAG_WARN            = score that triggers a warn log (default 30)
- *   MINI_FLAG_SUSPEND         = score that auto-suspends the session (default 80)
- *   MINI_FLAG_WINDOW_MS       = rolling score window (default 300000 = 5 min)
- *   MINI_FLAG_RETENTION_DAYS  = flag record retention (default 30)
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "../utils/access.js";
@@ -36,14 +14,6 @@ const CFG = {
     Math.max(1, Number(process.env.MINI_FLAG_RETENTION_DAYS) || 30) * 86_400_000,
 };
 
-/**
- * User-scope monitor (normal people on the main connection). Same rules, but
- * applied to inbound messages FROM a user, with a ban instead of a suspend.
- *   USER_MONITOR        = "off" to disable
- *   USER_FLAG_WARN      = score that triggers a warn log (default 50)
- *   USER_FLAG_BAN       = score that auto-bans the user (default 120)
- *   USER_FLAG_WINDOW_MS = rolling score window (default 5 min)
- */
 const UCFG = {
   enabled: (process.env.USER_MONITOR || "on").toLowerCase() !== "off",
   warn: Number(process.env.USER_FLAG_WARN) || 50,
@@ -53,20 +23,13 @@ const UCFG = {
     Math.max(1, Number(process.env.USER_FLAG_RETENTION_DAYS) || 30) * 86_400_000,
 };
 
-/** In-memory rolling state per sub-session number. */
-const state = new Map(); // number -> { texts: Map<hash, ts[]>, dms: Map<jid, ts[]>, links: ts[], lastLog: Map<rule, ts>, scoreWindow: [] }
-/** In-memory rolling state per normal user number (main-connection inbound). */
+const state = new Map();
+
 const ustate = new Map();
-/**
- * scoreWindow entries: { ts, w } — summed for the current window.
- */
 
 const URL_RE =
   /(?:https?:\/\/|www\.|wa\.me\/|chat\.whatsapp\.com\/|t\.me\/)[^\s]+/gi;
 
-// --- Wordlists ------------------------------------------------------------
-// Bilingual, deliberately conservative: only unmistakable abusive/invalid
-// tokens. Severe adds lots of score; critical suspends immediately.
 const CSAM_RE =
   /(child\s?(porn|porno|sex)|porn\s?(child|kids?)|cp\s?(videos?|files?|links?)|mega\.nz\/(cp|xx|kids?)|lolita\s?(porn|videos?)|reportage?\s?kesahkisi?\s?anak|k?inderporn?o)/i;
 const ILLEGAL_SALE_RE =
@@ -82,8 +45,6 @@ const HARASS_MILD_RE =
 const SCAM_RE =
   /(free\s?nitro|nitro\s?generator|free\s?robux|robux\s?generator|crypto\s?giveaway|wallet\s?has\s?been\s?unlocked|claim\s?your\s?prize|you'?ve?\s?won|giftcard\s?generator|free\s?gift\s?card|bitcoin\s?doubl|doubl?e\s?your\s?(bitcoin|crypto)|offiziellen?\s?gewinn(ne|st)?|kostenlose?\s?nitro|gratis\s?giftc?ards?|airdrop\s?claim)/i;
 
-// --- Flag record helpers ---------------------------------------------------
-
 let flagIdSeq = 0;
 
 function newFlagId() {
@@ -95,18 +56,15 @@ function normalizeChat(jid) {
   return String(jid || "").replace(/\D/g, "");
 }
 
-/** Load all mini flags from BotKV. */
 async function loadFlags() {
   const data = await kvGet(FLAGS_KEY);
   return data && typeof data === "object" && !Array.isArray(data) ? data : {};
 }
 
-/** Persist the whole mini-flag store. */
 async function saveFlags(store) {
   await kvSet(FLAGS_KEY, store);
 }
 
-/** Drop records older than the retention cap (GDPR §6). */
 function purgeRecords(list) {
   const cut = Date.now() - CFG.retentionMs;
   const kept = (Array.isArray(list) ? list : []).filter((r) => {
@@ -132,7 +90,6 @@ async function purgeStore(store) {
   return store;
 }
 
-/** Persist a single flag record for a number. */
 async function addFlag(number, rule, weight, message, scope = "mini") {
   const store = await purgeStore(await loadFlags());
   const list = purgeRecords(store[number] || []);
@@ -153,8 +110,6 @@ async function addFlag(number, rule, weight, message, scope = "mini") {
   return store[number].find((r) => r.ts === list[list.length - 1].ts);
 }
 
-// --- Rolling state --------------------------------------------------------
-
 function getState(map, number) {
   let s = map.get(number);
   if (!s) {
@@ -170,12 +125,10 @@ function getState(map, number) {
   return s;
 }
 
-/** Drop all in-memory tracking for a number (session suspension/resume). */
 export function resetMiniState(number) {
   state.delete(String(number).replace(/\D/g, ""));
 }
 
-/** Drop all in-memory tracking for a normal user number. */
 export function resetUserState(number) {
   ustate.delete(String(number).replace(/\D/g, ""));
 }
@@ -199,12 +152,6 @@ function shouldLog(s, rule, now) {
   return true;
 }
 
-// --- Rules ----------------------------------------------------------------
-
-/**
- * Each rule: { id, severity ("info"|"mild"|"severe"|"critical"), weight,
- *   test({ number, message, s, now }) -> { matched: true, note? } | null }
- */
 const RULES = [
   {
     id: "repeat_flood",
@@ -319,14 +266,6 @@ const RULES = [
   },
 ];
 
-// --- Public API -----------------------------------------------------------
-
-/**
- * Evaluate one message from a sub-session. Only outbound activity of the
- * linked account (key.fromMe) is monitored — that is the account the ToS
- * makes the user responsible for.
- * @returns {Promise<{ action: "continue"|"block"|"suspend", reason?: string }>}
- */
 export async function evaluateMiniMessage({ number, conn, message }) {
   if (!CFG.enabled) return { action: "continue" };
   const norm = number ? String(number) : normalizeNumber(message?.key?.remoteJid);
@@ -358,11 +297,10 @@ export async function evaluateMiniMessage({ number, conn, message }) {
           `🚩 [MINI] ${norm} → ${m.rule.id} (${m.rule.weight}) ${m.note}`,
           `…"${rec?.text || text}"`
         );
-      } catch { /* log group unavailable */ }
+      } catch {  }
     }
   }
 
-  // Critical rules suspend immediately (CSAM etc.). Otherwise threshold-based.
   const critical = matches.some((m) => m.rule.severity === "critical");
   s.scoreWindow.push({ ts: now, w: score });
   pruneWindow(s, now);
@@ -373,7 +311,7 @@ export async function evaluateMiniMessage({ number, conn, message }) {
       try {
         const { systemLog } = await import("../utils/logGroup.js");
         await systemLog("warn", `⚠️ [MINI] ${norm} ToS score ${windowScore} in ${Math.round(CFG.windowMs / 60000)}m window`, matches.map((m) => m.rule.id).join(", "));
-      } catch { /* ignore */ }
+      } catch {  }
     }
     return { action: "continue" };
   }
@@ -392,11 +330,6 @@ export async function evaluateMiniMessage({ number, conn, message }) {
   return { action: "suspend", reason };
 }
 
-/**
- * Admin view of a number's flag history (purged) + current window score.
- * @param {string} number  normalized number
- * @param {"mini"|"user"} [scope] which rolling state the window score comes from
- */
 export async function getMiniAdmin(number, scope = "mini") {
   const norm = String(number).replace(/\D/g, "");
   const store = await purgeStore(await loadFlags());
@@ -413,11 +346,6 @@ export async function getMiniAdmin(number, scope = "mini") {
   };
 }
 
-/**
- * Normal-user flagging — inbound messages FROM a user on the main connection.
- * Same ToS rules as minis; enforcement is a global bot ban instead of a suspend.
- * @returns {Promise<{ action: "continue"|"ban", reason?: string }>}
- */
 export async function evaluateUserMessage({ conn, message }) {
   if (!UCFG.enabled) return { action: "continue" };
   if (message?.key?.fromMe) return { action: "continue" };
@@ -432,7 +360,7 @@ export async function evaluateUserMessage({ conn, message }) {
     if (await isPrivileged(message, conn)) return { action: "continue" };
     const { isBotBanned } = await import("../utils/globalBan.js");
     if (await isBotBanned(norm)) return { action: "continue" };
-  } catch { /* the monitor must never break the message flow */ }
+  } catch {  }
 
   const now = Date.now();
   const s = getState(ustate, norm);
@@ -457,7 +385,7 @@ export async function evaluateUserMessage({ conn, message }) {
           `🚩 [USER] ${norm} → ${m.rule.id} (${m.rule.weight}) ${m.note}`,
           `…"${rec?.text || text}"`
         );
-      } catch { /* log group unavailable */ }
+      } catch {  }
     }
   }
 
@@ -471,7 +399,7 @@ export async function evaluateUserMessage({ conn, message }) {
       try {
         const { systemLog } = await import("../utils/logGroup.js");
         await systemLog("warn", `⚠️ [USER] ${norm} ToS score ${windowScore} in ${Math.round(UCFG.windowMs / 60000)}m window`, matches.map((m) => m.rule.id).join(", "));
-      } catch { /* ignore */ }
+      } catch {  }
     }
     return { action: "continue" };
   }
@@ -492,9 +420,6 @@ export async function evaluateUserMessage({ conn, message }) {
   return { action: "ban", reason };
 }
 
-/**
- * Dashboard list of normal users with open flags (scans the shared store).
- */
 export async function listFlaggedUsers() {
   const store = await purgeStore(await loadFlags());
   const out = [];
@@ -512,10 +437,6 @@ export async function listFlaggedUsers() {
   return out;
 }
 
-/**
- * Clear flag records for a number (operator review / false positive).
- * `id` = specific record id, "all" (default) clears everything for the number.
- */
 export async function clearMiniFlags(number, id) {
   const norm = String(number).replace(/\D/g, "");
   const store = await purgeStore(await loadFlags());
@@ -528,7 +449,6 @@ export async function clearMiniFlags(number, id) {
   return norm;
 }
 
-/** Drop expired flag records globally (call on boot). */
 export async function purgeOldFlags() {
   const store = await loadFlags();
   await purgeStore(store);

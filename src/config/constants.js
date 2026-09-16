@@ -1,22 +1,16 @@
-/**
- * Application Constants
- * Centralized configuration for the bot
- */
+
 
 let _prefix = (process.env.BOT_PREFIX || "").replace(/\s+/g, "") || "#";
 let _botName = (process.env.BOT_NAME || "ONYX UTILITY CORE").trim();
 
-/** Current runtime command prefix (BotKV/persisted override wins on boot). */
 export function getPrefix() {
   return _prefix;
 }
 
-/** Current runtime bot display name. */
 export function getBotName() {
   return _botName;
 }
 
-/** Load persisted prefix/botname overrides into memory (call after BotKV is up). */
 export async function loadRuntimeConfig() {
   try {
     const { kvGet } = await import("../database/botKv.js");
@@ -29,13 +23,12 @@ export async function loadRuntimeConfig() {
       _botName = n.trim().slice(0, 40);
     }
   } catch {
-    /* BotKV not ready yet — env/default values stay in effect */
+
   }
   process.env.BOT_PREFIX = _prefix;
   return { prefix: _prefix, botName: _botName };
 }
 
-/** Persist + apply a new command prefix (validated). Caller must rebuild patterns. */
 export async function saveRuntimePrefix(value) {
   const p = String(value).trim();
   if (!p) throw new Error("Prefix must not be empty.");
@@ -46,11 +39,10 @@ export async function saveRuntimePrefix(value) {
   try {
     const { kvSet } = await import("../database/botKv.js");
     await kvSet("config:prefix", p);
-  } catch { /* DB write not critical */ }
+  } catch {  }
   return p;
 }
 
-/** Persist + apply a new bot display name. */
 export async function saveRuntimeBotName(value) {
   const n = String(value).trim();
   if (!n) throw new Error("Bot name must not be empty.");
@@ -60,7 +52,7 @@ export async function saveRuntimeBotName(value) {
   try {
     const { kvSet } = await import("../database/botKv.js");
     await kvSet("config:botname", name);
-  } catch { /* DB write not critical */ }
+  } catch {  }
   return name;
 }
 
@@ -76,14 +68,14 @@ export const BOT_INFO = {
 };
 
 export const MEDIA = {
-  STICKER_PACKNAME: process.env.STICKER_PACKNAME || "X-Asena",
-  STICKER_AUTHOR: process.env.STICKER_AUTHOR || "X-Asena",
+  STICKER_PACKNAME: process.env.STICKER_PACKNAME || "Onyx",
+  STICKER_AUTHOR: process.env.STICKER_AUTHOR || "Onyx",
   REMOVEBG_API_KEY: process.env.REMOVEBG_API_KEY || "",
-  /** Soft caps before send (bytes) */
+
   MAX_AUDIO_BYTES: 15 * 1024 * 1024,
   MAX_VIDEO_BYTES: 60 * 1024 * 1024,
   MAX_STICKER_BYTES: 1 * 1024 * 1024,
-  /** Duration caps (seconds) */
+
   MAX_AUDIO_DURATION: 15 * 60,
   MAX_VIDEO_DURATION: 10 * 60,
   MAX_STICKER_VIDEO_DURATION: 10,

@@ -1,19 +1,9 @@
-/**
- * better-sqlite3 Auth State (default local backend)
- * Single DB handle, WAL, prepared statements, serial write queue.
- */
+
 
 import Database from "better-sqlite3";
 import { initAuthCreds, proto } from "baileys";
 import { BufferJSON, sanitizeKey, makeStorageKey } from "./bufferJson.js";
 
-/**
- * Shared sqlite auth-state factory.
- * When `withBotKv` is false the returned backend has NO botKv property, so it
- * never attaches a global BotKV backend — used for isolated sub-session auth.
- * @param {string} dbPath
- * @param {{ withBotKv?: boolean }} [opts]
- */
 function openAuthDb(dbPath, opts = {}) {
   const withBotKv = opts.withBotKv !== false;
   const db = new Database(dbPath);
@@ -52,7 +42,6 @@ function openAuthDb(dbPath, opts = {}) {
   );
   const stmtKvDelete = db.prepare("DELETE FROM BotKV WHERE key = ?");
 
-  /** Serial write queue — one async chain (bounded memory vs per-key Map) */
   let writeChain = Promise.resolve();
 
   function enqueueWrite(fn) {
@@ -131,7 +120,7 @@ function openAuthDb(dbPath, opts = {}) {
             }
           }
         } catch (err) {
-          // Fallback: per-key reads
+
           console.error("[auth-sqlite] batch get failed, falling back:", err?.message || err);
           for (const id of ids) {
             let value = readData(`${type}-${id}.json`);
@@ -234,19 +223,10 @@ function openAuthDb(dbPath, opts = {}) {
   };
 }
 
-/**
- * @param {string} dbPath
- * @returns {Promise<{ state: object, saveCreds: Function, clearAuthState: Function, hasCreds: Function, botKv: object }>}
- */
 export async function useBetterSqliteAuthState(dbPath) {
   return openAuthDb(dbPath, { withBotKv: true });
 }
 
-/**
- * Auth-only standalone session (no BotKV backend). Used by sub-sessions so each
- * number keeps its own creds/keys without hijacking the global BotKV backend.
- * @param {string} dbPath
- */
 export async function useStandaloneAuthState(dbPath) {
   return openAuthDb(dbPath, { withBotKv: false });
 }

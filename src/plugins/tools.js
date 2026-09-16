@@ -1,6 +1,4 @@
-/**
- * Accessory tools — tomp3, url, quote, fancy, tts, ttp, attp, removebg
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -22,7 +20,7 @@ import { MEDIA, BOT_INFO } from "../config/constants.js";
 import { readFile, stat } from "fs/promises";
 
 const FANCY_MAPS = [
-  // Mathematical Bold
+
   {
     name: "bold",
     map: (c) => {
@@ -32,7 +30,7 @@ const FANCY_MAPS = [
       return c;
     },
   },
-  // Mathematical Italic
+
   {
     name: "italic",
     map: (c) => {
@@ -42,7 +40,7 @@ const FANCY_MAPS = [
       return c;
     },
   },
-  // Bubbled
+
   {
     name: "bubble",
     map: (c) => {
@@ -52,7 +50,7 @@ const FANCY_MAPS = [
       return c;
     },
   },
-  // Fullwidth
+
   {
     name: "fullwidth",
     map: (c) => {
@@ -142,7 +140,7 @@ async function urlHandler(message, conn) {
         const ft = await fileTypeFromBuffer(media.buffer);
         if (ft?.ext) ext = ft.ext;
       } catch {
-        /* ignore */
+
       }
       const url = await uploadCatbox(media.buffer, `upload.${ext}`);
       if (!url.startsWith("http")) {
@@ -296,7 +294,6 @@ async function textToSticker(message, conn, { animated = false } = {}) {
     return;
   }
 
-  // Simple “animated” attp: cycle fill colors across frames via sharp → ffmpeg webp
   const colors = ["#ff0000", "#ff9900", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"];
   const frames = [];
   try {
@@ -339,7 +336,7 @@ async function textToSticker(message, conn, { animated = false } = {}) {
       await safeUnlink(out);
     }
   } catch {
-    // Fallback static if ffmpeg anim fails
+
     const svg = `
 <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"

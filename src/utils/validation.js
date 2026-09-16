@@ -1,14 +1,7 @@
-/**
- * Validation Utilities
- * Functions for validating commands, permissions, and inputs
- */
+
 
 import { isPrivileged } from "./access.js";
 
-/**
- * Validate if command can be executed
- * @returns {Promise<object>} Validation result { valid: boolean, error: string|null }
- */
 export async function validateCommand(message, commandInfo, conn) {
   const result = {
     valid: true,
@@ -21,7 +14,6 @@ export async function validateCommand(message, commandInfo, conn) {
     return result;
   }
 
-  // fromMe / owner commands: owner + sudo (linked devices), not only key.fromMe
   if (commandInfo.fromMe) {
     const ok = await isPrivileged(message, conn);
     if (!ok) {

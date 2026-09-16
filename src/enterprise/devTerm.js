@@ -1,14 +1,7 @@
-/**
- * Pure dev-console command runner (no console.log side-effects).
- * Shared by the TTY terminal and the web terminal (via dev.term action).
- * Returns { ok, text } — the TTY handler prints `text`; the web terminal
- * sends it back to the browser.
- */
+
 
 import { runDevAction, getDevSnapshot, formatDevSummary } from "./devConsole.js";
 import { BOT_INFO } from "../config/constants.js";
-
-// --- text helpers ---------------------------------------------------------
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
@@ -17,8 +10,6 @@ function fmtUptime(sec) {
   if (sec < 3600) return `${Math.floor(sec / 60)} min`;
   return `${(sec / 3600).toFixed(1)} h`;
 }
-
-// --- show helpers (terminal text output) -----------------------------------
 
 async function showStatus() {
   const snap = await getDevSnapshot();
@@ -63,8 +54,6 @@ async function tailLogs(n, filter) {
   return { ok: true, text: `Last ${lines.length} console line(s):\n${formatted.join("\n")}` };
 }
 
-// --- command parser -------------------------------------------------------
-
 export const DEV_WEB_HELP = [
   "Available commands:",
   "  status                     system + mini snapshot",
@@ -84,10 +73,6 @@ export const DEV_WEB_HELP = [
   "  help                       this list",
 ].join("\n");
 
-/**
- * Run a dev-console command line and return text output.
- * Does NOT print to stdout.  Safe to call from HTTP or TTY.
- */
 export async function runDevCommandText(line) {
   const [cmd, ...rest] = line.trim().split(/\s+/);
   const c = (cmd || "").toLowerCase();

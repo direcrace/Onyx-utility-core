@@ -1,13 +1,10 @@
-/**
- * In-memory metrics + error-rate alerts to system log group
- */
+
 
 import { systemLog } from "../utils/logGroup.js";
 
 const counters = Object.create(null);
 const timings = Object.create(null);
 
-/** Sliding window of error timestamps */
 const errorTimes = [];
 const WINDOW_MS = 60_000;
 const ERROR_ALERT_THRESHOLD = Number(process.env.ERROR_ALERT_THRESHOLD || 8);
@@ -67,7 +64,6 @@ export function getMetricsSnapshot() {
   };
 }
 
-/** Prometheus text exposition */
 export function metricsPrometheus() {
   const snap = getMetricsSnapshot();
   const lines = [

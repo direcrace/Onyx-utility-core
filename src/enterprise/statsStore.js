@@ -1,50 +1,28 @@
-/**
- * Dashboard statistics — in-memory sparkline series + BotKV hourly aggregates.
- *
- * Called via startStatsSampler() (starts a 60 s interval) and lazily on
- * getStats().  All reads are synchronous in-memory (except first init which
- * hydrates from BotKV once).
- *
- * Env knobs:
- *   STATS_SAMPLE_MS      background sample interval (default 60 000)
- *   STATS_SAMPLE_MIN_MS  min time between lazy samples from /api (default 3 000)
- *   STATS_SERIES_MAX     max sparkline points (default 360; persisted in BotKV)
- *   STATS_HOURLY_RETENTION_HOURS  hours kept in BotKV (default 168 = 7 d)
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
-
-// --- config ----------------------------------------------------------------
 
 const SAMPLE_MS = Math.max(15_000, Number(process.env.STATS_SAMPLE_MS) || 60_000);
 const SAMPLE_MIN_MS = Math.max(1_000, Number(process.env.STATS_SAMPLE_MIN_MS) || 1_000);
 const SERIES_MAX = Math.max(60, Number(process.env.STATS_SERIES_MAX) || 720);
-const HOURLY_RETENTION_HOURS = Number(process.env.STATS_HOURLY_RETENTION_HOURS) || 168; // 7 d
+const HOURLY_RETENTION_HOURS = Number(process.env.STATS_HOURLY_RETENTION_HOURS) || 168;
 const STORE_KEY = "stats_hourly";
 const SERIES_KEY = "stats_series";
 
-// --- state ----------------------------------------------------------------
-
-/** @type {Array<{ts,rss,heap,cpuPct,hostCpuPct,mem,diskGb,queue,rate,sends,fails,errorsMin}>} */
 let series = [];
 let lastSampleAt = 0;
 let samplerTimer = null;
 
-// delta baselines (set after first sample)
 let prevCounters = null;
 let prevTraffic = null;
 
-// persisted hourly buckets — hydrated once per process
 let hourlyHydrated = false;
-/** @type {Object<string, {in: number, out: number, fails: number, cmds: number, errs: number, jobsOk: number, jobsFail: number}>} */
+
 let hourly = {};
 
-// persisted sparkline series — survives restarts so charts keep their lines
 let seriesHydrated = false;
 let lastSeriesSave = 0;
 let lastHourlySave = 0;
-
-// --- helpers ---------------------------------------------------------------
 
 function hourKey(ts) {
   const d = new Date(ts);
@@ -55,8 +33,6 @@ function hourKey(ts) {
 function todayKey() {
   return hourKey(Date.now());
 }
-
-// --- persistence -----------------------------------------------------------
 
 async function loadHourly() {
   if (hourlyHydrated) return hourly;
@@ -83,7 +59,7 @@ async function saveHourly() {
   try {
     await kvSet(STORE_KEY, hourly);
   } catch {
-    /* BotKV may not be initialized in tests */
+
   }
 }
 
@@ -95,11 +71,11 @@ async function loadSeries() {
     if (!Array.isArray(raw) || !raw.length) return;
     const pts = raw.filter((p) => p && typeof p === "object" && typeof p.ts === "number");
     if (!pts.length) return;
-    // stale on purpose: a >5 min gap means downtime → start a fresh chart
+
     if (Date.now() - pts[pts.length - 1].ts > 5 * 60_000) return;
     series = pts;
     if (series.length > SERIES_MAX) series.splice(0, series.length - SERIES_MAX);
-  } catch { /* ignore */ }
+  } catch {  }
 }
 
 async function saveSeries() {
@@ -108,48 +84,40 @@ async function saveSeries() {
   try {
     await kvSet(SERIES_KEY, series.slice(-SERIES_MAX));
   } catch {
-    /* BotKV may not be initialized in tests */
+
   }
 }
 
-// --- sampling -------------------------------------------------------------
-
-/**
- * Collect a snapshot now.  Called on a timer and lazily when /api/stats is
- * requested.  No-ops if the last sample was <3 s ago.
- */
 export async function sampleNow() {
   await loadSeries();
   const now = Date.now();
   if (now - lastSampleAt < SAMPLE_MIN_MS) return;
   lastSampleAt = now;
 
-  // --- gather current values (dynamic imports to avoid startup ordering) ---
   let metricsSnap = null;
   try {
     const { getMetricsSnapshot } = await import("./metrics.js");
     metricsSnap = getMetricsSnapshot();
-  } catch { /* ignore */ }
+  } catch {  }
 
   let live = { totals: { in: 0, out: 0, fails: 0 } };
   try {
     const { getCorePanicStatus } = await import("../system/corePanic.js");
     live = getCorePanicStatus().Live || live;
-  } catch { /* ignore */ }
+  } catch {  }
 
   let host = {};
   try {
     const { hostSnapshot } = await import("../system/systemWatch.js");
     host = await hostSnapshot().catch(() => ({}));
-  } catch { /* ignore */ }
+  } catch {  }
 
   let queue = { pending: 0, active: 0 };
   try {
     const { queueStats } = await import("./queue.js");
     queue = queueStats();
-  } catch { /* ignore */ }
+  } catch {  }
 
-  // --- push sparkline point ------------------------------------------------
   const counters = metricsSnap?.counters || {};
   const traffic = live.totals || { in: 0, out: 0, fails: 0 };
 
@@ -169,7 +137,6 @@ export async function sampleNow() {
   if (series.length > SERIES_MAX) series.splice(0, series.length - SERIES_MAX);
   await saveSeries();
 
-  // --- hourly aggregate (deltas from prev counters) -------------------------
   await loadHourly();
   const key = todayKey();
   if (!hourly[key]) hourly[key] = { in: 0, out: 0, fails: 0, cmds: 0, errs: 0, jobsOk: 0, jobsFail: 0 };
@@ -192,11 +159,6 @@ export async function sampleNow() {
   prevTraffic  = { ...traffic };
 }
 
-// --- public API -----------------------------------------------------------
-
-/**
- * Return the full stats payload for the dashboard.
- */
 export async function getStats() {
   await sampleNow();
   const hArr = Object.keys(hourly)
@@ -206,11 +168,6 @@ export async function getStats() {
   return { series, hourly: hArr };
 }
 
-/**
- * Aggregate all mini-flags into a single summary.  Used by /api/dashboard and
- * the Flags section.  Returns records (newest first), counts by rule/severity,
- * and today/week totals.
- */
 export async function summarizeFlags() {
   try {
     const raw = await kvGet("mini_flags");
@@ -260,8 +217,6 @@ export async function summarizeFlags() {
     return { totalOpen: 0, totalToday: 0, totalWeek: 0, totalRecords: 0, resolvedTotal: 0, byRule: [], bySeverity: { info: 0, mild: 0, severe: 0, critical: 0 }, byScope: { mini: 0, user: 0 }, records: [] };
   }
 }
-
-// --- sampler lifecycle -----------------------------------------------------
 
 export function startStatsSampler() {
   if (samplerTimer) return;

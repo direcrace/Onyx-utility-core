@@ -1,6 +1,4 @@
-/**
- * Media utilities — download, temp files, convert, size caps
- */
+
 
 import fs from "fs/promises";
 import { createWriteStream } from "fs";
@@ -11,7 +9,6 @@ import { Readable } from "stream";
 import { downloadMediaMessage } from "baileys";
 import { MEDIA } from "../config/constants.js";
 
-/** Minimal pino-like logger for Baileys media helpers */
 const mediaLogger = {
   level: "error",
   child() {
@@ -29,40 +26,28 @@ const mediaLogger = {
   },
 };
 
-const TEMP_PREFIX = "x-asena-";
+const TEMP_PREFIX = "onyx-";
 
-/**
- * Create a unique temp path under os.tmpdir()
- */
 export function createTempPath(ext = "") {
   const name = `${TEMP_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext ? (ext.startsWith(".") ? ext : `.${ext}`) : ""}`;
   return path.join(os.tmpdir(), name);
 }
 
-/**
- * Unlink ignoring missing files
- */
 export async function safeUnlink(filePath) {
   if (!filePath) return;
   try {
     await fs.unlink(filePath);
   } catch {
-    /* ignore */
+
   }
 }
 
-/**
- * Write buffer to temp file; returns path
- */
 export async function writeTempFile(buffer, ext = "") {
   const filePath = createTempPath(ext);
   await fs.writeFile(filePath, buffer);
   return filePath;
 }
 
-/**
- * Stream a Web ReadableStream / Node Readable to a file
- */
 export async function streamToFile(stream, filePath) {
   let nodeStream;
   if (stream instanceof Readable) {
@@ -78,9 +63,6 @@ export async function streamToFile(stream, filePath) {
   return filePath;
 }
 
-/**
- * Map mime/type string to Baileys message key
- */
 export function mimeToMessageKey(typeOrMime) {
   const t = (typeOrMime || "").toLowerCase();
   if (t.includes("image") || t === "image") return "imageMessage";
@@ -91,9 +73,6 @@ export function mimeToMessageKey(typeOrMime) {
   return null;
 }
 
-/**
- * Build a WAMessage-like object for downloadMediaMessage
- */
 function buildDownloadable(message, source = "self") {
   if (source === "quoted" && message.quoted) {
     const q = message.quoted;
@@ -123,7 +102,6 @@ function buildDownloadable(message, source = "self") {
     message.messageTypeKey || mimeToMessageKey(message.type);
   if (!keyName || !message.message) return null;
 
-  // serialize stores inner content in message; wrap it
   const inner =
     message.rawMessage?.[keyName] ||
     (message.message?.[keyName] ? message.message[keyName] : message.message);
@@ -134,10 +112,6 @@ function buildDownloadable(message, source = "self") {
   };
 }
 
-/**
- * Download media from the message itself or a quoted message.
- * Returns { buffer, mimetype, type, filePath? } — caller should unlink filePath if set.
- */
 export async function downloadQuotedOrSelf(conn, message, { preferQuoted = true } = {}) {
   const hasQuotedMedia =
     preferQuoted &&
@@ -183,9 +157,6 @@ export async function downloadQuotedOrSelf(conn, message, { preferQuoted = true 
   };
 }
 
-/**
- * Assert size under cap; throws Error with friendly message
- */
 export function assertSize(bytes, maxBytes, label = "File") {
   if (bytes > maxBytes) {
     const mb = (maxBytes / (1024 * 1024)).toFixed(0);
@@ -201,9 +172,6 @@ export function assertVideoSize(bytes) {
   assertSize(bytes, MEDIA.MAX_VIDEO_BYTES, "Video");
 }
 
-/**
- * Lazy fluent-ffmpeg wrapper — convert file with options
- */
 export async function ffmpegConvert(inputPath, outputPath, optionsFn) {
   const ffmpeg = (await import("fluent-ffmpeg")).default;
   return new Promise((resolve, reject) => {
@@ -218,9 +186,6 @@ export async function ffmpegConvert(inputPath, outputPath, optionsFn) {
   });
 }
 
-/**
- * Convert media buffer/file to audio/mp3 via ffmpeg
- */
 export async function toMp3(inputPath) {
   const out = createTempPath(".mp3");
   try {
@@ -234,9 +199,6 @@ export async function toMp3(inputPath) {
   }
 }
 
-/**
- * Run fn with temp cleanup of listed paths in finally
- */
 export async function withTempFiles(pathsOrFactory, fn) {
   const paths = [];
   const track = (p) => {
@@ -254,9 +216,6 @@ export async function withTempFiles(pathsOrFactory, fn) {
   }
 }
 
-/**
- * Format seconds as m:ss
- */
 export function formatDuration(seconds) {
   const s = Math.max(0, Math.floor(Number(seconds) || 0));
   const m = Math.floor(s / 60);
@@ -264,9 +223,6 @@ export function formatDuration(seconds) {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/**
- * Extract YouTube video id from URL or return null
- */
 export function extractYoutubeId(input) {
   if (!input) return null;
   const text = String(input).trim();

@@ -1,6 +1,4 @@
-/**
- * Personal / shared notes in BotKV
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";

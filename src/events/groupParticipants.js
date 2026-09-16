@@ -1,6 +1,4 @@
-/**
- * Group participant welcome / goodbye + bot-added hello
- */
+
 
 import { getGroupSettings } from "../utils/groupSettings.js";
 import { groupCache } from "../utils/cache.js";
@@ -24,9 +22,6 @@ function isBotParticipant(conn, participantJid) {
   return p === bot || (botLid && p === botLid);
 }
 
-/**
- * Wire group-participants.update on a socket
- */
 export function attachGroupParticipantEvents(conn) {
   conn.ev.on("group-participants.update", async (update) => {
     try {
@@ -54,19 +49,17 @@ export function attachGroupParticipantEvents(conn) {
         const mention = typeof p === "string" ? p : p?.id || p;
         if (!mention) continue;
 
-        // Auto-approve pending join requests
         if (action === "request_join" && settings.autoapprove) {
           for (const p of participants) {
             const id = typeof p === "string" ? p : p?.id || p;
             if (!id) continue;
             try {
               await conn.groupParticipantsUpdate(groupJid, [id], "approve");
-            } catch { /* may fail if bot not admin */ }
+            } catch {  }
           }
           continue;
         }
 
-        // Bot was added to a normal group → short onboarding tip (not in log group)
         if (action === "add" && isBotParticipant(conn, mention) && !logGroup) {
           const { tr } = await import("../utils/message.js");
           await conn.sendMessage(groupJid, {
@@ -82,7 +75,7 @@ export function attachGroupParticipantEvents(conn) {
           continue;
         }
 
-        if (logGroup) continue; // no welcome spam inside system group
+        if (logGroup) continue;
 
         const tag = `@${String(mention).split("@")[0]}`;
 

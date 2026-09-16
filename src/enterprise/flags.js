@@ -1,12 +1,9 @@
-/**
- * Global feature flags / kill switches
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 
 const KEY = "feature_flags";
 
-/** Defaults — all on unless flipped */
 const DEFAULTS = {
   media: true,
   ytdl: true,
@@ -15,7 +12,7 @@ const DEFAULTS = {
   moderation: true,
   broadcast: true,
   games: false,
-  maintenance: false, // when true: only owner/sudo can run anything
+  maintenance: false,
 };
 
 let cache = null;
@@ -40,7 +37,7 @@ export async function setFlag(name, value) {
   const flags = await load();
   const key = String(name).toLowerCase();
   if (!(key in DEFAULTS) && key !== "maintenance") {
-    // allow custom flags too
+
   }
   flags[key] = !!value;
   await save(flags);
@@ -54,7 +51,6 @@ export async function isFlagEnabled(name) {
   return !!flags[name];
 }
 
-/** Map command → required flag (optional) */
 export const COMMAND_FLAGS = {
   ytmp3: "ytdl",
   ytmp4: "ytdl",

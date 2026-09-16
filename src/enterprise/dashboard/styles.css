@@ -1,12 +1,7 @@
-/* ======================================================================
-   ONYX Dashboard  —  polished dark-mode control console
-   All existing selectors preserved and enhanced; new properties are
-   additive (transitions, shadows, gradients) so nothing breaks.
-   ====================================================================== */
 
-/* ---------- design tokens ----------------------------------------------- */
+
 :root {
-  /* surfaces */
+
   --bg:          #0b0f14;
   --bg2:         #111820;
   --panel:       #151c26;
@@ -14,19 +9,16 @@
   --line:        #242d3a;
   --line-hi:     #34404e;
 
-  /* text */
   --tx:          #e2e8f0;
   --tx2:         #c0c8d4;
   --mut:         #6c7788;
   --mut2:        #505a68;
 
-  /* accent */
   --acc:         #4da3ff;
   --acc-dim:     #3a7acc;
   --acc-bg:      rgba(77,163,255,.07);
   --acc-glow:    rgba(77,163,255,.16);
 
-  /* semantic */
   --ok:          #3ddc84;
   --ok-dim:      #2aab66;
   --ok-bg:       rgba(61,220,132,.08);
@@ -37,27 +29,22 @@
   --err-dim:     #d45858;
   --err-bg:      rgba(248,113,113,.08);
 
-  /* terminal */
   --term-bg:     #070b10;
   --input-bg:    #0c1017;
 
-  /* radii */
   --radius:      10px;
   --radius-sm:   6px;
   --radius-pill: 20px;
 
-  /* shadows */
   --sh-sm:       0 1px 2px rgba(0,0,0,.35);
   --sh-md:       0 4px 12px rgba(0,0,0,.45);
   --sh-lg:       0 8px 30px rgba(0,0,0,.55);
   --sh-glow:     0 0 18px rgba(77,163,255,.10);
 
-  /* motion */
   --tr:          150ms ease;
   --tr-med:      220ms ease;
 }
 
-/* ---------- reset ------------------------------------------------------ */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
@@ -70,14 +57,12 @@ body {
 }
 ::selection { background: var(--acc); color: #fff; }
 
-/* ---------- custom scrollbar ------------------------------------------- */
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--mut); }
 * { scrollbar-width: thin; scrollbar-color: var(--line-hi) transparent; }
 
-/* ---------- buttons ---------------------------------------------------- */
 button {
   background: linear-gradient(180deg, #222933 0%, #1c222c 100%);
   border: 1px solid var(--line);
@@ -103,7 +88,6 @@ button.danger  { color: var(--err); }
 button.danger:hover   { border-color: var(--err-dim); background: linear-gradient(180deg, #2d1619 0%, #241315 100%); box-shadow: 0 0 10px rgba(248,113,113,.08); }
 button:disabled { opacity: .42; cursor: not-allowed; transform: none; }
 
-/* ---------- forms ------------------------------------------------------ */
 input, select, textarea {
   background: var(--input-bg);
   border: 1px solid var(--line);
@@ -121,7 +105,6 @@ input:focus, select:focus, textarea:focus {
 input[type="checkbox"], input[type="radio"] { accent-color: var(--acc); }
 input::placeholder, textarea::placeholder { color: var(--mut2); }
 
-/* ---------- helpers ---------------------------------------------------- */
 .mut  { color: var(--mut); }
 .mut2 { color: var(--mut); font-size: 11px; }
 .ok-text   { color: var(--ok); }
@@ -129,13 +112,8 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
 .err-text  { color: var(--err); }
 .spacer    { flex: 1; }
 
-/* ======================================================================
-   LAYOUT
-   ====================================================================== */
-
 .app { display: flex; height: 100vh; }
 
-/* ---------- sidebar ---------------------------------------------------- */
 .sidebar {
   width: 190px;
   flex: 0 0 190px;
@@ -201,7 +179,6 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
   border-top: 1px solid var(--line);
 }
 
-/* ---------- main / content --------------------------------------------- */
 .main {
   flex: 1;
   min-width: 0;
@@ -253,7 +230,6 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
 
 #hRole.op { color: var(--warn); border-color: rgba(251,191,36,.3); }
 
-/* ---------- tokbox ----------------------------------------------------- */
 .tokbox {
   padding: 10px 14px;
   background: var(--err-bg);
@@ -266,16 +242,10 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
 .tokbox[hidden] { display: none; }
 .tokbox code { color: var(--warn); font-weight: 700; }
 
-/* ---------- content area ----------------------------------------------- */
 #content { flex: 1; overflow: auto; padding: 16px; }
 .sec     { display: none; animation: fadeIn .25s ease both; }
 .sec.active { display: block; }
 
-/* ======================================================================
-   COMPONENTS
-   ====================================================================== */
-
-/* ---------- generic panels / cards ------------------------------------- */
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
 
 .panel {
@@ -309,7 +279,6 @@ input::placeholder, textarea::placeholder { color: var(--mut2); }
   border-radius: 2px;
 }
 
-/* ---------- overview panels / cards ------------------------------------ */
 .fleet {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -431,14 +400,12 @@ body.inst-in #content { animation: instIn .28s ease; }
 .card .v .dot { vertical-align: middle; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
 
-/* live ticker */
 .card .v { display: flex; align-items: baseline; gap: 6px; }
 .card .val { white-space: nowrap; }
 .delta { font-size: 10px; font-weight: 700; }
 .delta.up   { color: var(--ok); }
 .delta.down { color: var(--err); }
 
-/* ---------- sparklines / charts / bars --------------------------------- */
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
 .chart .cap { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--mut); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .06em; }
 .chart .cap .cur { margin-left: auto; color: var(--tx); font-weight: 700; font-size: 12px; letter-spacing: 0; text-transform: none; }
@@ -450,7 +417,6 @@ body.inst-in #content { animation: instIn .28s ease; }
 .bar-row .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--warn-dim) 0%, var(--warn) 100%); transition: width .4s ease; }
 .bar-fill.ok { background: linear-gradient(90deg, var(--ok-dim) 0%, var(--ok) 100%); }
 
-/* ---------- tables ----------------------------------------------------- */
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th {
@@ -470,14 +436,12 @@ tr.sel td { background: var(--acc-bg); }
 tr:hover td { background: rgba(255,255,255,.018); }
 .row-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 
-/* score bar */
 .score-wrap { display: flex; align-items: center; gap: 7px; }
 .score-bar  { width: 70px; height: 7px; background: var(--input-bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
 .score-fill { height: 100%; border-radius: 3px; background: var(--ok); transition: width .3s ease; }
 .score-fill.warnv { background: var(--warn); }
 .score-fill.dang  { background: var(--err); }
 
-/* ---------- badges ----------------------------------------------------- */
 .badge {
   display: inline-block;
   padding: 1px 8px;
@@ -493,7 +457,6 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .badge.critical { color: var(--err); border-color: var(--err-dim); background: var(--err-bg); }
 .badge.resolved { color: var(--ok); border-color: var(--ok-dim); background: var(--ok-bg); }
 
-/* ---------- mini / detail boxes ---------------------------------------- */
 .mini {
   white-space: pre-wrap;
   font-size: 12px;
@@ -509,7 +472,6 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .mini.err   { color: var(--err); border-color: var(--err-dim); box-shadow: inset 0 1px 3px rgba(248,113,113,.06); }
 .bans-list  { max-height: 220px; overflow-y: auto; }
 
-/* ---------- logs ------------------------------------------------------- */
 .scroller { height: calc(100vh - 210px); overflow: auto; }
 #ltLogs {
   background: var(--term-bg);
@@ -532,7 +494,6 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .live { font-size: 11px; color: var(--ok); animation: pulse 2s ease infinite; }
 .live.paused { color: var(--mut2); animation: none; }
 
-/* ---------- terminal --------------------------------------------------- */
 .term {
   background: var(--term-bg);
   border: 1px solid var(--line);
@@ -552,7 +513,7 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .term-out .log { margin: 2px 0; }
 .term-out .log:hover { background: rgba(255,255,255,.015); }
 .term-out .cmd { color: var(--ok); font-weight: 700; }
-.term-out .cmd::before { content: "❯ "; color: var(--ok); }
+.term-out .cmd::before { content: "â¯ "; color: var(--ok); }
 .term-out .error { color: var(--err); }
 .prompt { color: var(--ok); font-weight: 700; margin-right: 6px; }
 .term-in {
@@ -567,10 +528,8 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .term-in input::placeholder { color: var(--mut2); }
 #tmDanger.armed { background: var(--err-bg); border-color: var(--err); color: var(--err); font-weight: 700; box-shadow: 0 0 12px rgba(248,113,113,.10); }
 
-/* ---------- settings --------------------------------------------------- */
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 
-/* ---------- composer / send-as-bot ------------------------------------- */
 .composer { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 14px; align-items: stretch; }
 .composer-chats { display: flex; flex-direction: column; gap: 5px; }
 .composer-chats select { height: 148px; border-radius: var(--radius-sm); box-shadow: inset 0 2px 4px rgba(0,0,0,.25); }
@@ -578,7 +537,6 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .composer-msg textarea { width: 100%; box-sizing: border-box; resize: vertical; font-family: inherit; border-radius: var(--radius-sm); box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
 #rcMsgVia, #rcChatSel { max-width: none; }
 
-/* ---------- temporal message log --------------------------------------- */
 .msglog-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
 .msglog { display: flex; flex-direction: column; gap: 8px; border-radius: var(--radius-sm); padding: 4px; background: rgba(0,0,0,.15); }
 
@@ -703,7 +661,6 @@ tr:hover td { background: rgba(255,255,255,.018); }
 }
 .mlrow.mlblocked { background: rgba(248,113,113,.04); border-radius: 4px; }
 
-/* ---------- toggle rows / mode pills / paircode ------------------------ */
 .toggle-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); transition: background var(--tr); }
 .toggle-row:last-child { border-bottom: none; }
 .toggle-row:hover { background: rgba(255,255,255,.01); }
@@ -727,7 +684,6 @@ code.paircode, .code.paircode {
   box-shadow: 0 0 14px rgba(77,163,255,.12), inset 0 1px 0 rgba(255,255,255,.04);
 }
 
-/* ---------- toast ------------------------------------------------------ */
 .toast {
   position: fixed;
   right: 18px;
@@ -745,10 +701,6 @@ code.paircode, .code.paircode {
   animation: slideIn .25s ease both;
 }
 .toast.err { border-color: var(--err-dim); box-shadow: var(--sh-lg), 0 0 14px rgba(248,113,113,.10); }
-
-/* ======================================================================
-   ANIMATIONS
-   ====================================================================== */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
@@ -770,10 +722,6 @@ code.paircode, .code.paircode {
     transition-duration: 1ms !important;
   }
 }
-
-/* ======================================================================
-   RESPONSIVE
-   ====================================================================== */
 
 @media (max-width: 820px) {
   .app { flex-direction: column; }
@@ -800,12 +748,6 @@ code.paircode, .code.paircode {
   .settings-grid { grid-template-columns: 1fr; }
 }
 
-/* ======================================================================
-   POLISH V2 — aurora glow, gradient edges, group accents, sheen
-   Everything below is additive / overriding, never removing a selector.
-   ====================================================================== */
-
-/* ambient aurora behind the app */
 body::before {
   content: "";
   position: fixed;
@@ -823,17 +765,13 @@ body::before {
   to   { transform: translate3d(-1.5%,2%,0) scale(1.05); opacity: 1; }
 }
 
-/* let the aurora breathe through the main surface */
 .main { background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(77,163,255,.03) 0%, transparent 100%); }
 
-/* sticky + tinted topbar for real depth when content scrolls */
 .topbar { position: sticky; top: 0; border-bottom-color: rgba(77,163,255,.14); }
 
-/* brand + nav glow */
 .brand { filter: drop-shadow(0 0 16px rgba(77,163,255,.25)); }
 .nav.active { box-shadow: inset 3px 0 0 var(--acc), 0 0 16px rgba(77,163,255,.09); }
 
-/* button sheen sweep */
 button { position: relative; overflow: hidden; }
 button::after {
   content: "";
@@ -848,7 +786,6 @@ button::after {
 button:hover::after { left: 135%; }
 button.primary { box-shadow: 0 0 10px rgba(77,163,255,.10), inset 0 1px 0 rgba(255,255,255,.05); }
 
-/* gradient edge panels (progressive enhancement; flat border fallback above) */
 @supports (background-clip: border-box) {
   .panel, .ov-clock, .term, .toast {
     border: 1px solid transparent;
@@ -871,7 +808,6 @@ button.primary { box-shadow: 0 0 10px rgba(77,163,255,.10), inset 0 1px 0 rgba(2
   }
 }
 
-/* overview group accent coding — --acc-color injected per ov-panel from app.js */
 .ov-panel .ov-title { color: var(--acc-color, var(--mut)); }
 .ov-panel .ov-head { border-bottom-color: var(--line); }
 .ov-panel .card { border-left: 3px solid var(--acc-color); }
@@ -895,18 +831,15 @@ button.primary { box-shadow: 0 0 10px rgba(77,163,255,.10), inset 0 1px 0 rgba(2
   .ov-access { color: color-mix(in srgb, var(--acc-color) 72%, var(--tx2)); }
 }
 
-/* table headers + rosier hover = chunkier depth */
 th { background: linear-gradient(180deg, #141b26 0%, #10151e 100%); }
 tr:hover td { background: rgba(77,163,255,.02); }
 
-/* glowing score / bar fills */
 .score-fill { box-shadow: 0 0 5px rgba(61,220,132,.22); }
 .score-fill.warnv { box-shadow: 0 0 5px rgba(251,191,36,.22); }
 .score-fill.dang  { box-shadow: 0 0 5px rgba(248,113,113,.22); }
 .bar-fill  { box-shadow: 0 0 5px rgba(251,191,36,.18); }
 .bar-fill.ok { box-shadow: 0 0 5px rgba(61,220,132,.18); }
 
-/* composer / msglog richer inset depth */
 .composer { align-items: stretch; }
 .composer-chats select {
   box-shadow: inset 0 2px 5px rgba(0,0,0,.28), 0 1px 0 rgba(255,255,255,.02);
@@ -914,15 +847,10 @@ tr:hover td { background: rgba(77,163,255,.02); }
 }
 .composer-msg textarea { box-shadow: inset 0 2px 5px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.02); }
 
-/* panels get a gentle lift on hover (non-touch only) */
 @media (hover: hover) {
   .panel, .card { transition: border-color var(--tr), transform var(--tr), box-shadow var(--tr); }
   .panel:hover { transform: translateY(-1px); }
 }
-
-/* ======================================================================
-   MEDIA LOG — thumbnails + full-bytes viewer (temporal, see mediaCache.js)
-   ====================================================================== */
 
 .mlthumb-wrap {
   position: relative;
@@ -972,7 +900,6 @@ tr:hover td { background: rgba(77,163,255,.02); }
   font-weight: 600;
 }
 
-/* full-bytes media viewer */
 #mlPreview {
   position: fixed;
   inset: 0;
@@ -1031,9 +958,6 @@ tr:hover td { background: rgba(77,163,255,.02); }
 .mlprev-doc-ic { font-size: 44px; }
 .mlprev-doc .primary { text-decoration: none; }
 
-/* ======================================================================
-   INVITE LINKS — self-service pairing (Minis tab, creator tier)
-   ====================================================================== */
 .acc-text { color: var(--acc); }
 .invite-list { display: flex; flex-direction: column; gap: 6px; }
 .invite-row {

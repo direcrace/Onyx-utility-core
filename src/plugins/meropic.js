@@ -1,7 +1,4 @@
-/**
- * MeroPic — numbered image commands (1.png through 22.png)
- * Each sends the same static image with caption "by Mero."
- */
+
 
 import { command } from "../plugins.js";
 import { replyFail, tr } from "../utils/message.js";
@@ -23,7 +20,7 @@ async function findImage(i) {
     try {
       await readFile(p);
       return p;
-    } catch { /* try next extension */ }
+    } catch {  }
   }
   return null;
 }

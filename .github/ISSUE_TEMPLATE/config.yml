@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/Neeraj-x0/X-Asena/security/advisories/new
-    about: Please report security issues privately (see SECURITY.md).
+    url: https://github.com/direcrace/Onyx-main/security/advisories/new
+    about: Please report security issues privately via GitHub private vulnerability reporting.
   - name: Documentation (README)
-    url: https://github.com/Neeraj-x0/X-Asena/blob/main/README.md
+    url: https://github.com/direcrace/Onyx-main/blob/main/README.md
     about: Setup, env vars, and command reference.

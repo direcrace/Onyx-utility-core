@@ -1,6 +1,4 @@
-/**
- * Voice changer effects — 12 FFmpeg-based audio filters
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyFail, withTyping, tr } from "../utils/message.js";

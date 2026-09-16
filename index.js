@@ -32,7 +32,7 @@ const initialize = async () => {
   console.log("╚══════════════════════════════╝\n");
 
   try {
-    // Init auth backend early (creates table / opens DB)
+
     console.log(
       config.USE_POSTGRES
         ? "⏳ Initializing Postgres auth..."
@@ -40,7 +40,6 @@ const initialize = async () => {
     );
     await useMultiDbAuthState();
 
-    // Apply persisted prefix / botname overrides before command patterns compile
     try {
       const { loadRuntimeConfig } = await import("./src/config/constants.js");
       const rc = await loadRuntimeConfig();
@@ -51,7 +50,6 @@ const initialize = async () => {
       console.warn("Runtime config load failed:", err?.message || err);
     }
 
-    // Hydrate persisted creator/owner numbers (in-memory runtime sets)
     try {
       const { hydrateRoleNumbers } = await import("./src/utils/access.js");
       const roles = await hydrateRoleNumbers();
@@ -73,13 +71,11 @@ const initialize = async () => {
       );
     }
 
-    // Load plugins (skip database folder auto-import — auth is factory-based)
     await readAndRequireFiles(path.join(global.__basedir, "src/plugins"));
     console.log(`✅ ${commands.length} Plugins Loaded!`);
 
     initTerminalHandler();
 
-    // Optional enterprise admin HTTP (localhost + token)
     try {
       const { startAdminHttp } = await import("./src/enterprise/adminHttp.js");
       startAdminHttp();
@@ -90,7 +86,6 @@ const initialize = async () => {
     console.log("⏳ Connecting to WhatsApp...\n");
     await connect();
 
-    // Restore persisted sub-sessions (per-number bots linked by friends)
     try {
       const { respawnAllSubSessions } = await import(
         "./src/multi/sessionManager.js"
@@ -103,7 +98,6 @@ const initialize = async () => {
       console.error("Sub-session restore failed:", err?.message || err);
     }
 
-    // Core panic safety mechanism (auto pm2 stop on overload)
     try {
       const { startCorePanicMonitor } = await import(
         "./src/system/corePanic.js"
@@ -113,7 +107,6 @@ const initialize = async () => {
       console.warn("Core panic monitor start failed:", err?.message || err);
     }
 
-    // Host health watcher (CPU/RAM/disk/process -> log group alerts + escalation)
     try {
       const { startSystemMonitor } = await import(
         "./src/system/systemWatch.js"

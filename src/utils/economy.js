@@ -1,7 +1,4 @@
-/**
- * Lightweight no-signup economy — wallets keyed by normalized phone number.
- * The "account" is implicit: it appears the first time someone earns.
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";
@@ -105,9 +102,6 @@ export async function getLeaderboard() {
   return Array.isArray(list) ? list : [];
 }
 
-/**
- * #job — paid shift. Tiring after JOB_MAX_WITHIN jobs in a row.
- */
 export async function doJob(input, name) {
   const n = norm(input);
   if (!n) return { ok: false, reason: "invalid" };
@@ -143,9 +137,6 @@ export async function doJob(input, name) {
   });
 }
 
-/**
- * #daily — 24h bonus.
- */
 export async function claimDaily(input, name) {
   const n = norm(input);
   if (!n) return { ok: false, reason: "invalid" };
@@ -168,9 +159,6 @@ export async function claimDaily(input, name) {
   });
 }
 
-/**
- * #rob @target — steal a cut of the target's balance. 55% success.
- */
 export async function rob(input, targetInput, name) {
   const n = norm(input);
   const tn = norm(targetInput);
@@ -227,9 +215,6 @@ export async function rob(input, targetInput, name) {
   });
 }
 
-/**
- * #gamble <amount|all|half> — double or nothing on a coin toss.
- */
 export async function gamble(input, amountPhrase, name) {
   const n = norm(input);
   if (!n) return { ok: false, reason: "invalid" };

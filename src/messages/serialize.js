@@ -20,11 +20,6 @@ const WRAPPER_KEYS = [
     "templateMessage",
 ];
 
-/**
- * Gets the message type and MIME type from a message object.
- * @param {object} message - The message object to analyze.
- * @returns {{key: string, mime: string}} The message type key and MIME type.
- */
 function getMessageMimeType(message) {
     if (!message) return { key: "unknown", mime: "unknown" };
 
@@ -37,9 +32,6 @@ function getMessageMimeType(message) {
     return { key: "unknown", mime: "unknown" };
 }
 
-/**
- * Unwrap nested WA message wrappers to the inner content object
- */
 function unwrapMessage(msg) {
     let current = msg;
     for (let i = 0; i < 4 && current; i++) {
@@ -56,10 +48,6 @@ function unwrapMessage(msg) {
     return current;
 }
 
-/**
- * Extracts quoted message content from context info.
- * Returns a rich object with type + raw for media downloads.
- */
 function extractQuotedMessage(contextInfo) {
     if (!contextInfo?.quotedMessage) return null;
 
@@ -69,7 +57,6 @@ function extractQuotedMessage(contextInfo) {
 
     let content = unwrapped[quotedKey];
 
-    // Nested wrappers (e.g. documentWithCaptionMessage)
     if (content?.message) {
         const nested = unwrapMessage(content.message);
         const { key: nestKey, mime: nestMime } = getMessageMimeType(nested);
@@ -109,9 +96,6 @@ function normalizeQuoted(content, mime, messageTypeKey, raw) {
     };
 }
 
-/**
- * Determines sender information with LID/PN support.
- */
 function getSenderInfo(key, isGroup, conn) {
     const isBotMessage = key.fromMe && !key.participant;
 
@@ -136,10 +120,6 @@ function getSenderInfo(key, isGroup, conn) {
     }
 }
 
-/**
- * Serializes a Baileys message object to make it easier to work with.
- * Updated for Baileys 7.x.x with LID support.
- */
 async function serialize(message, conn) {
     if (!message?.key?.remoteJid || !message?.message) return null;
 

@@ -1,6 +1,4 @@
-/**
- * Global + per-group policy engine
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { getGroupSettings } from "../utils/groupSettings.js";
@@ -8,12 +6,12 @@ import { getGroupSettings } from "../utils/groupSettings.js";
 const KEY = "policies";
 
 const GLOBAL_DEFAULTS = {
-  quietHoursStart: null, // "22:00"
-  quietHoursEnd: null, // "07:00"
+  quietHoursStart: null,
+  quietHoursEnd: null,
   maxWarns: 3,
   allowMediaCommands: true,
-  allowLinksInGroups: true, // antilink still per-group
-  rateLimitPerUser: 20, // commands / minute
+  allowLinksInGroups: true,
+  rateLimitPerUser: 20,
   blockBroadcast: false,
 };
 
@@ -52,11 +50,10 @@ function inQuietHours(policy) {
   const b = parse(end);
   if (a === b) return false;
   if (a < b) return cur >= a && cur < b;
-  // wraps midnight
+
   return cur >= a || cur < b;
 }
 
-/** Simple per-user command rate limit */
 const buckets = new Map();
 
 function rateLimited(userKey, limit) {
@@ -69,19 +66,16 @@ function rateLimited(userKey, limit) {
   return arr.length > limit;
 }
 
-/**
- * @returns {{ ok: boolean, reason?: string }}
- */
 export async function evaluatePolicy(message, command, { privileged = false } = {}) {
   const policy = await loadGlobal();
   const name = (command.patternName || "").toLowerCase();
 
   if (privileged) {
-    // still honor maintenance-like broadcast block for non-owner handled elsewhere
+
   }
 
   if (!privileged && inQuietHours(policy)) {
-    // Allow menu/ping/status/help during quiet hours
+
     const allow = new Set(["menu", "help", "ping", "status", "mode", "setup"]);
     if (!allow.has(name)) {
       return { ok: false, reason: "QUIET_HOURS" };
@@ -116,15 +110,14 @@ export async function evaluatePolicy(message, command, { privileged = false } = 
     }
   }
 
-  // Sync warn limit into group defaults conceptually
   if (message.isGroup && policy.maxWarns) {
     try {
       const gs = await getGroupSettings(message.from);
       if (gs.warnLimit !== policy.maxWarns) {
-        // soft — don't write every message; only used when reading warns
+
       }
     } catch {
-      /* ignore */
+
     }
   }
 

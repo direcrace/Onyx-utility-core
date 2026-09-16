@@ -1,16 +1,8 @@
-/**
- * Group Utility Functions
- * LID/PN-aware helper functions for group operations
- */
+
 
 import { isLidUser, isPnUser } from "../functions.js";
 import { groupCache } from "./cache.js";
 
-/**
- * Collect all known identifiers for a participant (id, lid, phoneNumber)
- * @param {object} participant
- * @returns {Set<string>}
- */
 function participantIds(participant) {
   const ids = new Set();
   if (participant?.id) ids.add(participant.id);
@@ -19,11 +11,6 @@ function participantIds(participant) {
   return ids;
 }
 
-/**
- * Collect candidate JIDs for a user (sender + alts + bot user fields)
- * @param {string|object} userRef - JID string or { id, lid, jid }
- * @returns {Set<string>}
- */
 export function collectUserIds(userRef) {
   const ids = new Set();
   if (!userRef) return ids;
@@ -39,12 +26,6 @@ export function collectUserIds(userRef) {
   return ids;
 }
 
-/**
- * Find participant matching any of the candidate JIDs (LID or PN)
- * @param {object} groupMetadata
- * @param {string|object} userRef
- * @returns {object|null}
- */
 export function findParticipant(groupMetadata, userRef) {
   const candidates = collectUserIds(userRef);
   if (!candidates.size || !groupMetadata?.participants) return null;
@@ -60,30 +41,18 @@ export function findParticipant(groupMetadata, userRef) {
   );
 }
 
-/**
- * Check if user is group admin (LID/PN aware)
- * @param {object} groupMetadata
- * @param {string|object} userId
- * @returns {boolean}
- */
 export function isAdmin(groupMetadata, userId) {
   const participant = findParticipant(groupMetadata, userId);
   return participant?.admin === "admin" || participant?.admin === "superadmin";
 }
 
-/**
- * Check if bot is group admin using conn.user (LID/PN)
- * @param {object} groupMetadata
- * @param {object} conn - Baileys connection
- * @returns {boolean}
- */
 export function isBotAdmin(groupMetadata, conn) {
   const botRef = {
     id: conn?.user?.id,
     lid: conn?.user?.lid,
     jid: conn?.user?.id,
   };
-  // Also try stripping device suffix from id (123:xx@s.whatsapp.net)
+
   if (conn?.user?.id) {
     const bare = conn.user.id.replace(/:\d+@/, "@");
     botRef.pn = bare;
@@ -91,32 +60,20 @@ export function isBotAdmin(groupMetadata, conn) {
   return isAdmin(groupMetadata, botRef);
 }
 
-/**
- * Get all group admins
- */
 export function getAdmins(groupMetadata) {
   return (groupMetadata?.participants || []).filter(
     (p) => p.admin === "admin" || p.admin === "superadmin"
   );
 }
 
-/**
- * Get all group members (non-admins)
- */
 export function getMembers(groupMetadata) {
   return (groupMetadata?.participants || []).filter((p) => !p.admin);
 }
 
-/**
- * Get participant IDs for mentions
- */
 export function getParticipantIds(groupMetadata) {
   return (groupMetadata?.participants || []).map((p) => p.id);
 }
 
-/**
- * Display label for a participant / JID
- */
 export function displayId(jidOrParticipant) {
   if (!jidOrParticipant) return "unknown";
   if (typeof jidOrParticipant === "string") {
@@ -130,13 +87,6 @@ export function displayId(jidOrParticipant) {
   return id.split("@")[0] || "LID User";
 }
 
-/**
- * Validate group command permissions
- * @param {object} message
- * @param {object} groupMetadata
- * @param {object} options
- * @param {object} [conn] - required when botAdminRequired
- */
 export function validateGroupPermissions(
   message,
   groupMetadata,
@@ -180,9 +130,6 @@ export function validateGroupPermissions(
   return result;
 }
 
-/**
- * Format group info for display
- */
 export function formatGroupInfo(groupMetadata) {
   const admins = getAdmins(groupMetadata);
   const members = getMembers(groupMetadata);
@@ -222,11 +169,6 @@ export function formatGroupInfo(groupMetadata) {
   return info;
 }
 
-/**
- * Resolve a participant's PN-based JID from a possibly LID-prefixed reference.
- * Baileys groupParticipantsUpdate requires the phone-number WID, so LID
- * references must be mapped via group metadata.
- */
 export async function resolveParticipantJid(conn, groupJid, userRef) {
   if (!userRef) return "";
   let meta = groupCache.get(groupJid);
@@ -242,9 +184,6 @@ export async function resolveParticipantJid(conn, groupJid, userRef) {
   return participant?.id || participant?.phoneNumber || userRef;
 }
 
-/**
- * LID-safe kick: resolve the member's PN JID then remove them.
- */
 export async function kickUser(conn, groupJid, userRef) {
   const realJid = await resolveParticipantJid(conn, groupJid, userRef);
   if (!realJid) return false;
@@ -253,16 +192,10 @@ export async function kickUser(conn, groupJid, userRef) {
   return true;
 }
 
-/**
- * Promote/demote participants
- */
 export async function updateParticipantRole(conn, groupJid, participants, action) {
   return await conn.groupParticipantsUpdate(groupJid, participants, action);
 }
 
-/**
- * Resolve target user from reply or mention
- */
 export function resolveTargetUser(message) {
   const mentions = message.message?.contextInfo?.mentionedJid || [];
   if (message.quoted || message.message?.contextInfo?.participant) {

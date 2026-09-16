@@ -1,8 +1,4 @@
-/**
- * Auth State Factory
- * Dual backend: better-sqlite3 (default) | Sequelize Postgres (when DATABASE_URL is postgres)
- * Shared interface: { state, saveCreds }
- */
+
 
 import config from "../../config.js";
 import { attachBotKv, seedBotKvFromEnv } from "./botKv.js";
@@ -33,10 +29,6 @@ async function initBackend() {
   return activeBackend;
 }
 
-/**
- * Initialize once and return Baileys-compatible auth state.
- * @returns {Promise<{ state: object, saveCreds: Function }>}
- */
 export async function useMultiDbAuthState() {
   if (!initPromise) {
     initPromise = initBackend();
@@ -48,20 +40,11 @@ export async function useMultiDbAuthState() {
   };
 }
 
-/**
- * Create an isolated auth session with its OWN database file.
- * Used for sub-instances (per-number creds/keys) — never attaches BotKV.
- * Falls back to sqlite regardless of the main DATABASE_URL backend.
- * @param {string} dbPath absolute or relative path to the sub DB file
- */
 export async function useStandaloneAuthState(dbPath) {
   const { useStandaloneAuthState } = await import("./authSqlite.js");
   return useStandaloneAuthState(dbPath);
 }
 
-/**
- * Clear all auth state (logout / reset)
- */
 export async function clearAuthState() {
   if (!initPromise) {
     await useMultiDbAuthState();
@@ -73,9 +56,6 @@ export async function clearAuthState() {
   }
 }
 
-/**
- * Cheap creds existence check (no full table scan)
- */
 export async function checkAuthCreds() {
   if (!initPromise) {
     await useMultiDbAuthState();
@@ -92,9 +72,6 @@ export async function checkAuthCreds() {
   };
 }
 
-/**
- * @deprecated Prefer checkAuthCreds
- */
 export async function validateAuthState() {
   const result = await checkAuthCreds();
   return {

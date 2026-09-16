@@ -1,7 +1,4 @@
-/**
- * Advanced Group Management Plugin
- * Deduplicated, LID-aware, consistent utils API usage
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -32,7 +29,6 @@ async function getGroupMeta(conn, jid) {
   return meta;
 }
 
-// ==================== TAG ALL ====================
 command(
   {
     pattern: "tagall",
@@ -67,7 +63,6 @@ command(
   }
 );
 
-// ==================== NOTIFY ====================
 command(
   {
     pattern: "notify",
@@ -92,7 +87,6 @@ command(
   }
 );
 
-// ==================== GROUP INFO ====================
 command(
   {
     pattern: "groupinfo",
@@ -120,7 +114,6 @@ command(
   }
 );
 
-// ==================== PROMOTE ====================
 command(
   {
     pattern: "promote",
@@ -155,7 +148,6 @@ command(
   }
 );
 
-// ==================== DEMOTE ====================
 command(
   {
     pattern: "demote",
@@ -190,7 +182,6 @@ command(
   }
 );
 
-// ==================== ADMINS ====================
 command(
   {
     pattern: "admins",

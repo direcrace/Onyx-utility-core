@@ -1,7 +1,4 @@
-/**
- * Group moderation: welcome, goodbye, antilink, antispam, antibot, antidelete,
- * onlyadmin, nsfw, autoapprove, ban, warn, mute, kick
- */
+
 
 import { command } from "../plugins.js";
 import {

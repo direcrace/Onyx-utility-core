@@ -1,6 +1,4 @@
-/**
- * Lightweight multi-language replies
- */
+
 
 import { kvGet, kvSet, seedBotKvFromEnv } from "../database/botKv.js";
 
@@ -73,7 +71,7 @@ async function ensureLang() {
       return cachedLang;
     }
   } catch {
-    /* ignore */
+
   }
   const env = (process.env.BOT_LANG || "en").toLowerCase();
   cachedLang = STRINGS[env] ? env : "en";
@@ -92,9 +90,6 @@ export async function setLang(lang) {
   return next;
 }
 
-/**
- * Translate key with optional {placeholders}
- */
 export async function t(key, vars = {}) {
   const lang = await ensureLang();
   let text =

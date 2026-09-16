@@ -1,6 +1,4 @@
-/**
- * Fun commands: calculator, binary, emoji mix, reactions, flirt, mock text
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyFail, getCommandArgs, withTyping, tr } from "../utils/message.js";
@@ -14,9 +12,6 @@ function factorial(n) {
   return r;
 }
 
-/**
- * Safe math evaluator supporting + - * / % ^ ! sqrt() pi e
- */
 function evaluateMath(expr, variableValue = null) {
   let e = String(expr)
     .replace(/×/g, "*")

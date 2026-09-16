@@ -1,8 +1,4 @@
-/**
- * Creator-guard — the host tier above owner. Every denied attempt gets a
- * playful "I'm watching you" reply, is written to the audit log, and the
- * creators are notified (log group + DM when on the main connection).
- */
+
 
 import { BOT_INFO } from "../config/constants.js";
 import { replyFail, tr } from "./message.js";
@@ -41,15 +37,6 @@ function nextLine(lang) {
   return lines[lastLine % lines.length];
 }
 
-/**
- * Gate a creator-only action. Returns true when the sender may proceed.
- * On denial: witty reply + audit + notify the creators.
- *
- * @param {object} conn
- * @param {object} message
- * @param {string} [label]  human/command label of the attempt, e.g. "#update"
- * @returns {Promise<boolean>}
- */
 export async function requireCreator(conn, message, label = "creator-only") {
   if (isCreatorMessage(message, conn)) return true;
 
@@ -62,7 +49,7 @@ export async function requireCreator(conn, message, label = "creator-only") {
       `${line}\n\n_${pushName}'s ${label} attempt → logged._`,
       `${line}\n\n_${pushName}'s ${label}-Versuch → protokolliert._`
     ));
-  } catch { /* reply may fail */ }
+  } catch {  }
 
   try {
     await writeAudit({
@@ -72,13 +59,12 @@ export async function requireCreator(conn, message, label = "creator-only") {
       chat: message?.from || null,
       meta: { pushName, source: message?.source || null },
     });
-  } catch { /* audit best effort */ }
+  } catch {  }
 
   try {
     await systemLog("warn", `🚨 [CREATOR] *${label}* denied for ${pushName} (${actor})`, "creator-only attempt logged");
-  } catch { /* log group unavailable */ }
+  } catch {  }
 
-  // Notify creators directly (only from the main connection).
   if (!conn?.__isSub) {
     const creators = getCreatorNumbers();
     for (const num of creators) {
@@ -86,7 +72,7 @@ export async function requireCreator(conn, message, label = "creator-only") {
         await conn.sendMessage(`${num}@s.whatsapp.net`, {
           text: `🚨 *${BOT_INFO.NAME}* · creator-only attempt\n\n*${label}* was tried by ${pushName} (${actor}).\n📋 Logged and under your review.`,
         });
-      } catch { /* best effort */ }
+      } catch {  }
     }
   }
 

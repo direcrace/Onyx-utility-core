@@ -1,22 +1,4 @@
-/**
- * Invite-based onboarding ("personal bots") — provision a sub-session WITHOUT
- * ever DMing the main with `#pair`.
- *
- * The operator mints a short-lived invite (unguessable token, revocable). A
- * person opens `/invite/<token>`, types their WhatsApp number, and the pairing
- * code is delivered directly on that page — the page IS the out-of-band
- * channel, so nobody has to message the shared main to get their own bot.
- *
- * Env knobs:
- *   INVITE_TTL_MS           invite validity window (default 24 h)
- *   INVITE_MAX_USES         pair calls a single token may serve (default 3)
- *   INVITE_MAX_IP_ATTEMPTS  pair calls per IP per window (default 3)
- *   INVITE_IP_WINDOW_MS     IP rate-limit window (default 10 min)
- *
- * Invites persist in sessions/invites.json so a shared link survives restarts
- * (the linked sub-session itself persists via its own DB + instances.json).
- * Pairing attempts are audited like every other provisioning action.
- */
+
 
 import fs from "fs";
 import path from "path";
@@ -30,8 +12,8 @@ const MAX_LOAD_PER_IP = 40;
 
 const FILE = "invites.json";
 let loaded = false;
-let invites = []; // { token, label, created, expires, revoked, used }
-const ipHits = new Map(); // "pair:<ip>" | "load:<ip>" -> [ts, ...]
+let invites = [];
+const ipHits = new Map();
 
 function invitesDir() {
   const base = global.__basedir || process.cwd();
@@ -81,7 +63,6 @@ function hit(bucket, ip, max, windowMs) {
   return false;
 }
 
-/** True only for valid, live invites. Never throws. */
 function liveInvite(token) {
   const inv = invites.find((i) => i.token === token);
   if (!inv || inv.revoked) return null;
@@ -89,9 +70,6 @@ function liveInvite(token) {
   return inv;
 }
 
-/**
- * Mint a new invite. Returns the token (the link secret) + expiry.
- */
 export function createInvite({ label = "" } = {}) {
   load();
   const token = crypto.randomBytes(16).toString("hex");
@@ -109,7 +87,6 @@ export function createInvite({ label = "" } = {}) {
   return { token, label: inv.label, created: inv.created, expires: inv.expires };
 }
 
-/** Sanitized list for the dashboard (tokens only ever leave via /api action). */
 export function listInvites() {
   load();
   const now = Date.now();
@@ -139,19 +116,15 @@ export function revokeInvite(token) {
 function audit(text) {
   import("./audit.js").then(({ writeAudit }) =>
     writeAudit({ action: "invite:pair", actor: "web:invite", target: "sub-session", chat: null, meta: { note: text } })
-  ).catch(() => { /* audit best effort */ });
+  ).catch(() => {  });
 }
 
 function notify(text) {
   import("../utils/logGroup.js").then(({ systemLog }) =>
     systemLog("info", `🔗 ${text}`)
-  ).catch(() => { /* best effort */ });
+  ).catch(() => {  });
 }
 
-/**
- * Serve one pairing request through an invite.
- * @returns {{ok:true, data:{number,code}} | {ok:false, error:string}}
- */
 export async function pairNumber(token, { ip = "?", number } = {}) {
   load();
   const inv = liveInvite(token);
@@ -187,15 +160,10 @@ export async function pairNumber(token, { ip = "?", number } = {}) {
   return { ok: true, data: { number: n, code, hint: `Enter this 8-digit code once on ${n} → WhatsApp → Linked devices` } };
 }
 
-/** Whether a page load is allowed for this IP (generous, prevents hot-link hammering). */
 export function allowInviteLoad(ip = "?") {
   return !hit("load", ip, MAX_LOAD_PER_IP, 60 * 1000);
 }
 
-/**
- * The public invite page — self-contained, dark-theme, no external deps.
- * The token is embedded into both the page and its API calls.
- */
 export function renderInvitePage(token) {
   return `<!DOCTYPE html>
 <html lang="en">

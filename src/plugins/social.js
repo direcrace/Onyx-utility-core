@@ -1,7 +1,4 @@
-/**
- * Social downloaders — best-effort IG / TikTok / FB via HTTP
- * Scrapers break often; fail friendly.
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -83,9 +80,6 @@ async function sendMediaUrl(conn, message, mediaUrl, caption = "") {
   );
 }
 
-/**
- * Try tikwm API for TikTok
- */
 async function fetchTikTok(url) {
   const axios = (await import("axios")).default;
   const res = await axios.get("https://www.tikwm.com/api/", {
@@ -105,13 +99,9 @@ async function fetchTikTok(url) {
   };
 }
 
-/**
- * Best-effort Instagram via public saveig-style endpoints / oEmbed fallback
- */
 async function fetchInstagram(url) {
   const axios = (await import("axios")).default;
 
-  // Attempt 1: igdown / ddinstagram redirect (media often on ddinstagram)
   try {
     const dd = url
       .replace("www.instagram.com", "ddinstagram.com")
@@ -143,10 +133,9 @@ async function fetchInstagram(url) {
       };
     }
   } catch {
-    /* try next */
+
   }
 
-  // Attempt 2: oEmbed (image thumbnail only for some posts)
   try {
     const oembed = await axios.get("https://www.instagram.com/api/v1/oembed", {
       params: { url },
@@ -160,7 +149,7 @@ async function fetchInstagram(url) {
       };
     }
   } catch {
-    /* ignore */
+
   }
 
   throw new Error(
@@ -171,9 +160,6 @@ async function fetchInstagram(url) {
   );
 }
 
-/**
- * Facebook: og:video scrape via public page fetch
- */
 async function fetchFacebook(url) {
   const axios = (await import("axios")).default;
   const page = await axios.get(url, {

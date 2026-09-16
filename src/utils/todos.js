@@ -1,6 +1,4 @@
-/**
- * Per-user to-do lists in BotKV
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";

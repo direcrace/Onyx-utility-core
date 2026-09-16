@@ -1,6 +1,4 @@
-/**
- * Bot access control — public/private mode, owner + sudo
- */
+
 
 import { BOT_INFO } from "../config/constants.js";
 import { kvGet, kvSet, seedBotKvFromEnv } from "../database/botKv.js";
@@ -8,7 +6,6 @@ import { kvGet, kvSet, seedBotKvFromEnv } from "../database/botKv.js";
 const MODE_KEY = "mode";
 const SUDO_KEY = "sudo";
 
-/** Commands that always require privileged (even in public mode for management) */
 export const PRIVILEGED_COMMANDS = new Set([
   "mode",
   "sudo",
@@ -26,7 +23,6 @@ export const PRIVILEGED_COMMANDS = new Set([
   "metrics",
 ]);
 
-/** Owner-only (not sudo) — plugin may still allow sudo list */
 export const OWNER_ONLY_COMMANDS = new Set([
   "sudo",
   "broadcast",
@@ -35,24 +31,18 @@ export const OWNER_ONLY_COMMANDS = new Set([
   "backup",
 ]);
 
-/**
- * Strip JID / LID / device suffix → digits or lid id
- */
 export function normalizeNumber(input) {
   if (!input) return "";
   let s = String(input).trim();
-  // bare number or jid
+
   s = s.replace(/@.*/, "");
-  // device suffix 123456:61 → 123456
+
   if (s.includes(":")) s = s.split(":")[0];
-  // keep digits for phone; for LID keep alphanumeric
+
   const digits = s.replace(/\D/g, "");
   return digits || s;
 }
 
-/**
- * Collect candidate normalized ids from a message sender
- */
 export function senderCandidates(message, conn) {
   const ids = new Set();
   const add = (v) => {
@@ -77,11 +67,6 @@ export function senderCandidates(message, conn) {
   return ids;
 }
 
-/**
- * Owner numbers from env OWNER_NUMBER (comma-separated ok).
- * Creators (env CREATOR_NUMBERS + runtime) are always owners too, so a creator
- * can do everything an owner can while keeping creator-only powers.
- */
 export function getOwnerNumbers() {
   const all = new Set([
     ...envOwnerList(),
@@ -92,7 +77,6 @@ export function getOwnerNumbers() {
   return [...all].filter(Boolean);
 }
 
-/** Creator numbers — the ultimate host tier (env + runtime). */
 export function getCreatorNumbers() {
   const all = new Set([...envCreatorList(), ..._runtimeCreators]);
   return [...all].filter(Boolean);
@@ -112,7 +96,6 @@ function envCreatorList() {
     .filter(Boolean);
 }
 
-/** Runtime-added owner/creator numbers (persisted in BotKV; applied live). */
 let _runtimeOwners = new Set();
 let _runtimeCreators = new Set();
 
@@ -154,25 +137,21 @@ async function persistRoleNumbers() {
   try {
     await kvSet("config:owners", [..._runtimeOwners]);
     await kvSet("config:creators", [..._runtimeCreators]);
-  } catch { /* DB may be unavailable in tests */ }
+  } catch {  }
 }
 
-/** Load persisted owner/creator overrides into memory (call once after BotKV is up). */
 export async function hydrateRoleNumbers() {
   try {
     const o = await kvGet("config:owners");
     if (Array.isArray(o)) o.forEach((x) => _runtimeOwners.add(normalizeNumber(x)));
     const c = await kvGet("config:creators");
     if (Array.isArray(c)) c.forEach((x) => _runtimeCreators.add(normalizeNumber(x)));
-  } catch { /* Not ready */ }
+  } catch {  }
   return { owners: getOwnerNumbers(), creators: getCreatorNumbers() };
 }
 
-/**
- * Creator check — the host tier above owner.
- */
 export function isCreatorMessage(message, conn) {
-  // Sub-sessions are never the creator.
+
   if (conn?.__isSub) return false;
   if (message?.key?.fromMe) return true;
   const creators = getCreatorNumbers();
@@ -185,13 +164,10 @@ async function ensureSeeded() {
   try {
     await seedBotKvFromEnv();
   } catch {
-    /* BotKV may not be ready in tests */
+
   }
 }
 
-/**
- * Env SUDO list (always merged)
- */
 function envSudoList() {
   return (process.env.SUDO || "")
     .split(",")
@@ -213,9 +189,6 @@ export async function setMode(mode) {
   return next;
 }
 
-/**
- * Runtime sudo list from BotKV (env merged at read time)
- */
 export async function listSudo() {
   await ensureSeeded();
   const stored = (await kvGet(SUDO_KEY)) || [];
@@ -247,12 +220,12 @@ export async function removeSudo(number) {
 }
 
 export function isOwnerMessage(message, conn) {
-  // Sub-sessions are never the owner — they are restricted guests.
+
   if (conn?.__isSub) return false;
   if (message?.key?.fromMe) return true;
   const owners = getOwnerNumbers();
   if (!owners.length) {
-    // No OWNER_NUMBER: treat fromMe / bot user as owner only
+
     return !!message?.key?.fromMe;
   }
   const candidates = senderCandidates(message, conn);
@@ -266,31 +239,23 @@ export async function isSudoMessage(message, conn) {
   return sudos.some((s) => candidates.has(s));
 }
 
-/**
- * Owner or sudo (or fromMe)
- */
 export async function isPrivileged(message, conn) {
   if (message?.key?.fromMe) return true;
   if (isOwnerMessage(message, conn)) return true;
   return isSudoMessage(message, conn);
 }
 
-/**
- * Can this user run this command given current mode?
- * Returns { allowed: boolean, silent?: boolean, reason?: string }
- */
 export async function checkCommandAccess(message, command, conn) {
   const name = (command.patternName || "").toLowerCase();
   const privileged = await isPrivileged(message, conn);
   const owner = isOwnerMessage(message, conn);
 
-  // Strict owner-only (broadcast); sudo mutations enforced in plugin for `#sudo`
   if (name === "broadcast" && !owner && !message?.key?.fromMe) {
     return { allowed: false, silent: false, reason: "OWNER_ONLY" };
   }
 
   if (OWNER_ONLY_COMMANDS.has(name) && !owner && !message?.key?.fromMe) {
-    // Allow privileged to *list* sudo; plugin enforces owner for add/del
+
     if (!privileged) {
       return { allowed: false, silent: false, reason: "OWNER_ONLY" };
     }

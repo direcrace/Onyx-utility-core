@@ -1,6 +1,4 @@
-/**
- * Notes, reminders, polls
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -101,7 +99,6 @@ command(
       return;
     }
 
-    // Shorthand: #note <id> <text> → set
     const text = [id, ...rest].join(" ").trim();
     if (action && text) {
       await saveNote(owner, action, text);
@@ -302,7 +299,6 @@ command(
       return;
     }
 
-    // add / shorthand
     const text = (act === "add" ? rest.join(" ") : [action, ...rest].join(" ")).trim();
     if (!text) { await replyFail(conn, message, await tr(`Usage: ${BOT_INFO.PREFIX}todo add <text>`, `Benutzung: ${BOT_INFO.PREFIX}todo add <text>`)); return; }
     const count = await addTodo(owner, text);

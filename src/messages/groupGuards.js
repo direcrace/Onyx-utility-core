@@ -1,8 +1,4 @@
-/**
- * Non-command group moderation guards
- * Handles: mute, antilink, antispam, antibot, banned, onlyadmin
- * Plus post-message actions: autoreact, autotyping, autoread
- */
+
 
 import { shouldBlockGroupMessage, tryDeleteMessage } from "../utils/moderation.js";
 import { isPrivileged } from "../utils/access.js";
@@ -50,21 +46,18 @@ export async function processGroupGuards({ message, conn }, onBlock) {
 
   const settings = await getGroupSettings(message.from);
 
-  // BANNED USER CHECK
   if (!privileged) {
     if (await isBotBanned(senderNorm)) return block("BANNED");
     const banned = await isBanned(message.from, senderNorm);
     if (banned) return block("BANNED");
   }
 
-  // ONLY-ADMIN CHECK
   if (settings.onlyadmin && !admin && !privileged) return block("ONLY_ADMIN");
 
-  // CORE BLOCK CHECKS (mute / antilink / antispam / antitag)
   const result = await shouldBlockGroupMessage(message, conn);
   if (result.block) {
     if (["ANTILINK", "ANTISPAM", "ANTITAG", "ANTISTICKER"].includes(result.reason) && (privileged || admin)) {
-      // continue
+
     } else if (result.reason === "MUTED") {
       if (result.deleteMsg && meta && isBotAdmin(meta, conn)) {
         await tryDeleteMessage(conn, message);
@@ -76,7 +69,6 @@ export async function processGroupGuards({ message, conn }, onBlock) {
     }
   }
 
-  // ANTIBOT CHECK
   if (settings.antibot && !privileged && !admin && !message.key?.fromMe) {
     if (isSenderBot(message, conn)) {
       if (meta && isBotAdmin(meta, conn)) {
@@ -86,36 +78,35 @@ export async function processGroupGuards({ message, conn }, onBlock) {
       if (action === "kick" && meta && isBotAdmin(meta, conn)) {
         try {
           await kickUser(conn, message.from, message.sender);
-        } catch { /* ignore */ }
+        } catch {  }
       }
       try {
         await conn.sendMessage(message.from, {
           text: `🤖 Bot detected and ${action === "kick" ? "removed" : "action taken"}.`,
         });
-      } catch { /* ignore */ }
+      } catch {  }
       return block("ANTIBOT");
     }
   }
 
-  // POST-MESSAGE ACTIONS
   if (!result.block) {
     if (settings.autoreact && !message.key?.fromMe) {
       try {
         await conn.sendMessage(message.from, {
           react: { text: settings.autoreact, key: message.key },
         });
-      } catch { /* ignore */ }
+      } catch {  }
     }
     if (settings.autoread) {
-      try { await conn.sendPresenceUpdate("available", message.from); } catch { /* ignore */ }
+      try { await conn.sendPresenceUpdate("available", message.from); } catch {  }
     }
     if (settings.autotyping) {
       try {
         await conn.sendPresenceUpdate("composing", message.from);
         setTimeout(async () => {
-          try { await conn.sendPresenceUpdate("paused", message.from); } catch { /* ignore */ }
+          try { await conn.sendPresenceUpdate("paused", message.from); } catch {  }
         }, 2000);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   }
 
@@ -143,7 +134,7 @@ async function runPunishment(settings, reason, message, conn, meta) {
 
   try {
     await conn.sendMessage(message.from, { text: label });
-  } catch { /* ignore */ }
+  } catch {  }
 
   const {
     addWarn, resetWarns, banUser,
@@ -161,7 +152,7 @@ async function runPunishment(settings, reason, message, conn, meta) {
       try {
         await kickUser(conn, message.from, message.sender);
         await resetWarns(message.from, norm);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   } else if (action === "strict") {
     const count = await addWarn(message.from, norm);
@@ -174,25 +165,17 @@ async function runPunishment(settings, reason, message, conn, meta) {
       try {
         await kickUser(conn, message.from, message.sender);
         await resetWarns(message.from, norm);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   } else if (action === "kick" && meta && isBotAdmin(meta, conn)) {
     try {
       await kickUser(conn, message.from, message.sender);
-    } catch { /* ignore */ }
+    } catch {  }
   } else if (action === "ban") {
     await banUser(message.from, norm);
   }
 }
 
-/**
- * Group kill-switch gate ("#bot off").
- * Returns:
- *  - "disabled" → fully silent (bot is off for this group)
- *  - "wake"     → only run the #bot handler (skip guards)
- *  - "bypass"   → run normally but skip guards (privileged users while bot is off)
- *  - false      → normal pipeline
- */
 export async function processGroupMessageGate({ message, conn }) {
   if (!message?.isGroup || message.key?.fromMe) return false;
   const settings = await getGroupSettings(message.from);

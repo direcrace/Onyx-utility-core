@@ -1,6 +1,4 @@
-/**
- * Owner / sudo / mode commands
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";

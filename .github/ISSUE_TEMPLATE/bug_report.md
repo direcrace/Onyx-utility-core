@@ -22,7 +22,7 @@ A clear description of what went wrong.
 
 ## Environment
 
-- X-Asena version / commit:
+- Onyx Utility Core version / commit:
 - Node.js:
 - OS:
 - Auth backend: SQLite / Postgres

@@ -1,12 +1,4 @@
-/**
- * System controls: `#reboot` and `#shutdown`.
- * Works on the MAIN bot (owner/sudo) and on Onyx Minis (their own user).
- *
- * Main:   #reboot = graceful process restart (pm2 auto-restarts).
- *         #shutdown = pm2 stop (true off until manually started).
- * Mini:   #reboot = reconnect the sub-session in place.
- *         #shutdown = remove + logout the sub-session (termination DM).
- */
+
 
 import { exec } from "child_process";
 import { command } from "../plugins.js";
@@ -93,7 +85,6 @@ command(
       return;
     }
 
-    // Main bot: graceful process restart.
     await replyOk(conn, message, await tr("♻️ Rebooting bot...", "♻️ Bot wird neu gestartet..."));
     if (args === "now") {
       process.exit(0);
@@ -118,7 +109,6 @@ command(
       return;
     }
 
-    // Main bot: true pm2 stop (stays off until manually started).
     await replyOk(conn, message, await tr("👋 Shutting down... (pm2 stop — start again with `pm2 start onyx`)", "👋 Fahre herunter... (pm2 stop — erneut starten mit `pm2 start onyx`)"));
     setTimeout(async () => {
       const stopped = await pm2StopApp();
@@ -146,12 +136,12 @@ command(
       snapshot = await hostSnapshot();
       const { getSystemWatchStatus } = await import("../system/systemWatch.js");
       swatch = getSystemWatchStatus();
-    } catch { /* ignore */ }
+    } catch {  }
 
     try {
       const { getCorePanicStatus } = await import("../system/corePanic.js");
       panic = getCorePanicStatus();
-    } catch { /* ignore */ }
+    } catch {  }
 
     if (!snapshot || !panic) {
       await replyFail(conn, message, await tr("Could not read host status.", "Host-Status konnte nicht gelesen werden."));

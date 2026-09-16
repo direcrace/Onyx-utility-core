@@ -98,5 +98,5 @@ Major Baileys **7.0.0-rc13** rewrite on `main` (previous line preserved as `pre-
 - User-facing errors stay generic; stacks go to the system log group only
 - Spoof mitigations on `messages.upsert` (notify-only, ignore `requestId`)
 
-[Unreleased]: https://github.com/Neeraj-x0/X-Asena/compare/v4.0.0...HEAD
-[4.0.0]: https://github.com/Neeraj-x0/X-Asena/releases/tag/v4.0.0
+[Unreleased]: https://github.com/direcrace/Onyx-main/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/direcrace/Onyx-main/releases/tag/v4.0.0

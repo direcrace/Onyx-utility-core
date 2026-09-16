@@ -1,7 +1,4 @@
-/**
- * Logger Utility — console + optional system log group sink
- * Never dumps stacks to user chats (that is handled by callers).
- */
+
 
 import { LOG_LEVELS } from "../config/constants.js";
 
@@ -15,7 +12,7 @@ class Logger {
       [LOG_LEVELS.INFO]: 3,
       [LOG_LEVELS.DEBUG]: 4,
     };
-    /** @type {null | ((level: string, msg: string, detail?: any) => Promise<void>)} */
+
     this.remoteSink = null;
   }
 
@@ -23,9 +20,6 @@ class Logger {
     this.level = level;
   }
 
-  /**
-   * Attach remote sink (system log group). Errors/warns forward there.
-   */
   setRemoteSink(fn) {
     this.remoteSink = fn;
   }
@@ -47,7 +41,7 @@ class Logger {
       const detail = args.length ? args.map(String).join(" ") : undefined;
       await this.remoteSink(level, String(message), detail);
     } catch {
-      /* never throw from logger */
+
     }
   }
 

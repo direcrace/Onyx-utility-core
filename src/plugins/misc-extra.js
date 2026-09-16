@@ -1,6 +1,4 @@
-/**
- * Language, per-group plugin toggle, broadcast
- */
+
 
 import { command, getMenuCommands } from "../plugins.js";
 import {
@@ -79,7 +77,7 @@ command(
       );
       return;
     }
-    // Protect critical commands
+
     const protectedCmds = new Set([
       "enable",
       "disable",
@@ -201,10 +199,10 @@ command(
             text: `📢 *Broadcast*\n\n${text}`,
           });
           ok += 1;
-          // gentle rate limit
+
           await new Promise((r) => setTimeout(r, 400));
         } catch {
-          /* skip */
+
         }
       }
 
@@ -217,7 +215,6 @@ command(
   }
 );
 
-// Optional: list all command names (owner debug)
 command(
   {
     pattern: "cmdlist",

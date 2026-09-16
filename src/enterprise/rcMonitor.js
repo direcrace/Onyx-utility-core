@@ -1,27 +1,4 @@
-/**
- * Remote-control safeguard — the web dashboard's safety net, mirroring the
- * Onyx Mini ToS monitor:
- *
- *   • Every operator-tier web action carries a weight. A high rolling score
- *     first WARNS (system log + audit), then LOCKS that operator out of the
- *     action bus for a cooldown — like a mini being suspended.
- *   • Danger-sensitive actions additionally need an ARMED confirmation
- *     (single web confirm, enforced server-side with a short TTL) — the
- *     analogue of the mini suspend confirm.
- *   • Flags are persisted in BotKV under `rc_flags` (retention-capped like
- *     mini flags) and surfaced on the dashboard's Remote panel; every
- *     warn/lock is audited, logged, and DM'd to the creators.
- *
- * Operators accumulate score; the creator tier is trusted (still audited).
- *
- * Env knobs:
- *   RC_MONITOR            = "off" to disable scoring (default on)
- *   RC_FLAG_WARN          = score that logs a warn (default 30)
- *   RC_FLAG_LOCK          = score that locks the operator out (default 80)
- *   RC_FLAG_WINDOW_MS     = rolling score window (default 300000 = 5 min)
- *   RC_FLAG_LOCKOUT_MS    = how long the lock lasts (default 600000 = 10 min)
- *   RC_FLAG_RETENTION_DAYS= flag record retention (default 30)
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 
@@ -38,14 +15,10 @@ const CFG = {
     Math.max(1, Number(process.env.RC_FLAG_RETENTION_DAYS) || 30) * 86_400_000,
 };
 
-/**
- * Weight per action — how "risky" an operator using it is. Actions missing
- * from the map are read-only inspective ones (weight 0, never scored).
- */
 const RC_WEIGHTS = {
   "main.reconnect": 25,
   "minis.remove": 20,
-  "boot.restart": 0, // reserved
+  "boot.restart": 0,
   "minis.suspend": 10,
   "minis.respawn": 8,
   "minis.unsuspend": 4,
@@ -68,9 +41,9 @@ const RC_WEIGHTS = {
   "backup.now": 2,
   "pair.request": 8,
   "roles.list": 0,
-  "roles.set": 0, // creator-only anyway
-  "relink": 0, // creator-only
-  "git.update": 0, // creator-only
+  "roles.set": 0,
+  "relink": 0,
+  "git.update": 0,
   "invite.create": 2,
   "invite.list": 0,
   "invite.revoke": 2,
@@ -82,13 +55,11 @@ const RC_WEIGHTS = {
   "rc.arm": 0,
 };
 
-/** Actions an operator must explicitly arm before they run. */
 export const CONFIRM_REQUIRED = new Set([
   "main.reconnect",
   "minis.remove",
 ]);
 
-/** Actions the creator may run directly; operator gets the confirm+monitor path. */
 export const CREATOR_ONLY_ACTIONS = new Set([
   "reboot",
   "shutdown",
@@ -102,10 +73,6 @@ export const CREATOR_ONLY_ACTIONS = new Set([
   "invite.revoke",
 ]);
 
-/**
- * Config keys an operator may change through `config.set` (compared
- * lower-case). Everything else is creator-only.
- */
 export const OPERATOR_CONFIG_KEYS = new Set([
   "prefix",
   "botname",
@@ -120,8 +87,7 @@ export const OPERATOR_CONFIG_KEYS = new Set([
   "blockbroadcast",
 ]);
 
-/** In-memory rolling state per actor. */
-const state = new Map(); // actor -> { scoreWindow: [{ts,w}], lockedUntil, lastWarnAt, armed: Map<action,ts> , flagIdSeq }
+const state = new Map();
 
 let flagIdSeq = 0;
 
@@ -188,16 +154,11 @@ async function notifyCreators(text) {
         await conn.sendMessage(`${num}@s.whatsapp.net`, {
           text: `🚨 *${BOT_INFO.NAME}* · remote-control watch\n\n${text}`,
         });
-      } catch { /* best effort */ }
+      } catch {  }
     }
-  } catch { /* best effort */ }
+  } catch {  }
 }
 
-/**
- * Score + arm-check an operator web action.
- * @returns {Promise<{ok:boolean, score:number, threshold:number, warn?:boolean,
- *           locked?:boolean, needArm?:boolean, action:string, hint?:string}>}
- */
 export async function guardRcAction(actor, action, meta = {}) {
   const weight = RC_WEIGHTS[action] ?? 0;
   const now = Date.now();
@@ -207,7 +168,6 @@ export async function guardRcAction(actor, action, meta = {}) {
     return { ok: true, score: 0, threshold: { warn: CFG.warn, lock: CFG.lock, windowMs: CFG.windowMs }, locked: false, action };
   }
 
-  // Locked? No more actions until the cooldown ends.
   if (s.lockedUntil > now) {
     try {
       const { writeAudit } = await import("./audit.js");
@@ -218,7 +178,7 @@ export async function guardRcAction(actor, action, meta = {}) {
         chat: null,
         meta: { ...meta, source: "web" },
       });
-    } catch { /* audit best effort */ }
+    } catch {  }
     return {
       ok: false,
       locked: true,
@@ -242,11 +202,11 @@ export async function guardRcAction(actor, action, meta = {}) {
       const { writeAudit } = await import("./audit.js");
       const { snapshotLog } = await import("./messageLog.js");
       await writeAudit({ action: "rc:lock", actor, target: action, chat: null, meta: { score, ...meta, source: "web", recent: await snapshotLog() } });
-    } catch { /* audit best effort */ }
+    } catch {  }
     try {
       const { systemLog } = await import("../utils/logGroup.js");
       await systemLog("warn", `🔒 [RC] *${action}* by ${actor} — score ${score} ≥ ${CFG.lock}, remote-control locked`, `web operator cooldown ${Math.round(CFG.lockoutMs / 60000)} min`);
-    } catch { /* ignore */ }
+    } catch {  }
     await notifyCreators(`Operator *${actor}* ran *${action}* — rc score ${score}/${CFG.lock}. Locked out of the dashboard controls for ${Math.round(CFG.lockoutMs / 60000)} min. Oversight power is yours.`);
     return {
       ok: false,
@@ -266,17 +226,16 @@ export async function guardRcAction(actor, action, meta = {}) {
       const { writeAudit } = await import("./audit.js");
       const { snapshotLog } = await import("./messageLog.js");
       await writeAudit({ action: "rc:warn", actor, target: action, chat: null, meta: { score, ...meta, source: "web", recent: await snapshotLog() } });
-    } catch { /* audit best effort */ }
+    } catch {  }
     try {
       const { systemLog } = await import("../utils/logGroup.js");
       await systemLog("warn", `⚠️ [RC] *${action}* by ${actor} — score ${score}/${CFG.warn}`, "web operator watch");
-    } catch { /* ignore */ }
+    } catch {  }
   }
 
   return { ok: true, score, threshold: { warn: CFG.warn, lock: CFG.lock, windowMs: CFG.windowMs }, locked: false, action };
 }
 
-/** Explicit arm (confirm) for a danger-sensitive action. 90 s TTL. */
 export function armRcAction(actor, action) {
   const s = getState(actor);
   s.armed.set(action, Date.now() + ARM_TTL_MS);
@@ -293,7 +252,6 @@ export function isRcArmed(actor, action) {
   return true;
 }
 
-/** Reset an actor's lock + score but keep audit trail of what happened. */
 export function resetRcActor(actor) {
   const s = getState(actor);
   s.scoreWindow = [];
@@ -301,7 +259,6 @@ export function resetRcActor(actor) {
   s.lastWarnAt = 0;
 }
 
-/** Drop rc flag records for an actor (`id` = one record, "all" = everything). */
 export async function clearRcFlags(actor, id) {
   const store = await loadFlags();
   if (id && id !== "all") {
@@ -313,7 +270,6 @@ export async function clearRcFlags(actor, id) {
   return actor;
 }
 
-/** Live rc-monitor status for the dashboard / chat. */
 export async function getRcMonitor() {
   const store = await loadFlags();
   const actors = new Set([...state.keys(), ...Object.keys(store)]);

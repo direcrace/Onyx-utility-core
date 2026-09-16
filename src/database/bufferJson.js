@@ -1,6 +1,4 @@
-/**
- * Shared BufferJSON + key helpers for auth state backends
- */
+
 
 export const BufferJSON = {
   replacer: (_key, value) => {
@@ -34,17 +32,11 @@ export const BufferJSON = {
   },
 };
 
-/**
- * Sanitize key names for storage
- */
 export function sanitizeKey(key) {
   if (!key) return key;
   return key.replace(/[<>:"|?*]/g, "_").replace(/\//g, "__").replace(/:/g, "-");
 }
 
-/**
- * Build storage key for a Baileys signal key entry
- */
 export function makeStorageKey(type, id) {
   return sanitizeKey(`${type}-${id}.json`);
 }

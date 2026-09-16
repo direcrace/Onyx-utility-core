@@ -1,7 +1,4 @@
-/**
- * Global bot ban — users banned from using the bot anywhere.
- * Stored in BotKV as a list of normalized numbers (key "botbans").
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";

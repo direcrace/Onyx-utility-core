@@ -1,7 +1,4 @@
-/**
- * Bot system log group — onboarding + internal logs only.
- * User chats never receive stack traces / system diagnostics.
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { getOwnerNumbers, normalizeNumber } from "./access.js";
@@ -37,7 +34,7 @@ export async function markSetupDone(done = true) {
 }
 
 export function isLogGroup(jid) {
-  // sync check against last known — prefer async get for accuracy in callers
+
   return false;
 }
 
@@ -56,10 +53,6 @@ function botBareJid(conn) {
   return id.replace(/:\d+@/, "@");
 }
 
-/**
- * Ensure a dedicated log/onboarding group exists.
- * Creates "X-Asena · System" with owner numbers when possible.
- */
 export async function ensureLogGroup(conn) {
   attachLogGroupConn(conn);
 
@@ -69,7 +62,7 @@ export async function ensureLogGroup(conn) {
       await conn.groupMetadata(jid);
       return { jid, created: false };
     } catch {
-      // stale — recreate
+
       jid = null;
     }
   }
@@ -79,7 +72,6 @@ export async function ensureLogGroup(conn) {
     return bare ? normalizeNumber(j) !== normalizeNumber(bare) : true;
   });
 
-  // Need at least one other participant for groupCreate on many WA builds
   if (!participants.length) {
     console.warn(
       "[log-group] No OWNER_NUMBER set — cannot auto-create log group.\n" +
@@ -96,7 +88,6 @@ export async function ensureLogGroup(conn) {
 
     await setLogGroupJid(gid);
 
-    // Announce briefly
     await conn.sendMessage(gid, {
       text:
         `🛠 *${BOT_INFO.NAME} system group*\n\n` +
@@ -113,12 +104,9 @@ export async function ensureLogGroup(conn) {
   }
 }
 
-/**
- * Send a system message to the log group only (never to user chats).
- */
 export async function systemLog(level, message, detail) {
   const text = formatSystemLine(level, message, detail);
-  // Always mirror to console
+
   if (level === "error") console.error(text);
   else if (level === "warn") console.warn(text);
   else console.log(text);
@@ -128,7 +116,7 @@ export async function systemLog(level, message, detail) {
       const { recordError } = await import("../enterprise/metrics.js");
       recordError();
     } catch {
-      /* ignore */
+
     }
   }
 
@@ -165,10 +153,7 @@ function formatSystemLine(level, message, detail) {
   return body;
 }
 
-/**
- * User-facing safe error — never includes stack. Details go to log group.
- */
 export async function reportUserSafeError(conn, userJid, userMessage, error) {
   await systemLog("error", userMessage, error);
-  // Caller sends userMessage (generic) to userJid — we only log details here
+
 }

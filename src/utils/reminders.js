@@ -1,6 +1,4 @@
-/**
- * Reminder scheduler — persist in BotKV, tick every 30s
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import logger from "./logger.js";
@@ -18,9 +16,6 @@ async function saveReminders(list) {
   await kvSet(KEY, list);
 }
 
-/**
- * @param {{ id, jid, text, at, createdBy }} reminder
- */
 export async function addReminder(reminder) {
   const list = await loadReminders();
   list.push(reminder);
@@ -79,7 +74,6 @@ export function stopReminderScheduler() {
   connRef = null;
 }
 
-/** Parse relative time: 10m, 2h, 1d or HH:MM tomorrow-ish absolute epoch from now */
 export function parseWhen(input) {
   if (!input) return null;
   const s = String(input).trim().toLowerCase();

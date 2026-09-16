@@ -1,6 +1,4 @@
-/**
- * First-run / setup wizard — runs in the system log group only
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { getLogGroupJid, isSetupDone, markSetupDone, systemLog } from "../utils/logGroup.js";
@@ -31,9 +29,6 @@ export async function checkFfmpeg() {
   }
 }
 
-/**
- * Post welcome + checklist into log group after connect
- */
 export async function startOnboardingIfNeeded(conn) {
   const logJid = await getLogGroupJid();
   if (!logJid) return;
@@ -75,9 +70,6 @@ export async function startOnboardingIfNeeded(conn) {
   });
 }
 
-/**
- * Handle #setup conversation inside log group
- */
 export async function runSetupCommand(message, conn, args) {
   const logJid = await getLogGroupJid();
   if (!logJid || message.from !== logJid) {
@@ -124,7 +116,7 @@ async function advanceWizard(message, conn, step, raw) {
   if (step === "idle" || step === "await_start" || step === "owner") {
     const owners = getOwnerNumbers();
     if (!owners.length && raw && /^\d{8,15}$/.test(raw)) {
-      // Persist owner into BotKV note — env still preferred; store botkv owner_override
+
       await kvSetRaw("owner_override", raw);
       process.env.OWNER_NUMBER = raw;
       BOT_INFO.OWNER = raw;

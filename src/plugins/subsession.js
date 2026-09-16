@@ -1,6 +1,4 @@
-/**
- * Sub-session management — `#pair` (open) + `#instances` (owner)
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";
@@ -94,7 +92,7 @@ command(
     let target = normalizeNumber(arg);
 
     if (!target) {
-      // Fall back to the requester's own number when no argument is given.
+
       target = normalizeNumber(message.sender || message.from);
     }
 
@@ -111,7 +109,7 @@ command(
     }
 
     if (message.sender && normalizeNumber(message.sender) !== target) {
-      // Allow anyone to pair their OWN number; only owner may pair others.
+
       if (!isOwnerMessage(message, conn)) {
         await replyFail(
           conn,
@@ -150,7 +148,6 @@ command(
       return;
     }
 
-    // A suspended number stays blocked with a clear message (never "already linked").
     const idx = (await getIndexEntries()).find((e) => e.number === target);
     if (!live && idx?.status === "suspended") {
       await replyFail(
@@ -492,5 +489,4 @@ command(
   }
 );
 
-// Expose respawn for index.js boot wiring
 export { respawnSubSession };

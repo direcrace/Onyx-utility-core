@@ -1,10 +1,4 @@
-/**
- * Bounded in-process console capture ring.
- *
- * Captures every console.log/warn/error/info so the dev console (web SSE pane,
- * chat `#minilog`, terminal `logs`) can tail live output without reading log
- * files. Bounded to DEV_CONSOLE_LOG_MAX entries (default 2000).
- */
+
 
 const MAX = Math.max(100, Number(process.env.DEV_CONSOLE_LOG_MAX) || 2000);
 const ring = [];
@@ -27,20 +21,17 @@ function formatArg(a) {
 
 function emit(entry) {
   for (const fn of [...subscribers]) {
-    // Defer so a subscriber that logs cannot recurse into us.
+
     setImmediate(() => {
       try {
         fn(entry);
       } catch {
-        /* never let a subscriber break the ring */
+
       }
     });
   }
 }
 
-/**
- * Patch console.* once. Call at the very top of boot so every line lands here.
- */
 export function installConsoleRing() {
   if (installed) return true;
   installed = true;
@@ -61,7 +52,6 @@ export function installConsoleRing() {
   return true;
 }
 
-/** Last n lines of captured console output. */
 export function getRingTail(n = 100, filter) {
   const count = Math.min(Math.max(1, n | 0), 500);
   let list = ring;
@@ -78,10 +68,6 @@ export function getRingTail(n = 100, filter) {
   return list.slice(-count);
 }
 
-/**
- * Subscribe to new console lines. Returns an unsubscribe fn.
- * @param {(entry:{ts:number,level:string,text:string})=>void} fn
- */
 export function subscribeConsole(fn) {
   subscribers.add(fn);
   return () => subscribers.delete(fn);

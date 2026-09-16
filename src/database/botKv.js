@@ -1,15 +1,8 @@
-/**
- * BotKV — key/value settings on the same DB as auth
- * Keys: mode, sudo, sticker_packname, sticker_author
- */
+
 
 let kvBackend = null;
 let seeded = false;
 
-/**
- * Attach BotKV backend from auth init (sqlite or postgres)
- * @param {{ get: Function, set: Function, del?: Function }} backend
- */
 export function attachBotKv(backend) {
   kvBackend = backend;
   seeded = false;
@@ -38,9 +31,6 @@ export async function kvDel(key) {
   return b.set(key, null);
 }
 
-/**
- * Seed mode / sudo from env once if DB has no values yet
- */
 export async function seedBotKvFromEnv() {
   if (seeded) return;
   ensureBackend();
@@ -66,11 +56,11 @@ export async function seedBotKvFromEnv() {
   if ((await kvGet("sticker_packname")) == null) {
     await kvSet(
       "sticker_packname",
-      process.env.STICKER_PACKNAME || "X-Asena"
+      process.env.STICKER_PACKNAME || "Onyx"
     );
   }
   if ((await kvGet("sticker_author")) == null) {
-    await kvSet("sticker_author", process.env.STICKER_AUTHOR || "X-Asena");
+    await kvSet("sticker_author", process.env.STICKER_AUTHOR || "Onyx");
   }
 
   if ((await kvGet("lang")) == null) {

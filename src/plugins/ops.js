@@ -1,11 +1,4 @@
-/**
- * Ops & diagnostics: instance-aware restart/logs/health plus config,
- * permissions, whoami, session(s), ratelimit, diagnostics, debug, uptime,
- * version, update.
- *
- * <instance> addressing: a number targets an Onyx Mini; omitting it targets
- * the MAIN bot (mirrors #reboot / #minilog behavior).
- */
+
 
 import { exec } from "child_process";
 import { command, rebuildCommandPatterns } from "../plugins.js";
@@ -35,7 +28,6 @@ async function requireControl(conn, message) {
   return true;
 }
 
-/** Resolve instance → { type: 'main' | 'mini', number } */
 function resolveInstance(conn, token) {
   if (isSubConnection(conn)) return { type: "self", number: conn.__subNumber };
   const num = token ? normalizeNumber(token) : null;
@@ -51,7 +43,6 @@ function formatUptime(sec) {
   return `${h}h ${m % 60}m`;
 }
 
-// ------------------------------------------------------------------ #uptime
 command(
   { pattern: "uptime", fromMe: false, desc: "Show how long the bot has been running", type: "info" },
   async (message, conn) => {
@@ -66,7 +57,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #version
 command(
   { pattern: "version", fromMe: false, desc: "Show bot version", type: "info" },
   async (message, conn) => {
@@ -80,7 +70,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #update
 command(
   { pattern: "update", fromMe: false, desc: "Pull latest code & restart (creator only)", type: "owner" },
   async (message, conn) => {
@@ -107,7 +96,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #restart
 command(
   { pattern: "restart", fromMe: false, desc: "Restart bot (or #restart <number> for a mini)", type: "owner" },
   async (message, conn) => {
@@ -135,7 +123,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #logs
 command(
   { pattern: "logs", fromMe: false, desc: "Tail bot logs (or #logs <number> for a mini)", type: "owner" },
   async (message, conn) => {
@@ -166,7 +153,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #health
 command(
   { pattern: "health", fromMe: false, desc: "Health of bot (or #health <number> for a mini)", type: "owner" },
   async (message, conn) => {
@@ -198,7 +184,6 @@ command(
       return;
     }
 
-    // main / self health
     let host = {};
     let panic = null;
     try {
@@ -206,7 +191,7 @@ command(
       host = await hostSnapshot();
       const { getCorePanicStatus } = await import("../system/corePanic.js");
       panic = getCorePanicStatus();
-    } catch { /* ignore */ }
+    } catch {  }
 
     const memUsedPct = host.mem?.usedPct ?? "n/a";
     const cpu = host.hostCpuPct != null ? `${host.hostCpuPct}%` : "n/a";
@@ -234,7 +219,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #config
 async function getAllConfig() {
   const { kvGet } = await import("../database/botKv.js");
   const mode = await getMode();
@@ -290,7 +274,7 @@ command(
           await setMode(value);
           await replyOk(conn, message, await tr(`✅ Mode = *${value}*`, `✅ Modus = *${value}*`));
         } else {
-          // Freeform config:* KV writes can break the bot — creator only.
+
           if (!(await requireCreator(conn, message, `config set ${key}`))) return;
           const { kvSet } = await import("../database/botKv.js");
           await kvSet(`config:${key}`, value);
@@ -302,7 +286,6 @@ command(
       return;
     }
 
-    // get / view
     const cfg = await getAllConfig();
     if (action === "get" && key) {
       if (key === "mode") { await reply(conn, message, await tr(`*mode* = ${cfg.mode}`, `*mode* = ${cfg.mode}`)); return; }
@@ -353,7 +336,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #permissions
 command(
   { pattern: "permissions", fromMe: false, desc: "Show role permissions & your effective role", type: "owner" },
   async (message, conn) => {
@@ -372,7 +354,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #whoami
 command(
   { pattern: "whoami", fromMe: false, desc: "Show who you are to the bot", type: "info" },
   async (message, conn) => {
@@ -389,7 +370,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #session (own chat)
 command(
   { pattern: "session", fromMe: false, desc: "Show this chat's session info", type: "info" },
   async (message, conn) => {
@@ -402,7 +382,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #sessions
 command(
   { pattern: "sessions", fromMe: false, desc: "List all linked Onyx Mini sessions (owner)", type: "owner" },
   async (message, conn) => {
@@ -421,7 +400,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #ratelimit
 command(
   { pattern: "ratelimit", fromMe: false, desc: "Show global rate-limit / policy config (owner)", type: "owner" },
   async (message, conn) => {
@@ -434,7 +412,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #diagnostics
 command(
   { pattern: "diagnostics", fromMe: false, desc: "Run health diagnostics across the system (owner)", type: "owner" },
   async (message, conn) => {
@@ -452,7 +429,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #debug
 command(
   { pattern: "debug", fromMe: false, desc: "Dump runtime debug info (owner)", type: "owner" },
   async (message, conn) => {
@@ -463,8 +439,8 @@ command(
     const ul = process.uptime();
     const pm2 = process.env.PM2_APP_NAME || "onyx";
     const extra = [];
-    try { extra.push(`cwd=${global.__basedir}`); } catch { /* ignore */ }
-    try { extra.push(`queue=${(await import("../enterprise/queue.js")).queueStats().length}`); } catch { /* ignore */ }
+    try { extra.push(`cwd=${global.__basedir}`); } catch {  }
+    try { extra.push(`queue=${(await import("../enterprise/queue.js")).queueStats().length}`); } catch {  }
     await reply(conn, message, await tr(
       `🐞 *Debug*\n• pid ${process.pid} · uptime ${formatUptime(ul)}\n• node ${process.version} · pm2 ${pm2}\n• mode=${mode} · lang=${lang}\n• minis=${minis} · ${extra.join(" · ")}`,
       `🐞 *Debug*\n• pid ${process.pid} · Laufzeit ${formatUptime(ul)}\n• node ${process.version} · pm2 ${pm2}\n• mode=${mode} · lang=${lang}\n• minis=${minis} · ${extra.join(" · ")}`
@@ -484,7 +460,6 @@ function resolveTargetUser(message) {
   return mentions[0] || "";
 }
 
-// ------------------------------------------------------------------ #setcreator
 command(
   { pattern: "setcreator", fromMe: false, desc: "Manage creator (host) numbers — add|del|list", type: "owner" },
   async (message, conn) => {
@@ -525,7 +500,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #creatormenu
 command(
   { pattern: "creatormenu", fromMe: false, desc: "Creator-only commands", type: "owner", dontAddCommandList: true },
   async (message, conn) => {
@@ -555,7 +529,6 @@ command(
   }
 );
 
-// ------------------------------------------------------------------ #setowner
 command(
   { pattern: "setowner", fromMe: false, desc: "Manage owner (operator) numbers — add|del|list (creator only)", type: "owner" },
   async (message, conn) => {

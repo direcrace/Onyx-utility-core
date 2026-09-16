@@ -1,6 +1,4 @@
-/**
- * LM Studio AI — chat, chatbot toggle, system prompt, history
- */
+
 
 import { command, findCommand } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, withTyping, tr } from "../utils/message.js";
@@ -54,9 +52,6 @@ async function callGroq(messages, { timeoutMs = 60_000 } = {}) {
   };
 }
 
-/**
- * LM Studio first, Groq as automatic fallback when LM Studio is unreachable.
- */
 async function callAI(messages) {
   try {
     return await callLMStudio(messages);
@@ -141,9 +136,6 @@ command(
   }
 );
 
-/**
- * Called from handler.js for non-command messages
- */
 export async function handleChatbotReply({ message, conn }) {
   try {
     const chatbotOn = await isChatbotEnabled();
@@ -165,5 +157,5 @@ export async function handleChatbotReply({ message, conn }) {
     await addMessage(sender, { role: "user", content: text });
     await addMessage(sender, { role: "assistant", content: reply_text });
     await conn.sendMessage(message.from, { text: reply_text }, { quoted: { key: message.key, message: message.message } });
-  } catch { /* ignore chatbot errors silently */ }
+  } catch {  }
 }

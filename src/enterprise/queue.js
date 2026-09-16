@@ -1,6 +1,4 @@
-/**
- * Lightweight in-process job queue for heavy media work
- */
+
 
 import logger from "../utils/logger.js";
 import { recordMetric } from "./metrics.js";
@@ -10,11 +8,6 @@ let active = 0;
 let paused = false;
 const CONCURRENCY = Number(process.env.JOB_CONCURRENCY || 1);
 
-/**
- * @param {string} name
- * @param {() => Promise<any>} fn
- * @returns {Promise<any>}
- */
 export function enqueueJob(name, fn) {
   return new Promise((resolve, reject) => {
     queue.push({ name, fn, resolve, reject, enqueuedAt: Date.now() });
@@ -51,7 +44,6 @@ export function queueStats() {
   return { pending: queue.length, active, concurrency: CONCURRENCY, paused };
 }
 
-/** Pause (true) or resume (false) job dequeuing — a soft "suspend" for the main bot. */
 export function setQueuePaused(value) {
   paused = !!value;
   if (!paused) pump();

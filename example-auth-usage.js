@@ -1,9 +1,4 @@
-/**
- * Example: Using Database Authentication State (Baileys 7.0.0-rc13)
- *
- * Default: better-sqlite3 (./database.db)
- * Postgres: set DATABASE_URL=postgres://...
- */
+
 
 import makeWASocket, {
   fetchLatestBaileysVersion,

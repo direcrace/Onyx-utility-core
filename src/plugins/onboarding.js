@@ -1,6 +1,4 @@
-/**
- * Onboarding, log-group, status, groupsetup, help
- */
+
 
 import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";

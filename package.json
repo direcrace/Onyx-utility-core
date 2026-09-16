@@ -10,9 +10,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "repository": "https://github.com/Neeraj-x0/x-asena",
-  "author": "Neeraj <krishnaneeraj773@gmail.com>",
-  "license": "MIT",
+  "repository": "https://github.com/direcrace/Onyx-main.git",
+  "author": "Nero Venero <Puma.yt11@gmail.com>",
+  "license": "N-SAL-1.0",
   "private": false,
   "type": "module",
   "dependencies": {

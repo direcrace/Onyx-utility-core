@@ -1,6 +1,4 @@
-/**
- * Anti-Delete — recovers deleted messages and resends to group
- */
+
 
 import { getGroupSettings } from "./groupSettings.js";
 import { msgCache } from "./cache.js";
@@ -48,5 +46,5 @@ export async function handleAntiDelete(conn, update) {
     }
 
     await conn.sendMessage(jid, { text: recoveryText, mentions: [sender] });
-  } catch { /* don't crash on anti-delete errors */ }
+  } catch {  }
 }

@@ -1,21 +1,9 @@
-/**
- * Dev Console — one shared "action bus" for ONYX + Onyx Minis, served by
- * three front-ends:
- *   1. Web   — devConsoleHtml.js at /ui + /api/* + /api/events (SSE)
- *   2. Chat  — `#dev` / `#minilog` owner commands
- *   3. Terminal — typed commands in the running process console
- *
- * Every surface resolves to the same runDevAction(action, params) so behavior
- * stays consistent (and anything the operator might need can be added once).
- *
- * Env knobs:
- *   DEV_CONSOLE_LOG_MAX   ring size for captured console output (default 2000)
- */
+
 
 import { exec } from "child_process";
 import { BOT_INFO } from "../config/constants.js";
 
-// --- Snapshot --------------------------------------------------------------
+
 
 async function mainBotSnapshot() {
   const out = {
@@ -39,28 +27,28 @@ async function mainBotSnapshot() {
     out.connected = !!conn;
     out.user = conn?.user?.id || null;
     out.wsReady = conn?.ws?.isOpen ? 1 : (conn?.ws?.socket?.readyState ?? 0);
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     const { getMode } = await import("../utils/access.js");
     out.mode = await getMode();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     const { queueStats } = await import("./queue.js");
     out.queue = queueStats();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     const { getMetricsSnapshot } = await import("./metrics.js");
     out.metrics = getMetricsSnapshot();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     const { getCorePanicStatus } = await import("../system/corePanic.js");
     out.panic = getCorePanicStatus();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     const { getSystemWatchStatus, hostSnapshot } = await import("../system/systemWatch.js");
     out.systemWatch = getSystemWatchStatus();
     out.host = await hostSnapshot();
-  } catch { /* ignore */ }
+  } catch {  }
   return out;
 }
 
@@ -90,7 +78,7 @@ async function miniSnapshots() {
       let admin = null;
       try {
         admin = await getMiniAdmin(s.number);
-      } catch { /* ignore */ }
+      } catch {  }
       return {
         number: s.number,
         status: s.status,
@@ -105,14 +93,14 @@ async function miniSnapshots() {
   );
 }
 
-/** Full dev snapshot for the web console / chat summary. */
+
 export async function getDevSnapshot() {
   const [main, minis] = await Promise.all([mainBotSnapshot(), miniSnapshots()]);
   let rc = null;
   try {
     const { getRcMonitor } = await import("./rcMonitor.js");
     rc = await getRcMonitor();
-  } catch { /* ignore */ }
+  } catch {  }
   return {
     generated_at: Date.now(),
     name: BOT_INFO.NAME,
@@ -124,7 +112,7 @@ export async function getDevSnapshot() {
   };
 }
 
-// --- Actions ---------------------------------------------------------------
+
 
 const PM2_APP =
   process.env.PM2_APP_NAME ||
@@ -140,12 +128,7 @@ function jidOf(number) {
   return `${String(number).replace(/\D/g, "")}@s.whatsapp.net`;
 }
 
-/**
- * Execute a console action.
- * @param {string} action e.g. "status" | "minis.suspend" | "flags.clear"
- * @param {object} params number/reason/id/n/filter/target/text/source/mini
- * @returns {Promise<{ok:boolean, data?:any, error?:string}>}
- */
+
 export async function runDevAction(action, params = {}) {
   const p = params || {};
   const norm = () => String(p.number || p.target || "").replace(/\D/g, "");
@@ -258,7 +241,7 @@ export async function runDevAction(action, params = {}) {
         const { getSubSessions } = await import("../multi/sessionManager.js");
         const { getConnection } = await import("../socket/connection.js");
         const conn = getConnection?.();
-        if (conn) await syncGroups(conn, false); // throttled 60 s (the ↻ button becomes a real resync)
+        if (conn) await syncGroups(conn, false);
         const chats = await listChats({ n: p.n });
         const minis = getSubSessions()
           .filter((s) => s.status === "connected" || s.status === "linking")
@@ -289,7 +272,7 @@ export async function runDevAction(action, params = {}) {
         try {
           const { recordChat } = await import("./chatIndex.js");
           await recordChat({ jid: target, kind, ts: Date.now() });
-        } catch { /* best effort */ }
+        } catch {  }
         return { ok: true, data: { to: target, kind, via: p.mini || "main" } };
       }
 
@@ -299,7 +282,7 @@ export async function runDevAction(action, params = {}) {
         return { ok: true, data: { temporal: true, cap: LOG_CAP, messages } };
       }
 
-      // --- Settings actions -------------------------------------------------
+
 
       case "mode.set": {
         const { getMode, setMode } = await import("../utils/access.js");
@@ -362,7 +345,7 @@ export async function runDevAction(action, params = {}) {
         return { ok: true, data: flags };
       }
 
-      // --- Global ban actions -----------------------------------------------
+
 
       case "bans.list": {
         const { listBotBans } = await import("../utils/globalBan.js");
@@ -524,7 +507,7 @@ export async function runDevAction(action, params = {}) {
         return { ok: true, data: { enabled: on, status: getSystemWatchStatus() } };
       }
 
-      // --- Web terminal -----------------------------------------------------
+
 
       case "dev.term": {
         const { runDevCommandText } = await import("./devTerm.js");
@@ -542,7 +525,7 @@ export async function runDevAction(action, params = {}) {
   }
 }
 
-/** The list of supported actions (for /api/help + terminal help). */
+
 export function devActions() {
   return [
     "status",
@@ -589,7 +572,7 @@ export function devActions() {
   ];
 }
 
-// --- Text formatting (chat / terminal) -------------------------------------
+
 
 function fmtUptime(sec) {
   if (sec < 60) return `${sec}s`;
@@ -645,7 +628,7 @@ function fmtLine(snapshot, de) {
   return L.join("\n");
 }
 
-/** Multiline summary text for `#dev` / terminal `status`. */
+
 export function formatDevSummary(snapshot, de = false) {
   return fmtLine(snapshot, de);
 }

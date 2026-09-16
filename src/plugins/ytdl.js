@@ -1,7 +1,4 @@
-/**
- * YouTube download via youtubei.js (no yt-dlp)
- * #yt #ytmp3 #ytmp4 #play
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -121,7 +118,6 @@ async function fetchAudioMp3(yt, videoId, duration) {
     );
   }
 
-  // Prefer audio-only; remux to mp3 with ffmpeg for WA compatibility
   const rawPath = await downloadToFile(
     yt,
     videoId,
@@ -137,9 +133,9 @@ async function fetchAudioMp3(yt, videoId, duration) {
       await safeUnlink(rawPath);
       return mp3Path;
     } catch {
-      // If already playable-ish, try sending raw as mp3 rename — still convert fail
+
       await safeUnlink(mp3Path);
-      // Retry with video+audio then strip? fallback: return raw and hope
+
       throw new Error(
         await tr("FFmpeg failed converting audio. Is FFmpeg installed on PATH?", "FFmpeg konnte das Audio nicht konvertieren. Ist FFmpeg im PATH installiert?")
       );

@@ -1,7 +1,3 @@
-/**
- * Sticker plugins — #sticker #take #toimg #exif
- */
-
 
 
 import { command } from "../plugins.js";
@@ -25,21 +21,14 @@ import {
 import { kvGet, kvSet } from "../database/botKv.js";
 import { MEDIA, BOT_INFO } from "../config/constants.js";
 
-
-
 async function getPackMeta() {
   const pack =
-    (await kvGet("sticker_packname")) || MEDIA.STICKER_PACKNAME || "X-Asena";
+    (await kvGet("sticker_packname")) || MEDIA.STICKER_PACKNAME || "Onyx";
   const author =
-    (await kvGet("sticker_author")) || MEDIA.STICKER_AUTHOR || "X-Asena";
+    (await kvGet("sticker_author")) || MEDIA.STICKER_AUTHOR || "Onyx";
   return { pack, author };
 }
 
-
-
-/**
- * WhatsApp sticker EXIF (JSON in EXIF IFD)
- */
 function buildExifBuffer(packname, author) {
   const json = JSON.stringify({
     "sticker-pack-id": "com.xasena.whatsapp",
@@ -57,8 +46,6 @@ function buildExifBuffer(packname, author) {
   return Buffer.concat([exifAttr, len, jsonBuff]);
 }
 
-
-
 async function addExif(webpBuffer, packname, author) {
   const { Image } = await import("node-webpmux");
   const img = new Image();
@@ -66,8 +53,6 @@ async function addExif(webpBuffer, packname, author) {
   img.exif = buildExifBuffer(packname, author);
   return img.save(null);
 }
-
-
 
 async function imageToWebp(buffer) {
   const sharp = (await import("sharp")).default;
@@ -79,8 +64,6 @@ async function imageToWebp(buffer) {
     .webp({ quality: 80 })
     .toBuffer();
 }
-
-
 
 async function videoToWebp(buffer) {
   const input = await writeTempFile(buffer, ".mp4");
@@ -115,8 +98,6 @@ async function videoToWebp(buffer) {
   }
 }
 
-
-
 async function makeStickerBuffer(media) {
   if (media.type === "image" || media.type === "sticker") {
     if (
@@ -133,8 +114,6 @@ async function makeStickerBuffer(media) {
   throw new Error(await tr("Reply to an image, video, gif, or sticker.", "Antworte auf ein Bild, Video, GIF oder einen Sticker."));
 }
 
-
-
 async function sendSticker(conn, message, webp, pack, author) {
   const withExif = await addExif(webp, pack, author);
   await conn.sendMessage(
@@ -148,8 +127,6 @@ async function sendSticker(conn, message, webp, pack, author) {
     }
   );
 }
-
-
 
 command(
   {
@@ -180,8 +157,6 @@ command(
   }
 );
 
-
-
 command(
   {
     pattern: "s",
@@ -191,7 +166,7 @@ command(
     dontAddCommandList: true,
   },
   async (message, conn) => {
-    // Reuse sticker logic via re-dispatch is awkward; call same flow
+
     await withTyping(conn, message.from, async () => {
       try {
         const media = await downloadQuotedOrSelf(conn, message);
@@ -212,8 +187,6 @@ command(
     }, { timeoutMs: 60_000 });
   }
 );
-
-
 
 async function takeHandler(message, conn) {
   await withTyping(conn, message.from, async () => {
@@ -250,8 +223,6 @@ async function takeHandler(message, conn) {
   });
 }
 
-
-
 command(
   {
     pattern: "take",
@@ -261,8 +232,6 @@ command(
   },
   takeHandler
 );
-
-
 
 command(
   {
@@ -274,8 +243,6 @@ command(
   },
   takeHandler
 );
-
-
 
 command(
   {
@@ -310,8 +277,6 @@ command(
   }
 );
 
-
-
 command(
   {
     pattern: "exif",
@@ -344,5 +309,4 @@ command(
     );
   }
 );
-
 

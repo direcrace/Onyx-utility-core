@@ -1,7 +1,4 @@
-/**
- * Append-only audit log (memory ring + BotKV snapshot)
- * Queried only from system log group / admin HTTP.
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import { normalizeNumber } from "../utils/access.js";
@@ -9,7 +6,6 @@ import { normalizeNumber } from "../utils/access.js";
 const KEY = "audit_log";
 const MAX = 500;
 
-/** @type {Array<object>} */
 let ring = null;
 
 async function load() {
@@ -23,9 +19,6 @@ async function persist() {
   await kvSet(KEY, ring.slice(-MAX));
 }
 
-/**
- * @param {{ action, actor, target?, chat?, meta? }} entry
- */
 export async function writeAudit(entry) {
   const list = await load();
   const row = {
@@ -40,7 +33,7 @@ export async function writeAudit(entry) {
   list.push(row);
   if (list.length > MAX) list.splice(0, list.length - MAX);
   ring = list;
-  // Persist async — don't block hot path hard
+
   persist().catch(() => {});
   return row;
 }

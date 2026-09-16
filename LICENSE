@@ -1,21 +1,96 @@
-MIT License
+N-SAL License v1.0
+Nero source available license
 
-Copyright (c) 2023–2026 Neeraj, X-Asena contributors
+Copyright (c) 2026 Nero Venero
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+contact: Puma.yt11@gmail.com
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the Software
+without restriction, including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software, subject to the
+following terms and conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+PERMISSIONS
+
+✓ Distribution — freely distribute the Software.
+✓ Modification — modify the Software and create derivative works.
+✓ Private Use — use the Software privately without disclosure.
+
+CONDITIONS
+
+1. License and Copyright Notice
+   — A copy of this license and copyright notice must be included in all copies or
+     substantial portions of the Software.
+
+2. Disclosed Source
+   — Modified versions must have their source code made available under the same terms.
+   — You must disclose what changes were made (state changes).
+
+3. Same License (File-level)
+   — Any derivative work or modified file must carry the same license.
+   — This applies to modified files, not necessarily the entire project if you're
+     combining with other licensed code.
+
+4. State Changes
+   — You must clearly indicate modifications made to the original Software.
+   — Include a changelog or modification notice in your distribution.
+
+LIMITATIONS
+
+✗ No Liability
+   — The Software is provided "as is" without warranty of any kind, express or implied.
+   — The copyright holder is not liable for any damages, claims, or losses arising from
+     use or inability to use the Software, even if advised of the possibility of such
+     damage.
+
+✗ No Patent Grant
+   — This license does not grant any patent rights.
+   — Any patent claims related to the Software remain with the original copyright holder.
+
+✗ No Trademark Use
+   — You may not use the name, logo, or "trademark" of the copyright holder to endorse or
+     promote derivative works without explicit written permission.
+
+✗ No Warranty
+   — The Software is provided without any warranty, including but not limited to
+     merchantability, fitness for a particular purpose, or non-infringement.
+
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+
+Intellectual Property The name "E.R.G.O","Executive response governance operator", all associated logos, artwork, documentation, branding, persona designs, and other original creative assets are the exclusive intellectual property of the copyright holder and may not be copied, adapted, redistributed, or used without prior written permission.
+
+By using, copying, modifying, or distributing the Software, you agree to these terms.
+Failure to comply with these conditions will automatically terminate your rights under
+this license.
+
+---
+
+Original Work Attribution
+
+This Software is a derivative of X-Asena (https://github.com/Neeraj-x0/X-Asena),
+which was licensed under the MIT License. The original MIT copyright notice and
+permission notice are reproduced below and apply to the portions of the Software
+originating from X-Asena:
+
+Copyright (c) 2023-2026 Neeraj, X-Asena contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the Software
+without restriction, including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.

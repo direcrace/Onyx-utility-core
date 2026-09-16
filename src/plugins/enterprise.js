@@ -1,6 +1,4 @@
-/**
- * Enterprise commands: audit, flags, policy, role, backup, metrics
- */
+
 
 import { command } from "../plugins.js";
 import {

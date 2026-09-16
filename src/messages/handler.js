@@ -1,7 +1,4 @@
-/**
- * Message Handler — ACL, flags, policy, audit, metrics
- * User chats: friendly errors only. Stacks → system log group.
- */
+
 
 import { findCommand } from "../plugins.js";
 import { validateCommand } from "../utils/validation.js";
@@ -42,7 +39,6 @@ const AUDIT_ACTIONS = new Set([
   "shutdown",
 ]);
 
-/** Commands a sub-session (secondary bot) may never run. */
 const SUB_BLOCKED_COMMANDS = new Set([
   "pair",
   "unpair",
@@ -75,9 +71,6 @@ export async function messageHandler(params) {
     if (message.isBotMessage && message.isGroup) return;
     if (!message.body) return;
 
-    // ToS flagging for normal (non-mini) users — inbound messages. Runs before
-    // the prefix gate so spam/chatter is scored too. A "ban" verdict silently
-    // stops processing (the user is now globally banned).
     if (!conn?.__isSub) {
       try {
         const { evaluateUserMessage } = await import("../multi/miniMonitor.js");
@@ -90,7 +83,6 @@ export async function messageHandler(params) {
 
     if (!message.body.startsWith(BOT_INFO.PREFIX)) return;
 
-    // Global bot ban — silently ignore banned users (owner/sudo exempt)
     if (!(await isPrivileged(message, conn)) && (await isBotBanned(message.sender))) {
       return;
     }
@@ -101,7 +93,6 @@ export async function messageHandler(params) {
     const name = (command.patternName || "").toLowerCase();
     const privileged = await isPrivileged(message, conn);
 
-    // Sub-sessions are restricted: block owner/management commands entirely.
     if (conn?.__isSub && SUB_BLOCKED_COMMANDS.has(name)) {
       return;
     }
@@ -113,11 +104,10 @@ export async function messageHandler(params) {
       return;
     }
 
-    // Maintenance / feature flags (owner/sudo bypass maintenance for control cmds)
     const flagCheck = await checkCommandFlag(name);
     if (!flagCheck.ok) {
       if (flagCheck.flag === "maintenance" && privileged) {
-        // allow privileged through during maintenance
+
       } else if (flagCheck.flag === "maintenance") {
         await sendError(
           conn,
@@ -135,7 +125,6 @@ export async function messageHandler(params) {
       }
     }
 
-    // Global policies (quiet hours, rate limit, …)
     const policy = await evaluatePolicy(message, command, { privileged });
     if (!policy.ok) {
       const msgs = {
@@ -235,14 +224,11 @@ function commandNameSafe(message) {
   }
 }
 
-/**
- * Chatbot auto-reply for non-command messages — delegates to ai.js
- */
 export async function tryChatbotReply({ message, conn }) {
   try {
     const { handleChatbotReply } = await import("../plugins/ai.js");
     await handleChatbotReply({ message, conn });
   } catch {
-    /* ai plugin not loaded or error */
+
   }
 }

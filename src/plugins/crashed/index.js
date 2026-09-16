@@ -1,12 +1,7 @@
 import commands from "./commands.js";
 import config from "./config.js";
 
-/**
- * Crashed Update Plugin
- * 
- * Hooks into the socket connection to intercept !crashed_* commands
- * Completely isolated from main bot code — zero modifications needed to index.js or plugins.js
- */
+
 
 export const initCrashedPlugin = (conn) => {
   console.log("[CRASHED] Plugin initialized");
@@ -14,18 +9,18 @@ export const initCrashedPlugin = (conn) => {
   console.log(`[CRASHED] Audio: dms.mp3, take.mp3 (from ./assets/)`);
   console.log(`[CRASHED] Commands: ${config.ALL_COMMANDS.join(", ")}`);
 
-  // Hook into messages.upsert to catch crashed commands
+
   conn.ev.on("messages.upsert", async ({ messages, type }) => {
     if (type !== "notify") return;
 
     const msg = messages[0];
     if (!msg?.message) return;
 
-    // Extract text from message
+
     const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
     if (!text) return;
 
-    // Check if message starts with #crashed
+
     if (!text.toLowerCase().startsWith("#crashed ")) return;
 
     const args = text.slice("#crashed ".length).split(/\s+/).filter(Boolean);
@@ -33,7 +28,7 @@ export const initCrashedPlugin = (conn) => {
     
     const commandName = args[0].toLowerCase();
 
-    // Check if this is a crashed command
+
     if (!config.ALL_COMMANDS.includes(commandName)) return;
 
     const sender = msg.key.remoteJid;
@@ -42,7 +37,7 @@ export const initCrashedPlugin = (conn) => {
     console.log(`[CRASHED] Command: ${commandName} from ${senderId}`);
 
     try {
-      // Route to command handler
+
       if (commandName === "ping") {
         await commands.ping(conn, msg);
       } else if (commandName === "menu" || commandName === "help" || commandName === "commands") {
@@ -78,8 +73,5 @@ export const initCrashedPlugin = (conn) => {
   });
 };
 
-/**
- * Auto-init on socket connection
- * This runs automatically when the v5 bot's connection.js emits the socket event
- */
+
 export default { initCrashedPlugin };

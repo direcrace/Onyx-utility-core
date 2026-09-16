@@ -1,34 +1,4 @@
-/**
- * SYSTEM WATCH — "the bot's eyes on the box".
- *
- * Continuously samples host health (CPU, RAM, disk, this process' RSS/uptime)
- * and reacts to anything unusual:
- *   • warn level  → announced once in the system log group (deduped per rule)
- *   • panic level → sustains for N samples, then CORE PANIC (real pm2 stop)
- *
- * Everything is env-tunable (see defaults below). It is deliberately
- * independent from corePanic.js but escalates THROUGH it, so the grace period,
- * watchdog, hard kill deadline and log-group announcement all still apply.
- *
- *   SYSTEM_WATCH               = "off" to disable
- *   SYSTEM_WATCH_INTERVAL_MS   = sample cadence (default 15000, min 5000)
- *   SYSTEM_WATCH_CPU_WARN      = BOT process CPU% warn (default 70 ≈ 1 hot core)
- *   SYSTEM_WATCH_CPU_PANIC     = BOT process CPU% panic (default 160 ≈ 2 hot cores)
- *   SYSTEM_WATCH_HOST_CPU_WARN = HOST total CPU% warn-only (default 92)
- *   SYSTEM_WATCH_RAM_WARN      = total RAM usage % warn (default 90)
- *   SYSTEM_WATCH_RAM_PANIC     = total RAM usage % panic (default 99)
- *   SYSTEM_WATCH_DISK_WARN_MB  = free disk warn (default 1024 = 1 GB)
- *   SYSTEM_WATCH_DISK_PANIC_MB = free disk panic (default 300)
- *   SYSTEM_WATCH_RSS_WARN_MB   = bot process RSS warn (default 1000; pm2 cap 1300)
- *   SYSTEM_WATCH_SUSTAINED     = consecutive samples before acting (default 3)
- *   SYSTEM_WATCH_COOLDOWN_MS   = silence window after a warn (default 5 min)
- *
- * IMPORTANT: the panic thresholds below key off the BOT PROCESS's own
- * consumption, not the whole desktop. This host is a busy personal/gaming
- * machine routinely at 80-99% total CPU — killing the bot because a game or
- * stream is running would be a false positive. Host-wide CPU is, at most, a
- * warn-only. Only the BOT's own CPU (and RAM/disk/RSS saturation) escalate.
- */
+
 
 import os from "os";
 import fs from "fs/promises";
@@ -51,8 +21,8 @@ const CFG = {
 let timer = null;
 let running = false;
 let hasRun = false;
-const streak = {}; // rule -> consecutive over-threshold samples
-const lastReported = {}; // rule -> timestamp of last warn/panic
+const streak = {};
+const lastReported = {};
 
 function gb(bytes) {
   return (bytes / 1024 / 1024 / 1024).toFixed(1);
@@ -62,9 +32,6 @@ function mb(bytes) {
   return Math.round(bytes / 1024 / 1024);
 }
 
-/**
- * Host total CPU % across all cores, measured over a short 200ms delta.
- */
 async function hostCpuPercent() {
   const t1 = os.cpus();
   const idle1 = t1.reduce((a, c) => a + c.times.idle, 0);
@@ -78,15 +45,6 @@ async function hostCpuPercent() {
   return Math.round((1 - (idle2 - idle1) / dt) * 1000) / 10;
 }
 
-/**
- * This process' own CPU load, as a % of one logical core (0-100).
- *
- * Measured cross-platform, no counters needed: we busy-spin for a short
- * interval and use process.hrtime to see how much `process.cpuUsage` advanced
- * during a known wall-clock window. If the bot is idle, CPU advances ~0 and we
- * report ~0%; if it's saturating a core, CPU advances close to wall time and
- * we report ~100% per core (matching Task Manager's per-core %).
- */
 async function processCpuPercent() {
   const pass = () => ({
     cpu: process.cpuUsage(),
@@ -125,12 +83,6 @@ async function diskFree() {
   }
 }
 
-/**
- * One host health snapshot (also used by `#sys`).
- * Memoized for ~900 ms — the dashboard polls every 1 s and both its request
- * paths (getDevSnapshot + stats sample) would otherwise pay 2x the 320 ms
- * CPU-delta cost per second for identical data.
- */
 let snapCache = { at: 0, p: null };
 const SNAP_TTL_MS = 900;
 
@@ -165,16 +117,13 @@ export function hostSnapshot() {
   const now = Date.now();
   if (snapCache.p && now - snapCache.at < SNAP_TTL_MS) return snapCache.p;
   const p = measureHost().catch((err) => {
-    snapCache = { at: 0, p: null }; // don't serve a poisoned cache
+    snapCache = { at: 0, p: null };
     throw err;
   });
   snapCache = { at: now, p };
   return p;
 }
 
-/**
- * Declarative status for `#sys`.
- */
 export function getSystemWatchStatus() {
   return {
     enabled: running && isWatchEnabled("systemwatch"),
@@ -213,7 +162,6 @@ function withinCooldown(rule) {
 async function evaluate(snapshot) {
   const active = [];
 
-  // Bot process CPU — the real signal for an overloaded bot (0-100*cores).
   const cpu = snapshot.cpuPct;
   if (cpu >= CFG.cpuPanic) {
     if (bumpStreak("cpu") >= CFG.sustained) {
@@ -236,7 +184,6 @@ async function evaluate(snapshot) {
     resetStreak("cpu");
   }
 
-  // Host total CPU — informational only, never panic (busy desktop).
   const hcpu = snapshot.hostCpuPct;
   if (hcpu >= CFG.hostCpuWarn) {
     if (bumpStreak("hostCpu") >= CFG.sustained && !withinCooldown("hostCpu")) {
@@ -339,17 +286,15 @@ async function runSample() {
   const warns = active.filter((a) => a.level === "warn");
   const panics = active.filter((a) => a.level === "panic");
 
-  // One aggregated warning message per sample (never spam the log group).
   if (warns.length) {
     const body = warns.map((w) => w.text).join("\n");
     lastReported[warns[0].rule] = Date.now();
     try {
       const { systemLog } = await import("../utils/logGroup.js");
       await systemLog("warn", body);
-    } catch { /* ignore */ }
+    } catch {  }
   }
 
-  // Escalate the worst through the core-panic mechanism (grace + watchdog apply).
   if (panics.length) {
     const worst = panics[0];
     lastReported[worst.rule] = Date.now();
@@ -366,9 +311,6 @@ async function runSample() {
   }
 }
 
-/**
- * Start the host health monitor. Idempotent.
- */
 export async function startSystemMonitor() {
   if (running) return;
   if (process.env.SYSTEM_WATCH === "off") {

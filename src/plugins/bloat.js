@@ -1,7 +1,4 @@
-/**
- * ONYX BLOAT CORE — a pile of useless commands walled off in #bloatmode
- * All registered as type "bloat" and hidden from the main menu.
- */
+
 
 import { command, getCommandsByType } from "../plugins.js";
 import {

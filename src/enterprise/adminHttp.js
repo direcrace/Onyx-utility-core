@@ -1,18 +1,4 @@
-/**
- * Admin HTTP + Dev Console — health, metrics, audit (token-protected).
- * Bind localhost by default.
- *
- *   GET  /health             open (no token) localhost
- *   GET  /ui *.css *.js      Dev Console web page + static assets (?token=)
- *   GET  /api/status         live snapshot (main + minis + flags)
- *   GET  /api/dashboard      aggregated dashboard payload (minis + stats + audit + bans)
- *   GET  /api/stats          time-series + hourly aggregates + flag summary
- *   GET  /api/bans           global bot bans
- *   POST /api/action         run a dev-console action
- *   GET  /api/events         SSE live console log stream
- *   GET  /api/help           supported actions
- *   GET  /metrics /flags /policies /audit
- */
+
 
 import http from "http";
 import fs from "fs";
@@ -50,8 +36,6 @@ import {
 
 let server = null;
 
-// --- static dashboard assets (read once at boot) -----------------------------
-
 const DASH_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "dashboard");
 const STATIC_MIME = {
   ".html": "text/html; charset=utf-8",
@@ -61,7 +45,7 @@ const STATIC_MIME = {
   ".png": "image/png",
   ".ico": "image/x-icon",
 };
-const staticCache = new Map(); // url -> { mime, body }
+const staticCache = new Map();
 
 function loadStatic() {
   if (staticCache.size) return;
@@ -89,12 +73,6 @@ function auth(req, token) {
   return url.searchParams.get("token") === token;
 }
 
-/**
- * Resolve which tier this request authenticated as.
- *   null      — not authenticated
- *   "creator" — ADMIN_HTTP_TOKEN (full access)
- *   "operator" — ADMIN_OPERATOR_TOKEN (restricted dev-console tier)
- */
 function resolveRole(req) {
   const creator = process.env.ADMIN_HTTP_TOKEN || "";
   if (creator && auth(req, creator)) return "creator";
@@ -103,9 +81,6 @@ function resolveRole(req) {
   return null;
 }
 
-/** Dev-console actions only the creator (host) token may run (see rcMonitor.js). */
-
-/** JL1-style watching denial used when an operator hits a creator-only action. */
 function watchedDenial(action) {
   return {
     ok: false,
@@ -125,7 +100,6 @@ function json(res, code, body) {
   res.end(JSON.stringify(body, null, 2));
 }
 
-/** Read a JSON request body (best effort) → merges with query params. */
 function readBody(req) {
   return new Promise((resolve) => {
     let data = "";
@@ -173,10 +147,10 @@ function handleSSE(req, res, token) {
     clearInterval(heartbeat);
     try {
       unsub?.();
-    } catch { /* ignore */ }
+    } catch {  }
     try {
       res.end();
-    } catch { /* ignore */ }
+    } catch {  }
   };
   req.on("close", cleanup);
   req.on("error", cleanup);
@@ -204,7 +178,6 @@ export function startAdminHttp() {
       const url = new URL(req.url || "/", `http://${host}`);
       const path = url.pathname;
 
-      // Health is open on localhost only (still require token if remotely bound)
       if (path === "/health") {
         const ff = await checkFfmpeg();
         return json(res, 200, {
@@ -219,11 +192,6 @@ export function startAdminHttp() {
         });
       }
 
-      // ----- Self-service onboarding (public invite links) -----------------
-      // Public surface ONLY: the /invite/<token>/… page + its pairing API.
-      // Everything else on this port stays token-protected. The page delivers
-      // the pairing code inline, so nobody ever has to DM the main with #pair.
-      // Rate limiting + per-token caps happen inside invites.js.
       if (path.startsWith("/invite/")) {
         const segs = path.slice("/invite/".length).split("/").filter(Boolean);
         const token = decodeURIComponent(segs[0] || "");
@@ -242,8 +210,6 @@ export function startAdminHttp() {
         return json(res, 404, { error: "not_found" });
       }
 
-      // Static dashboard assets (client code only — the API surface below
-      // stays token-protected).
       if (path === "/styles.css" || path === "/app.js" || path === "/favicon.svg") {
         loadStatic();
         const entry = staticCache.get(path);
@@ -257,7 +223,6 @@ export function startAdminHttp() {
         return json(res, 401, { error: "unauthorized" });
       }
 
-      // ----- Dev Console ------------------------------------------------
       if (path === "/ui" || path === "/index.html") {
         loadStatic();
         const entry = staticCache.get("/index.html");
@@ -266,10 +231,6 @@ export function startAdminHttp() {
         return res.end(entry.body);
       }
 
-      // ----- Temporal media cache -------------------------------------
-      // Served ONLY through the in-memory index (session + log id, both
-      // decoded from the path) — never via user-supplied file paths. The
-      // bytes follow the RAM-log lifecycle: they die with the process.
       if (path.startsWith("/media/")) {
         if (role !== "creator") return json(res, 403, { error: "creator-only" });
         const { getMedia } = await import("./mediaCache.js");
@@ -321,7 +282,7 @@ export function startAdminHttp() {
         try {
           const { listFlaggedUsers } = await import("../multi/miniMonitor.js");
           userFlags = await listFlaggedUsers();
-        } catch { /* ignore */ }
+        } catch {  }
         const { getPrefix, getBotName } = await import("../config/constants.js");
         return json(res, 200, {
           generated_at: Date.now(),
@@ -349,7 +310,7 @@ export function startAdminHttp() {
         try {
           const { getBotName } = await import("../config/constants.js");
           localName = getBotName() || localName;
-        } catch { /* keep default */ }
+        } catch {  }
         const self = selfSnapshot(snap.main, snap.minis, BOT_INFO.VERSION);
         self.name = localName;
         const all = [self, ...peers];
@@ -369,18 +330,11 @@ export function startAdminHttp() {
         });
       }
 
-      // ----- Fleet instance switcher ------------------------------------
-      // "Same dashboard, switched main": this daemon forwards requests to the
-      // chosen instance using that instance's admin token (kept server-side,
-      // never shipped to the browser). Every panel then shows that instance
-      // exactly as if it were the local one.
       if (path.startsWith("/api/proxy/")) {
         const { fleetPeers } = await import("./fleet.js");
         const segs = path.slice("/api/proxy/".length).split("/").filter(Boolean);
         const name = segs[0] ? decodeURIComponent(segs[0]) : "";
-        // The dashboard prefixes its API paths with "/api/" — accept both
-        // `/api/proxy/<name>/<sub>` (short) and `/api/proxy/<name>/api/<sub>`
-        // (what the switcher actually sends) so nothing 404s.
+
         let idx = 1;
         if (segs[1] === "api") idx = 2;
         const sub = segs[idx] || "";
@@ -464,9 +418,8 @@ export function startAdminHttp() {
         const actor = role === "creator" ? "web:creator" : "web:operator";
         const isOperator = role === "operator";
 
-        // ------ Remote-control safeguard (operator tier) -------------------
         if (isOperator) {
-          // explicit arm (the real "yes I meant it" — needed for CONFIRM_REQUIRED)
+
           if (action === "rc.arm") {
             const target = String(params.target || "").trim();
             if (!target) return json(res, 400, { ok: false, confirm: true, error: "target action required" });
@@ -495,16 +448,14 @@ export function startAdminHttp() {
               chat: null,
               meta: { source: "web", req: url.pathname },
             });
-          } catch { /* audit best effort */ }
+          } catch {  }
           try {
             const { systemLog } = await import("../utils/logGroup.js");
             await systemLog("warn", `🚨 [CREATOR] operator-token tried *${action}* on the web console`, "logged via /api/action");
-          } catch { /* ignore */ }
+          } catch {  }
           return json(res, 403, watchedDenial(action));
         }
 
-        // Operators may only `config.set` whitelisted keys — freeform `config:*`
-        // KV writes can break the bot and stay creator-only.
         if (isOperator && action === "config.set" && !OPERATOR_CONFIG_KEYS.has(String(params.key || "").toLowerCase().trim())) {
           try {
             const { writeAudit } = await import("./audit.js");
@@ -515,18 +466,14 @@ export function startAdminHttp() {
               chat: null,
               meta: { source: "web", req: url.pathname },
             });
-          } catch { /* audit best effort */ }
+          } catch {  }
           try {
             const { systemLog } = await import("../utils/logGroup.js");
             await systemLog("warn", `🚨 [CREATOR] operator-token tried *config.set ${String(params.key || "?")}* on the web console`, "logged via /api/action");
-          } catch { /* ignore */ }
+          } catch {  }
           return json(res, 403, watchedDenial("config.set:" + String(params.key || "?")));
         }
 
-        // Danger-sensitive actions need an armed confirm first (server-side).
-        // send.chat to a group/community/broadcast is treated like one too —
-        // the safety monitor has to be everywhere, so group-wide blind sends
-        // can never fire without an explicit arm.
         const groupSend =
           action === "send.chat" &&
           /@g\.us$|@broadcast$/.test(String(params?.to || ""));
@@ -543,7 +490,6 @@ export function startAdminHttp() {
           });
         }
 
-        // Score the operator's action through the rc monitor.
         if (isOperator) {
           const g = await guardRcAction(actor, action, { req: path });
           if (!g.ok) {
@@ -561,15 +507,10 @@ export function startAdminHttp() {
 
         const result = await runDevAction(action, { ...params, actor: params.actor || actor });
 
-        // Attach the shareable invite origin to freshly minted links so the
-        // dashboard can show a copy-ready URL (uses the origin the operator
-        // actually reached this server through).
         if (action === "invite.create" && result?.ok && result.data?.token) {
           result.data.url = `${url.protocol}//${url.host}/invite/${result.data.token}`;
         }
 
-        // Every "send as bot" is audited, whatever tier ran it — the monitor
-        // follows the message, not just the console action.
         if (action === "send.chat") {
           try {
             const { writeAudit } = await import("./audit.js");
@@ -587,13 +528,12 @@ export function startAdminHttp() {
                 source: "web",
               },
             });
-          } catch { /* audit best effort */ }
+          } catch {  }
         }
 
         return json(res, result.ok ? 200 : 400, result);
       }
 
-      // ----- Legacy header endpoints ------------------------------------
       if (path === "/metrics" && url.searchParams.get("format") === "prom") {
         res.writeHead(200, { "Content-Type": "text/plain; version=0.0.4" });
         res.end(metricsPrometheus());

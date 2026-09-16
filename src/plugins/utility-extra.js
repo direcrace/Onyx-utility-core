@@ -1,6 +1,4 @@
-/**
- * Extra utilities: #fetch (owner-only URL dump), #vv (view-once recover), #del
- */
+
 
 import { command } from "../plugins.js";
 import {
@@ -15,9 +13,6 @@ import { BOT_INFO } from "../config/constants.js";
 
 const MAX_FETCH_BYTES = 4 * 1024 * 1024;
 
-/**
- * #fetch <url> — fetch and dump any URL/API response (owner only)
- */
 command(
   { pattern: "fetch", fromMe: true, desc: "Fetch a URL / API endpoint (owner)", type: "misc" },
   async (message, conn) => {
@@ -71,9 +66,6 @@ command(
   }
 );
 
-/**
- * #vv — recover a view-once image/video by replying to it
- */
 command(
   { pattern: "vv", fromMe: false, desc: "Recover a view-once media (reply to it)", type: "media" },
   async (message, conn) => {
@@ -108,9 +100,6 @@ command(
   }
 );
 
-/**
- * #del — delete the replied message (or the command itself)
- */
 command(
   { pattern: "del", fromMe: false, desc: "Delete a message (reply to it)", type: "admin", groupOnly: true, adminOnly: true, botAdminRequired: true },
   async (message, conn) => {
@@ -126,7 +115,7 @@ command(
         };
         await conn.sendMessage(message.from, { delete: targetKey });
         return;
-      } catch { /* fall through to command-message delete */ }
+      } catch {  }
     }
     try {
       await conn.sendMessage(message.from, { delete: message.key });

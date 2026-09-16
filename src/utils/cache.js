@@ -1,12 +1,5 @@
-/**
- * Tiny in-memory TTL + max-size caches
- */
 
-/**
- * @param {object} options
- * @param {number} [options.ttlMs] - Entry time-to-live in ms
- * @param {number} [options.max] - Max entries (evict oldest)
- */
+
 export function createTtlCache({ ttlMs = 5 * 60 * 1000, max = 50 } = {}) {
   const store = new Map();
 
@@ -32,7 +25,7 @@ export function createTtlCache({ ttlMs = 5 * 60 * 1000, max = 50 } = {}) {
         store.delete(key);
         return undefined;
       }
-      // Refresh insertion order for LRU-ish eviction
+
       store.delete(key);
       store.set(key, entry);
       return entry.value;
@@ -59,13 +52,11 @@ export function createTtlCache({ ttlMs = 5 * 60 * 1000, max = 50 } = {}) {
   };
 }
 
-/** Group metadata cache (~3 min, max 50) */
 export const groupCache = createTtlCache({
   ttlMs: 3 * 60 * 1000,
   max: 50,
 });
 
-/** Message cache for getMessage retries (~100 entries, 5 min) */
 export const msgCache = createTtlCache({
   ttlMs: 5 * 60 * 1000,
   max: 100,

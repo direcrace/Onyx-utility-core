@@ -4,10 +4,6 @@ dotenv.config();
 
 const DATABASE_URL = process.env.DATABASE_URL || "./database.db";
 
-/**
- * Detect whether DATABASE_URL points at Postgres.
- * Local / default path uses better-sqlite3 (no Sequelize).
- */
 export function isPostgresUrl(url = DATABASE_URL) {
   if (!url || typeof url !== "string") return false;
   const normalized = url.trim().toLowerCase();
@@ -19,10 +15,9 @@ export function isPostgresUrl(url = DATABASE_URL) {
 
 const USE_POSTGRES = isPostgresUrl(DATABASE_URL);
 
-/** Local sqlite file path when not using Postgres */
 export function getSqlitePath(url = DATABASE_URL) {
   if (!url || url === "./database.db") return "./database.db";
-  // File path or file: URL
+
   if (url.startsWith("file:")) {
     return url.slice("file:".length);
   }

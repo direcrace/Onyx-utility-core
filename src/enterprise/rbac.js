@@ -1,7 +1,4 @@
-/**
- * RBAC — roles: owner > admin > mod > user
- * Capabilities gate sensitive actions.
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 import {
@@ -29,7 +26,7 @@ export const CAPABILITIES = {
   user: [],
 };
 
-const KEY = "rbac_roles"; // { "9198...": "admin" }
+const KEY = "rbac_roles";
 
 async function loadMap() {
   const m = await kvGet(KEY);
@@ -63,13 +60,10 @@ export async function listRoles() {
   return loadMap();
 }
 
-/**
- * Resolve effective role for a message
- */
 export async function resolveRole(message, conn) {
   if (isOwnerMessage(message, conn) || message?.key?.fromMe) return "owner";
   if (await isSudoMessage(message, conn)) {
-    // sudo defaults to admin unless mapped
+
     const candidates = [...senderCandidates(message, conn)];
     const map = await loadMap();
     for (const c of candidates) {

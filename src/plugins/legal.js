@@ -1,11 +1,4 @@
-/**
- * Legal docs: `#terms` and `#privacy`.
- *
- * Default: a condensed, bilingual summary (one message).
- * `#terms full` / `#privacy full`: the complete document from the repo files,
- * sent in chunks. Chunks are paced so the multi-message send never trips the
- * core-panic send-burst condition (4 text messages inside 2 seconds).
- */
+
 
 import path from "path";
 import fs from "fs/promises";

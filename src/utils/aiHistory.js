@@ -1,6 +1,4 @@
-/**
- * Persistent AI conversation history + chatbot settings (BotKV)
- */
+
 
 import { kvGet, kvSet } from "../database/botKv.js";
 

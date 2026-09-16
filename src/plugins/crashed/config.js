@@ -3,10 +3,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const config = {
-  // Whitelist of user IDs allowed to use crashed commands
+
   WHITELIST: (process.env.CRASHED_WHITELIST || "").split(",").filter(Boolean).map(id => id.trim()),
   
-  // Command-specific audio files (destructive commands)
+
   COMMAND_AUDIO: {
     nuke: process.env.CRASHED_AUDIO_NUKE || "./assets/dms.mp3",
     take: process.env.CRASHED_AUDIO_TAKE || "./assets/take.mp3",
@@ -15,7 +15,7 @@ const config = {
     groupinfo: process.env.CRASHED_AUDIO_GROUPINFO || "./assets/dms.mp3"
   },
   
-  // Commands that trigger audio playback (destructive ops)
+
   AUDIO_COMMANDS: [
     "nuke",
     "take",
@@ -24,7 +24,7 @@ const config = {
     "groupinfo"
   ],
   
-  // All available crashed commands
+
   ALL_COMMANDS: [
     "ping",
     "menu",

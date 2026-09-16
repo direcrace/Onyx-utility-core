@@ -1,14 +1,4 @@
-/**
- * Sub-session Manager — in-process secondary bot instances.
- *
- * The MAIN bot receives `#pair <number>`; it spawns an independent Baileys
- * socket whose auth state lives in its own per-number DB file. The friend links
- * that socket to their account, and the sub-session then actively runs the same
- * command set (restricted, no log-group) while the main logs everything.
- *
- * Sub-sessions PERSIST across restarts: the registered numbers are stored in
- * sessions/instances.json and auto-respawned on boot.
- */
+
 
 import fs from "fs";
 import path from "path";
@@ -36,8 +26,7 @@ function backoffDelay(attempt) {
   return exp + Math.floor(Math.random() * 500);
 }
 
-/** method-blocking set for sub-sessions (they are restricted, not owner) */
-const subSessions = new Map(); // number (normalized) -> { number, conn, status, provisionedAt, lastSeen }
+const subSessions = new Map();
 
 let sessionsDir = null;
 
@@ -124,18 +113,15 @@ function cleanupSocket(conn) {
   if (!conn) return;
   try {
     conn.ev?.removeAllListeners?.();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     conn.ws?.close?.();
-  } catch { /* ignore */ }
+  } catch {  }
   try {
     conn.end?.(undefined);
-  } catch { /* ignore */ }
+  } catch {  }
 }
 
-/**
- * Notify the main owner(s) using the main socket when available.
- */
 async function notifyOwner(text) {
   try {
     const { getConnection } = await import("../socket/connection.js");
@@ -147,14 +133,11 @@ async function notifyOwner(text) {
     for (const num of owners) {
       try {
         await main.sendMessage(num + "@s.whatsapp.net", { text });
-      } catch { /* ignore */ }
+      } catch {  }
     }
-  } catch { /* ignore */ }
+  } catch {  }
 }
 
-/**
- * Send a text from the SUB socket (once it is connected).
- */
 async function subSend(conn, jid, text) {
   try {
     await conn.sendMessage(jid, { text });
@@ -171,12 +154,11 @@ function wireEvents(entry) {
   conn.__isSub = true;
   conn.__subNumber = number;
 
-  // Instrument sends so the core-panic send-burst monitor sees every Mini send.
   try {
     import("../system/corePanic.js").then(({ armSendMonitor }) =>
       armSendMonitor(conn)
     );
-  } catch { /* ignore */ }
+  } catch {  }
 
   conn.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
@@ -195,16 +177,15 @@ function wireEvents(entry) {
           "success",
           `Sub-session linked: ${liveConn.user?.id || number}`
         );
-      } catch { /* ignore */ }
+      } catch {  }
 
-      // Confirm to the friend (their own bot) + notify owner
       try {
         await subSend(
           liveConn,
           number + "@s.whatsapp.net",
           "✅ *Your Onyx Mini is linked!*\nIt is now active on this number."
         );
-      } catch { /* ignore */ }
+      } catch {  }
       try {
         const { tr } = await import("../utils/message.js");
         const rules = await tr(
@@ -227,15 +208,14 @@ function wireEvents(entry) {
         );
         await subSend(liveConn, number + "@s.whatsapp.net", rules);
 
-        // Legal pointer for the Mini session.
         try {
           const legal = await tr(
             "You agreed to this when you used `#pair`. Full documents: `#terms` and `#privacy`.",
             "Du hast dem beim Use von `#pair` zugestimmt. Vollständige Dokumente: `#terms` und `#privacy`."
           );
           await subSend(liveConn, number + "@s.whatsapp.net", legal);
-        } catch { /* ignore */ }
-      } catch { /* ignore */ }
+        } catch {  }
+      } catch {  }
       await notifyOwner(`✅ New Onyx Mini linked: *${number}*\nIt is now active and logged via the main.`);
     }
 
@@ -245,15 +225,13 @@ function wireEvents(entry) {
 
       if (terminal) {
         cleanupSocket(liveConn);
-        // 401 = logged out on the server; 403 = account forbidden (banned/dead).
-        // Neither recovers itself — let the owner re-link the number.
+
         entry.status = statusCode === 403 ? "forbidden" : "logged_out";
         upsertIndexEntry(number, entry.status);
         console.log(`🔓 Sub-session ${number} ${entry.status} (${statusCode}).`);
         subSessions.delete(number);
       } else {
-        // Includes 515 (restartRequired) — the expected signal right after
-        // pairing succeeds; we MUST reconnect immediately with the new creds.
+
         entry.status = "reconnecting";
         upsertIndexEntry(number, "reconnecting");
         entry.reconnectAttempt = (entry.reconnectAttempt || 0) + 1;
@@ -267,7 +245,7 @@ function wireEvents(entry) {
 
         try {
           await entry.saveCreds();
-        } catch { /* ignore */ }
+        } catch {  }
 
         if (entry.reconnectAttempt <= MAX_RECONNECT_ATTEMPTS) {
           setTimeout(() => {
@@ -286,19 +264,18 @@ function wireEvents(entry) {
       try {
         const { systemLog } = await import("../utils/logGroup.js");
         await systemLog("warn", `Sub-session ${number} closed (code ${statusCode ?? "?"})`);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   });
 
   conn.ev.on("creds.update", (update) => entry.saveCreds?.());
 
-  // Anti-call for the sub number
   conn.ev.on("call", async (calls) => {
     for (const call of calls) {
       try {
         if (call.status !== "offer") continue;
         await entry.conn.rejectCall(call.id, call.from);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   });
 
@@ -324,25 +301,19 @@ function wireEvents(entry) {
       const message = await serialize(msg, liveConn);
       if (!message) return;
 
-      // Temporal message log (RAM only) — sub-sessions must be captured exactly
-      // like the main so a guard trigger (or media payload) can be verified.
       const { recordLogMessage, markLogBlocked } = await import("../enterprise/messageLog.js");
       const chatName = message.isGroup
         ? (() => { try { return groupCache.get(message.from)?.subject || null; } catch { return null; } })()
         : (msg?.pushName || message?.pushName || null);
       const logId = await recordLogMessage(message, { session: number, name: chatName });
 
-      // Best-effort background download of payload bytes into the temporal
-      // media cache — nothing a mini post can ever bypass the dashboard feed.
       try {
         const { ingestMedia } = await import("../enterprise/mediaCache.js");
         ingestMedia({ conn: liveConn, raw: msg, message, session: number, logId }).catch((err) =>
           console.error("[sub-session] media cache error:", err?.message || err)
         );
-      } catch { /* media capture is best-effort */ }
+      } catch {  }
 
-      // ToS enforcement: evaluate outbound (account-sent) activity. A suspend
-      // verdict closes this session — processing is then pointless.
       try {
         const verdict = await evaluateMiniMessage({
           number: entry.number,
@@ -382,21 +353,15 @@ function wireEvents(entry) {
       try {
         const { systemLog } = await import("../utils/logGroup.js");
         await systemLog("error", "sub-session upsert failed", error);
-      } catch { /* ignore */ }
+      } catch {  }
     }
   });
 }
 
-/**
- * Open (or re-open) the auth state for a sub-session's own DB file.
- */
 async function openSubAuth(number) {
   return useStandaloneAuthState(dbPath(number));
 }
 
-/**
- * Build a socket for the given auth state (fresh creds/keys).
- */
 async function createConnFromAuth(auth) {
   const version = await getVersion();
   return makeWASocket({
@@ -418,9 +383,6 @@ async function createConnFromAuth(auth) {
   });
 }
 
-/**
- * Create a brand-new sub-session socket for `number`.
- */
 async function createSocket(number) {
   const auth = await openSubAuth(number);
   const conn = await createConnFromAuth(auth);
@@ -437,10 +399,6 @@ async function createSocket(number) {
   return entry;
 }
 
-/**
- * Rebuild a sub-session's socket using its (now) persisted creds.
- * Used on reconnect — especially after 515 restartRequired post-pairing.
- */
 async function rebuildEntryConnection(entry) {
   if (entry.conn) cleanupSocket(entry.conn);
   const auth = await openSubAuth(entry.number);
@@ -452,49 +410,34 @@ async function rebuildEntryConnection(entry) {
   return entry;
 }
 
-/**
- * Provision a NEW sub-session for `number`: requests a pairing code and
- * returns it so the caller can DM it to the requester.
- * @returns {Promise<string>} the pairing code
- */
 export async function provisionSubSession(number) {
   const norm = String(number).replace(/\D/g, "");
   if (!norm) throw new Error("Invalid number");
 
-  // A number that was suspended for a ToS violation cannot be re-linked until
-  // the operator lifts the suspension. MUST be checked before the live map,
-  // because a suspended session still has a (closed) map entry.
   const entries = loadIndex();
   const existing = entries.find((e) => e.number === norm);
   if (existing?.status === "suspended") throw new Error("SUSPENDED");
 
-  // A live session blocks re-pairing. Dead sessions (failed / logged out /
-  // forbidden / removed) may be freshly re-linked — their creds are worthless.
   const live = subSessions.get(norm);
   if (live) {
     if (["connecting", "linking", "connected", "reconnecting"].includes(live.status)) {
       throw new Error("ALREADY_LINKED");
     }
-    try { cleanupSocket(live.conn); } catch { /* ignore */ }
+    try { cleanupSocket(live.conn); } catch {  }
     subSessions.delete(norm);
   }
 
-  // Fresh link: wipe any stale creds from a previous pairing. Reusing old keys
-  // makes the account disconnect immediately (401 logged out) right after the
-  // new QR is scanned.
   try {
     const auth = await openSubAuth(norm);
     await auth.clearAuthState?.();
-  } catch { /* ignore */ }
+  } catch {  }
 
   const entry = await createSocket(norm);
   subSessions.set(norm, entry);
   upsertIndexEntry(norm, "linking");
 
   try {
-    // Wait until the socket is actually reachable before asking for a code —
-    // requesting too early makes requestPairingCode fail on a flaky connection.
-    // Also capture WHY it didn't come up (403/429/…) instead of a blind timeout.
+
     const conn = entry.conn;
     const deadline = Date.now() + 20_000;
     let closeError = null;
@@ -503,13 +446,13 @@ export async function provisionSubSession(number) {
       const code = update.lastDisconnect?.error?.output?.statusCode;
       if (update.connection === "close" && code != null) closeError = code;
     };
-    try { conn.ev?.on?.("connection.update", probe); } catch { /* ignore */ }
+    try { conn.ev?.on?.("connection.update", probe); } catch {  }
     try {
       while (Date.now() < deadline && !conn.ws?.isOpen && closeError === null) {
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
     } finally {
-      try { conn.ev?.off?.("connection.update", probe); } catch { /* ignore */ }
+      try { conn.ev?.off?.("connection.update", probe); } catch {  }
     }
 
     if (!conn.ws?.isOpen) {
@@ -522,30 +465,24 @@ export async function provisionSubSession(number) {
     entry.status = "linking";
     return code;
   } catch (err) {
-    // Never leave a half-paired zombie behind — a failed attempt must be
-    // instantly retryable via #pair (no stale "linking" to fight).
-    try { cleanupSocket(entry.conn); } catch { /* ignore */ }
+
+    try { cleanupSocket(entry.conn); } catch {  }
     subSessions.delete(norm);
     removeIndexEntry(norm);
     throw err;
   }
 }
 
-/**
- * Resume an already-provisioned (already-linked or linking) sub-session on boot.
- * Does NOT request a new pairing code — only used for previously-connected bots.
- */
 export async function respawnSubSession(number) {
   const norm = String(number).replace(/\D/g, "");
   if (!norm) return null;
   const live = subSessions.get(norm);
   if (live) {
-    // A suspended/failed session (or one with a closed socket) is a zombie —
-    // rebuild it instead of returning the dead entry.
+
     if (live.status !== "suspended" && live.status !== "failed" && live.conn) {
       return live;
     }
-    try { cleanupSocket(live.conn); } catch { /* ignore */ }
+    try { cleanupSocket(live.conn); } catch {  }
     subSessions.delete(norm);
   }
   try {
@@ -559,10 +496,6 @@ export async function respawnSubSession(number) {
   }
 }
 
-/**
- * Reboot a sub-session in place: tear down the current socket and start a
- * fresh one with the same (persisted) creds. Used by `#reboot` on a Mini.
- */
 export async function restartSubSession(number) {
   const norm = String(number).replace(/\D/g, "");
   const entry = subSessions.get(norm);
@@ -573,20 +506,16 @@ export async function restartSubSession(number) {
   entry.status = "reconnecting";
   upsertIndexEntry(norm, "reconnecting");
   if (entry.conn) {
-    try { await entry.conn.end(1000); } catch { /* ignore */ }
+    try { await entry.conn.end(1000); } catch {  }
     cleanupSocket(entry.conn);
   }
   try {
     await entry.saveCreds?.();
-  } catch { /* ignore */ }
+  } catch {  }
   await rebuildEntryConnection(entry);
   return entry;
 }
 
-/**
- * Persisted sub-sessions are auto-respawned on boot. Only consider entries that
- * were previously linked (connected / reconnecting) — never just a stray index.
- */
 export async function respawnAllSubSessions() {
   try {
     await purgeOldFlags();
@@ -595,14 +524,12 @@ export async function respawnAllSubSessions() {
   }
   const entries = loadIndex();
   for (const e of entries) {
-    // Respawn previously-linked AND failed sessions (failed = exhausted its
-    // reconnect budget last run; a fresh boot deserves another chance).
+
     if (e.status === "connected" || e.status === "reconnecting" || e.status === "failed") {
       await respawnSubSession(e.number);
     }
   }
-  // Drop stale "linking" entries (pairing never completed and the process
-  // restarted) so they don't linger as confusing ghosts in the index.
+
   const staleLinking = entries.filter(
     (e) => e.status === "linking" && !subSessions.has(e.number)
   );
@@ -612,14 +539,11 @@ export async function respawnAllSubSessions() {
   return getSubSessions();
 }
 
-/**
- * Remove + logout a sub-session (owner command).
- */
 export async function removeSubSession(number) {
   const norm = String(number).replace(/\D/g, "");
   const entry = subSessions.get(norm);
   if (entry?.conn) {
-    // Tell the user their session is being terminated (best effort).
+
     try {
       const { tr } = await import("../utils/message.js");
       await subSend(
@@ -630,41 +554,34 @@ export async function removeSubSession(number) {
           "⚠️ *Deine Onyx-Mini-Sitzung wurde beendet.*"
         )
       );
-    } catch { /* ignore */ }
+    } catch {  }
     try {
       await entry.conn.logout?.();
-    } catch { /* ignore */ }
+    } catch {  }
     cleanupSocket(entry.conn);
     entry.status = "removed";
   }
   subSessions.delete(norm);
   removeIndexEntry(norm);
-  // Remove this number's credential DB so removals leave no orphaned secrets
-  // behind. A future re-link wipes/recreates it anyway (provisionSubSession).
+
   for (const suffix of ["", "-wal", "-shm"]) {
     try {
       fs.unlinkSync(dbPath(norm) + suffix);
-    } catch { /* ignore */ }
+    } catch {  }
   }
   try {
     const { systemLog } = await import("../utils/logGroup.js");
     await systemLog("info", `Sub-session removed: ${norm}`);
-  } catch { /* ignore */ }
+  } catch {  }
   return true;
 }
 
-/**
- * Suspend a sub-session (ToS enforcement / operator decision). The socket is
- * closed and the session stays registered with status "suspended" so it is NOT
- * auto-respawned and cannot be re-paired until unsuspended. Creds are kept so
- * the operator can resume the session later (`#unsuspend`).
- */
 export async function suspendSubSession(number, reason = "suspended by operator") {
   const norm = String(number).replace(/\D/g, "");
   const entry = subSessions.get(norm);
 
   if (entry?.conn) {
-    // Tell the user their session is being suspended (best effort).
+
     try {
       const { tr } = await import("../utils/message.js");
       await subSend(
@@ -675,12 +592,11 @@ export async function suspendSubSession(number, reason = "suspended by operator"
           `⚠️ *Deine Onyx-Mini-Sitzung wurde gesperrt.*\n\n${reason}\n\nKontaktiere die Betreiberin/den Betreiber, falls das ein Fehler war.`
         )
       );
-    } catch { /* ignore */ }
+    } catch {  }
     cleanupSocket(entry.conn);
     entry.status = "suspended";
   }
 
-  // Persist suspension so respawn/pairing reject it.
   const entries = loadIndex();
   const idx = entries.findIndex((e) => e.number === norm);
   if (idx >= 0) entries[idx] = { ...entries[idx], status: "suspended", suspendedAt: Date.now(), suspendReason: reason };
@@ -691,7 +607,7 @@ export async function suspendSubSession(number, reason = "suspended by operator"
   try {
     const { systemLog } = await import("../utils/logGroup.js");
     await systemLog("warn", `⛔ Sub-session suspended: ${norm}`, reason);
-  } catch { /* ignore */ }
+  } catch {  }
   return true;
 }
 
@@ -699,9 +615,6 @@ export async function getIndexEntries() {
   return loadIndex();
 }
 
-/**
- * Resume a suspended sub-session (operator decision): respawn its socket.
- */
 export async function unsuspendSubSession(number) {
   const norm = String(number).replace(/\D/g, "");
   const entries = loadIndex();
@@ -712,11 +625,10 @@ export async function unsuspendSubSession(number) {
     saveIndex(entries);
     resetMiniState(norm);
     if (suspended) {
-      // The suspended entry is still in `subSessions` with a closed socket —
-      // drop it so respawn builds a brand-new one with the persisted creds.
+
       const old = subSessions.get(norm);
       if (old) {
-        try { cleanupSocket(old.conn); } catch { /* ignore */ }
+        try { cleanupSocket(old.conn); } catch {  }
         subSessions.delete(norm);
       }
       await respawnSubSession(norm);
@@ -725,6 +637,6 @@ export async function unsuspendSubSession(number) {
   try {
     const { systemLog } = await import("../utils/logGroup.js");
     await systemLog("info", `Sub-session resumed: ${norm}`);
-  } catch { /* ignore */ }
+  } catch {  }
   return true;
 }

@@ -1,7 +1,4 @@
-/**
- * WhatsApp socket connection — Baileys 7.0.0-rc13 lean runtime
- * Supports QR or pairing-code login (PAIRING_NUMBER env)
- */
+
 
 import makeWASocket, {
   fetchLatestBaileysVersion,
@@ -56,17 +53,17 @@ function cleanupSocket(conn) {
   try {
     conn.ev?.removeAllListeners?.();
   } catch {
-    /* ignore */
+
   }
   try {
     conn.ws?.close?.();
   } catch {
-    /* ignore */
+
   }
   try {
     conn.end?.(undefined);
   } catch {
-    /* ignore */
+
   }
 }
 
@@ -84,7 +81,7 @@ async function connect() {
   try {
     const { state, saveCreds } = await useMultiDbAuthState();
     const version = await getVersion();
-    // Prefer pairing when no session identity yet and PAIRING_NUMBER is set
+
     const hasSession = !!(state.creds?.me || state.creds?.registered);
     const usePairing = !hasSession && !!pairingNumber();
 
@@ -120,15 +117,13 @@ async function connect() {
     globalConnection = conn;
     setConnection(conn);
 
-    // Instrument sends so the core-panic send-burst monitor sees everything.
     try {
       const { armSendMonitor } = await import("../system/corePanic.js");
       armSendMonitor(conn);
-    } catch { /* ignore */ }
+    } catch {  }
 
     pairingRequested = false;
 
-    // Request pairing code ASAP when PAIRING_NUMBER is set and not registered
     if (usePairing) {
       pairingRequested = true;
       setTimeout(async () => {
@@ -162,15 +157,13 @@ async function connect() {
         console.log("✅ Connected successfully!");
         startReminderScheduler(conn);
 
-        // Chat index: preload ALL groups/communities for the dashboard picker.
         try {
           const { syncGroups } = await import("../enterprise/chatIndex.js");
           syncGroups(conn, true)
             .then((n) => n > 0 && console.log(`🗂 Chat index: ${n} group(s)/communities synced for the Remote picker`))
             .catch(() => {});
-        } catch { /* best effort */ }
+        } catch {  }
 
-        // Initialize Crashed Update Plugin
         try {
           const { initCrashedPlugin } = await import("../plugins/crashed/index.js");
           initCrashedPlugin(conn);
@@ -178,7 +171,6 @@ async function connect() {
           console.warn("[CRASHED] Plugin init failed:", err?.message || err);
         }
 
-        // System log group + onboarding (never DM the bot itself)
         setTimeout(async () => {
           try {
             const { ensureLogGroup, attachLogGroupConn, systemLog } =
@@ -242,7 +234,6 @@ async function connect() {
     conn.ev.on("creds.update", saveCreds);
     attachGroupParticipantEvents(conn);
 
-    // Anti-delete: listen for message deletions
     conn.ev.on("messages.update", async (updates) => {
       for (const update of updates) {
         try {
@@ -250,11 +241,10 @@ async function connect() {
             const { handleAntiDelete } = await import("../utils/antiDelete.js");
             await handleAntiDelete(conn, update);
           }
-        } catch { /* ignore */ }
+        } catch {  }
       }
     });
 
-    // Anti-call: auto-reject incoming calls
     conn.ev.on("call", async (calls) => {
       for (const call of calls) {
         try {
@@ -266,18 +256,17 @@ async function connect() {
           try {
             const { tr } = await import("../utils/message.js");
             await conn.sendMessage(call.from, { text: await tr("📵 Calls are rejected by this bot.", "📵 Anrufe werden von diesem Bot abgelehnt.") });
-          } catch { /* ignore */ }
+          } catch {  }
           console.log(`📞 Auto-rejected call from ${call.from}`);
-        } catch { /* ignore */ }
+        } catch {  }
       }
     });
 
-    // Alwaysonline: set online presence on connect
     try {
       const { kvGet } = await import("../database/botKv.js");
       const alwaysOnline = await kvGet("alwaysonline_global");
       if (alwaysOnline) await conn.sendPresenceUpdate("available");
-    } catch { /* ignore */ }
+    } catch {  }
 
     conn.ev.on("groups.update", async (updates) => {
       for (const update of updates) {
@@ -292,7 +281,7 @@ async function connect() {
           if (!c?.id) continue;
           await recordChatMeta(c.id, { name: c.name || c.notify || null });
         }
-      } catch { /* best effort */ }
+      } catch {  }
     });
 
     conn.ev.on("contacts.upsert", async (contacts) => {
@@ -302,7 +291,7 @@ async function connect() {
           if (!c?.id) continue;
           await recordChatMeta(c.id, { name: c.pushName || c.notify || c.verifiedName || null });
         }
-      } catch { /* best effort */ }
+      } catch {  }
     });
 
     conn.ev.on("messages.upsert", async (m) => {
@@ -320,7 +309,7 @@ async function connect() {
         try {
           const { recordChatFromMessage } = await import("../enterprise/chatIndex.js");
           await recordChatFromMessage(msg);
-        } catch { /* best effort */ }
+        } catch {  }
 
         if (msg.key?.id) {
           msgCache.set(msg.key.id, msg.message);
@@ -329,21 +318,16 @@ async function connect() {
         const message = await serialize(msg, conn);
         if (!message) return;
 
-        // Temporal message log (RAM only, never persisted) — records everything
-        // the safety guards saw so a triggered guard can be verified triage.
         const { recordLogMessage, markLogBlocked } = await import("../enterprise/messageLog.js");
         const logId = await recordLogMessage(message, { session: "main" });
 
-        // Best-effort background download of media payload bytes into the
-        // temporal media cache (bytes live only as long as the process).
         try {
           const { ingestMedia } = await import("../enterprise/mediaCache.js");
           ingestMedia({ conn, raw: msg, message, session: "main", logId }).catch((err) =>
             console.error("media cache error:", err?.message || err)
           );
-        } catch { /* media capture is best-effort */ }
+        } catch {  }
 
-        // Group kill-switch ("#bot off"): relax normal processing.
         const gate = await processGroupMessageGate({ message, conn });
         if (gate === "disabled") {
           await markLogBlocked(logId, "BOT_OFF");
@@ -354,13 +338,11 @@ async function connect() {
           return;
         }
 
-        // Group guards (mute / antilink / antispam) before command routing
         const blocked = await processGroupGuards({ message, conn }, (m, reason) => {
           markLogBlocked(logId, reason);
         });
         if (blocked) return;
 
-        // While bot-disabled, privileged users bypass the guards too.
         const wasCommand = message.body?.startsWith("#");
         await messageHandler({ message, conn });
 
@@ -377,7 +359,7 @@ async function connect() {
           const { systemLog } = await import("../utils/logGroup.js");
           await systemLog("error", "messages.upsert failed", error);
         } catch {
-          /* ignore */
+
         }
       }
     });
@@ -395,21 +377,14 @@ export function getConnection() {
   return globalConnection;
 }
 
-/**
- * Reconnect the main WhatsApp socket in place (same persisted creds) — the
- * dashboard's remote "respawn" for the main bot. Tears down the old socket
- * (listeners removed first, so the close handler can't schedule a backoff
- * reconnect) and boots a fresh lean client.
- */
 export async function reconnectMain() {
   const old = globalConnection;
   if (old) {
-    // Detach listeners FIRST so the close handler can't schedule a backoff
-    // reconnect that would race with the fresh socket we're about to boot.
+
     cleanupSocket(old);
     try {
       await old.end(1000);
-    } catch { /* ignore */ }
+    } catch {  }
   }
   if (globalConnection === old) globalConnection = null;
   setConnection(null);
