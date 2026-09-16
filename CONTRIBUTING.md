@@ -11,7 +11,7 @@ Read the [README](README.md) (the changelog-style overview of what this fork cha
 
 ## Ground rules
 
-1. Search the [open issues](https://github.com/direcrace/Onyx-main/issues) and PRs first — duplicates get closed fast.
+1. Search the [open issues](https://github.com/direcrace/Onyx-utility-core/issues) and PRs first — duplicates get closed fast.
 2. Big feature ideas deserve an issue first, so we can argue about scope before anyone writes code.
 3. Never commit secrets. `.env`, `database.db`, `sessions/`, API keys and admin tokens stay out of git, always.
 4. Don't re-enable WhatsApp full-history sync, and don't dump big objects into the console — that's how the panic guards get tripped.
@@ -21,8 +21,8 @@ Read the [README](README.md) (the changelog-style overview of what this fork cha
 **Requirements:** Node.js ≥ 20, FFmpeg on `PATH`, Git.
 
 ```bash
-git clone https://github.com/direcrace/Onyx-main.git
-cd Onyx-main
+git clone https://github.com/direcrace/Onyx-utility-core.git
+cd Onyx-utility-core
 npm install
 cp .env.example .env   # then set at least OWNER_NUMBER
 npm run dev
@@ -96,7 +96,7 @@ If you found a vulnerability — especially anything that could expose a session
 
 Read [SECURITY.md](SECURITY.md) for the full policy. Short version:
 
-- Report privately via GitHub's [private vulnerability reporting](https://github.com/direcrace/Onyx-main/security/advisories/new).
+- Report privately via GitHub's [private vulnerability reporting](https://github.com/direcrace/Onyx-utility-core/security/advisories/new).
 - Include what's affected, how to trigger it, and the impact. No live secrets, no full session files, fake numbers only.
 - It's a solo project maintained in spare time: you'll get a real reply, but it may take a few days.
 - Hold public write-ups until the fix ships — a published leak is worse than the bug.

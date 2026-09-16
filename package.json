@@ -10,7 +10,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "repository": "https://github.com/direcrace/Onyx-main.git",
+  "repository": "https://github.com/direcrace/Onyx-utility-core.git",
   "author": "Nero Venero <Puma.yt11@gmail.com>",
   "license": "N-SAL-1.0",
   "private": false,

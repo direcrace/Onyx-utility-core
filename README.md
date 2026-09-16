@@ -8,7 +8,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2020-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0f0f0f)](https://nodejs.org/)
 [![Baileys](https://img.shields.io/badge/Baileys-7.0.0--rc13-25D366?style=for-the-badge&logo=whatsapp&logoColor=white&labelColor=0f0f0f)](https://github.com/WhiskeySockets/Baileys)
 [![License](https://img.shields.io/badge/License-N--SAL--v1.0-1e3a8a?style=for-the-badge&logo=open-source-initiative&logoColor=white&labelColor=0f0f0f)](LICENSE)
-[![Repo](https://img.shields.io/badge/direcrace-Onyx--main-0f0f0f?style=for-the-badge&logo=github&logoColor=white)](https://github.com/direcrace/Onyx-main)
+[![Repo](https://img.shields.io/badge/direcrace-Onyx--utility--core-0f0f0f?style=for-the-badge&logo=github&logoColor=white)](https://github.com/direcrace/Onyx-utility-core)
 
 This changelog documents **everything that is different in `onyx-core`** compared to its upstream base **X-Asena v4.0.0**. Onyx Core is a heavily extended fork of X-Asena: it renames the project, adds multi-account (**"Onyx Mini"**) support, a web dashboard / dev console, self-protection (**"core panic"**) systems, AI chat, games/economy, expanded moderation, and replaces the language set with English + German.
 
@@ -321,12 +321,12 @@ New default settings: `antilinkAction`, `antispamAction` (now `delete|warn|stric
 
 <div align="center">
 
-[![Issues](https://img.shields.io/badge/Issues-report-1e3a8a?style=for-the-badge&logo=github&labelColor=0f0f0f)](https://github.com/direcrace/Onyx-main/issues)
+[![Issues](https://img.shields.io/badge/Issues-report-1e3a8a?style=for-the-badge&logo=github&labelColor=0f0f0f)](https://github.com/direcrace/Onyx-utility-core/issues)
 [![Security](https://img.shields.io/badge/Security-policy-1e3a8a?style=for-the-badge&logo=github&labelColor=0f0f0f)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributing-read-8a2be2?style=for-the-badge&logo=github&labelColor=0f0f0f)](CONTRIBUTING.md)
 [![Changelog](https://img.shields.io/badge/Changelog-history-d4af37?style=for-the-badge&labelColor=0f0f0f)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/LICENSE-N--SAL--v1.0-1e3a8a?style=for-the-badge&labelColor=0f0f0f)](LICENSE)
 
-**Author:** Nero Venero · **Repo:** [direcrace/Onyx-main](https://github.com/direcrace/Onyx-main)
+**Author:** Nero Venero · **Repo:** [direcrace/Onyx-utility-core](https://github.com/direcrace/Onyx-utility-core)
 
 </div>

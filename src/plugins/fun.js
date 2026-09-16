@@ -135,9 +135,11 @@ command(
       if (!text || !text.includes("+")) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}emix 😅+🤔\``, `Benutzung: \`${BOT_INFO.PREFIX}emix 😅+🤔\``)); return; }
       const [emoji1, emoji2] = text.split("+").map((s) => s.trim());
       if (!emoji1 || !emoji2) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}emix 😅+🤔\``, `Benutzung: \`${BOT_INFO.PREFIX}emix 😅+🤔\``)); return; }
+      const tenorKey = process.env.TENOR_API_KEY;
+      if (!tenorKey) { await replyFail(conn, message, await tr("Emoji mix is not configured (missing TENOR_API_KEY).", "Emoji-Mischung ist nicht konfiguriert (TENOR_API_KEY fehlt).")); return; }
       try {
         const fetch = (await import("node-fetch")).default;
-        const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`);
+        const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(tenorKey)}&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`);
         const data = await res.json();
         if (!data.results?.length) { await replyFail(conn, message, await tr("No mix found.", "Keine Emoji-Mischung gefunden.")); return; }
         for (const r of data.results) {

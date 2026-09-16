@@ -8,7 +8,7 @@ Onyx Utility Core runs real WhatsApp accounts. A bug here isn't a to-do-app bug:
 
 Report privately instead:
 
-- GitHub private vulnerability reporting: [security/advisories/new](https://github.com/direcrace/Onyx-main/security/advisories/new)
+- GitHub private vulnerability reporting: [security/advisories/new](https://github.com/direcrace/Onyx-utility-core/security/advisories/new)
 - If you can't use GitHub for some reason, DM the maintainer (discord `directorace`) with a one-line summary; you'll be pointed at the private channel.
 
 ## What counts as a vulnerability here

@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/direcrace/Onyx-main/security/advisories/new
+    url: https://github.com/direcrace/Onyx-utility-core/security/advisories/new
     about: Something that could expose a session, a token, or someone's chats. Private report only — never file a public issue for security problems; this project handles real WhatsApp accounts.
   - name: Documentation (README)
-    url: https://github.com/direcrace/Onyx-main/blob/main/README.md
+    url: https://github.com/direcrace/Onyx-utility-core/blob/main/README.md
     about: The changelog-style README covers what changed in the fork, the env vars, and where everything lives.
