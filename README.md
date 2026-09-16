@@ -1,6 +1,6 @@
-# X-Asena
+# Onyx Utility core 
 
-Open-source WhatsApp bot built on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13**.
+WhatsApp bot built on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13**. and X-Asena (https://github.com/Neeraj-x0/X-Asena)
 
 Optimized for a lean Node process with SQLite (or Postgres) auth, a dedicated **system log group** for onboarding and diagnostics, and an optional **enterprise control plane** (audit, feature flags, RBAC, policies, metrics, backups).
 
@@ -42,8 +42,8 @@ sudo apt install ffmpeg       # Debian/Ubuntu
 ## Install
 
 ```bash
-git clone https://github.com/Neeraj-x0/X-Asena.git
-cd X-Asena
+git clone https://github.com/direcrace/Onyx-main.git
+cd Onyx-main
 npm install
 ```
 
@@ -51,14 +51,12 @@ Create a `.env` in the project root (copy from [`.env.example`](.env.example)), 
 
 ```bash
 npm start
-# development (auto-reload):
-npm run dev
 ```
 
 ### Login
 
 1. **QR (default)** — scan the QR printed in the terminal with WhatsApp → *Linked devices*.
-2. **Pairing code** — set `PAIRING_NUMBER` to your number with country code (digits only, e.g. `919876543210`), restart, and enter the code shown in the terminal on your phone.
+2. **Pairing code** — set `PAIRING_NUMBER` to your number with country code (digits only, e.g. `012345678910`), restart, and enter the code shown in the terminal on your phone.
 
 Session data is stored in `./database.db` by default (or in Postgres when `DATABASE_URL` is a Postgres URL).
 
