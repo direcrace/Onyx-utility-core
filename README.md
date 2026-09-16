@@ -345,13 +345,10 @@ npm run dev  # nodemon index.js
 
 [MIT](LICENSE)
 
-## Community
-
-- [Contributing](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security](SECURITY.md)
-- [Changelog](CHANGELOG.md)
+.[N-SAL 2.0](LICENSE) ((custom))
 
 ---
+**Bot will keep the MIT license AND a N-SAL 2.0 license(for Onyx Changes)**
+---
 
-**Author:** [Neeraj](https://github.com/Neeraj-x0) · **Repo:** [Neeraj-x0/X-Asena](https://github.com/Neeraj-x0/X-Asena)
+**Original creator:** [Neeraj](https://github.com/Neeraj-x0) · **Original Repo:** [Neeraj-x0/X-Asena](https://github.com/Neeraj-x0/X-Asena)
