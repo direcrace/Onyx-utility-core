@@ -115,4 +115,4 @@ These Terms are governed by the laws of Germany/EU, without regard to conflict-o
 ## 13. Contact
 
 Questions about these Terms can be sent to:
-+49 160 95344704 (WhatsApp) · discord: directorace · email: teamtestdevteam@gmx.net
+ (WhatsApp contact not included) · discord: directorace · email: teamtestdevteam@gmx.net
