@@ -94,10 +94,12 @@ Open a bug report (use the template) and include:
 
 If you found a vulnerability — especially anything that could expose a session, a token, or someone else's data — **do not open a public issue**. This project handles real WhatsApp accounts and real people's chats; a public disclosure is itself a security incident.
 
-- Report privately through GitHub's private vulnerability reporting: [Security advisory → new](https://github.com/direcrace/Onyx-main/security/advisories/new).
-- Include: what's affected (file/endpoint/command), how to trigger it, impact, and a minimal repro. No live secrets, no full session files.
-- I maintain this alone, in my spare time. You'll get a real (not automated) reply, but it may take a few days.
-- One honest promise: a well-written private report gets acted on and credited. Ignoring or leaking a report gets the bot stopped and the matter treated as an active incident.
+Read [SECURITY.md](SECURITY.md) for the full policy. Short version:
+
+- Report privately via GitHub's [private vulnerability reporting](https://github.com/direcrace/Onyx-main/security/advisories/new).
+- Include what's affected, how to trigger it, and the impact. No live secrets, no full session files, fake numbers only.
+- It's a solo project maintained in spare time: you'll get a real reply, but it may take a few days.
+- Hold public write-ups until the fix ships — a published leak is worse than the bug.
 
 ## License
 

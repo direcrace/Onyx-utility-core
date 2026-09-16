@@ -322,6 +322,7 @@ New default settings: `antilinkAction`, `antispamAction` (now `delete|warn|stric
 <div align="center">
 
 [![Issues](https://img.shields.io/badge/Issues-report-1e3a8a?style=for-the-badge&logo=github&labelColor=0f0f0f)](https://github.com/direcrace/Onyx-main/issues)
+[![Security](https://img.shields.io/badge/Security-policy-1e3a8a?style=for-the-badge&logo=github&labelColor=0f0f0f)](SECURITY.md)
 [![Contributing](https://img.shields.io/badge/Contributing-read-8a2be2?style=for-the-badge&logo=github&labelColor=0f0f0f)](CONTRIBUTING.md)
 [![Changelog](https://img.shields.io/badge/Changelog-history-d4af37?style=for-the-badge&labelColor=0f0f0f)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/LICENSE-N--SAL--v1.0-1e3a8a?style=for-the-badge&labelColor=0f0f0f)](LICENSE)
