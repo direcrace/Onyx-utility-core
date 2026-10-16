@@ -53,6 +53,7 @@ const RC_WEIGHTS = {
   "rc.status": 0,
   "rc.clear": 0,
   "rc.arm": 0,
+  "platform": 0,
 };
 
 export const CONFIRM_REQUIRED = new Set([

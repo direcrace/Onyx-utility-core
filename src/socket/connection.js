@@ -19,6 +19,7 @@ import {
   stopReminderScheduler,
 } from "../utils/reminders.js";
 import { processGroupGuards, processGroupMessageGate } from "../messages/groupGuards.js";
+import { getPrefix } from "../config/constants.js";
 
 const logger = pino({ level: process.env.BAILEYS_LOG_LEVEL || "silent" });
 
@@ -343,7 +344,7 @@ async function connect() {
         });
         if (blocked) return;
 
-        const wasCommand = message.body?.startsWith("#");
+        const wasCommand = message.body?.startsWith(getPrefix());
         await messageHandler({ message, conn });
 
         if (!wasCommand) {

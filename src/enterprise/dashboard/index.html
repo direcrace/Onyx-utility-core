@@ -31,7 +31,7 @@
 
   <div class="main">
     <header class="topbar">
-      <span class="chip" title="main whatsapp connection"><span id="hMain" class="dot off"></span><b id="hMainTxt">â€”</b></span>
+      <span class="chip" title="main whatsapp connection"><span id="hMain" class="dot off"></span><b id="hMainTxt">—</b></span>
       <span class="chip">mode <b id="hMode">?</b></span>
       <span class="chip">up <b id="hUp">?</b></span>
       <span class="chip">PID <b id="hPid">?</b></span>
@@ -42,9 +42,9 @@
       <span class="chip" title="core panic monitor"><span id="hPanic" class="dot on"></span>panic</span>
       <span class="chip" id="hRole" title="dashboard token tier">creator</span>
       <span class="spacer"></span>
-      <span class="chip inst" id="hInst" hidden data-act="instLocal" title="click to return to the local dashboard">viewing â€”</span>
-      <span class="chip" id="hApi">â€”</span>
-      <button id="btnRefresh" title="refresh now">â†»</button>
+      <span class="chip inst" id="hInst" hidden data-act="instLocal" title="click to return to the local dashboard">viewing —</span>
+      <span class="chip" id="hApi">—</span>
+      <button id="btnRefresh" title="refresh now">↻</button>
     </header>
 
     <div id="tokBox" class="tokbox" hidden>
@@ -61,7 +61,7 @@
 
       <section id="sec-minis" class="sec">
         <div class="toolbar">
-          <input id="tNum" placeholder="+49â€¦ target number" style="width:170px"/>
+          <input id="tNum" placeholder="+49… target number" style="width:170px"/>
           <input id="tText" placeholder="test msg text" style="flex:1;min-width:160px"/>
           <button id="btnSend" class="primary">Send test msg</button>
           <span class="spacer"></span>
@@ -93,10 +93,10 @@
 
       <section id="sec-logs" class="sec">
         <div class="toolbar">
-          <input id="lgFilter" placeholder="filterâ€¦" style="width:180px"/>
-          <button id="btnPause">âšâš pause</button>
+          <input id="lgFilter" placeholder="filter…" style="width:180px"/>
+          <button id="btnPause">❚❚ pause</button>
           <button id="btnClear">clear</button>
-          <span id="lgLive" class="live" hidden>â— live</span>
+          <span id="lgLive" class="live" hidden>● live</span>
           <span class="mut" id="lgStat"></span>
         </div>
         <div id="lgBody"><div class="log scroller" id="ltLogs"></div></div>
@@ -104,7 +104,7 @@
 
       <section id="sec-audit" class="sec">
         <div class="toolbar">
-          <input id="auFilter" placeholder="action filterâ€¦" style="width:200px"/>
+          <input id="auFilter" placeholder="action filter…" style="width:200px"/>
           <button id="btnAudit" class="primary">refresh</button>
           <span class="mut" id="auStat"></span>
         </div>
@@ -113,10 +113,10 @@
 
       <section id="sec-terminal" class="sec">
         <div class="term">
-          <div class="term-out" id="tmOut"><div class="log"><span class="prompt">onyx&gt;</span> type <b>help</b> and press Enter â€” or use the buttons below</div></div>
+          <div class="term-out" id="tmOut"><div class="log"><span class="prompt">onyx&gt;</span> type <b>help</b> and press Enter — or use the buttons below</div></div>
           <div class="term-in">
             <span class="prompt">onyx&gt;</span>
-            <input id="tmIn" autocomplete="off" spellcheck="false" placeholder="status Â· minis Â· logs 20 Â· help"/>
+            <input id="tmIn" autocomplete="off" spellcheck="false" placeholder="status · minis · logs 20 · help"/>
             <button id="tmDanger" class="danger" title="panic/reboot/shutdown guard">arm danger</button>
           </div>
         </div>
@@ -132,7 +132,7 @@
 
 <div id="mlPreview" hidden>
   <div id="mlPrevDrag">
-    <button id="mlPrevClose" title="close" aria-label="close">âœ•</button>
+    <button id="mlPrevClose" title="close" aria-label="close">✕</button>
     <div id="mlPrevMedia"></div>
     <div id="mlPrevMeta" class="mini mut"></div>
   </div>

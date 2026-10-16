@@ -2,6 +2,13 @@
 
 import { exec } from "child_process";
 import { BOT_INFO } from "../config/constants.js";
+import {
+  detectSupervisor,
+  supervisorLabel,
+  pm2AppName,
+  stopViaPm2,
+  describe as describePlatform,
+} from "../system/platform.js";
 
 
 
@@ -104,7 +111,7 @@ export async function getDevSnapshot() {
   return {
     generated_at: Date.now(),
     name: BOT_INFO.NAME,
-    version: "5.0.3",
+    version: "5.0.4",
     main,
     minis,
     rc,
@@ -114,14 +121,14 @@ export async function getDevSnapshot() {
 
 
 
-const PM2_APP =
-  process.env.PM2_APP_NAME ||
-  process.env.name ||
-  (process.env.PM2_ID ? `pm${process.env.PM2_ID}` : "") ||
-  "onyx";
+const PM2_APP = pm2AppName();
 
-function pm2Stop(cb) {
-  exec(`pm2 stop ${PM2_APP}`, { windowsHide: true }, (err) => cb(!!err));
+async function stopServiceAsync() {
+  if (PM2_APP && detectSupervisor() === "pm2") {
+    const ok = await stopViaPm2(PM2_APP);
+    if (ok) return "pm2";
+  }
+  return "exit";
 }
 
 function jidOf(number) {
@@ -208,15 +215,17 @@ export async function runDevAction(action, params = {}) {
 
       case "reboot":
         setTimeout(() => process.exit(0), 800);
-        return { ok: true, data: { rebooting: true } };
+        return { ok: true, data: { rebooting: true, supervisor: detectSupervisor() } };
 
       case "shutdown":
-        setTimeout(() => {
-          pm2Stop((failed) => {
-            if (failed) process.exit(0);
-          });
+        setTimeout(async () => {
+          const via = await stopServiceAsync();
+          if (via !== "pm2") process.exit(0);
         }, 800);
-        return { ok: true, data: { stopping: true } };
+        return { ok: true, data: { stopping: true, supervisor: detectSupervisor() } };
+
+      case "platform":
+        return { ok: true, data: describePlatform() };
 
       case "send.test": {
         if (!p.target) return { ok: false, error: "target number required" };

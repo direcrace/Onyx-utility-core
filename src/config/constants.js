@@ -60,7 +60,7 @@ export const BOT_INFO = {
   get NAME() {
     return _botName;
   },
-  VERSION: "5.0.3",
+  VERSION: "5.0.4",
   get PREFIX() {
     return _prefix;
   },

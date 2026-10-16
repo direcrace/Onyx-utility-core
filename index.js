@@ -1,11 +1,13 @@
 import fs from "fs/promises";
 import path from "path";
+import { pathToFileURL } from "url";
 import connect from "./src/socket/connection.js";
 import { commands } from "./src/plugins.js";
-import { initTerminalHandler } from "./src/terminal/handler.js";
+import { installSignalHandlers } from "./src/terminal/handler.js";
 import { useMultiDbAuthState, checkAuthCreds } from "./src/database/authState.js";
 import config from "./config.js";
 import { installConsoleRing } from "./src/utils/consoleRing.js";
+import { describe, hasFfmpeg } from "./src/system/platform.js";
 
 global.__basedir = path.resolve();
 installConsoleRing();
@@ -15,9 +17,7 @@ const readAndRequireFiles = async (directory) => {
     const files = await fs.readdir(directory);
     const jsFiles = files.filter((file) => file.endsWith(".js"));
     await Promise.all(
-      jsFiles.map((file) =>
-        import(`file://${path.join(directory, file).replace(/\\/g, "/")}`)
-      )
+      jsFiles.map((file) => import(pathToFileURL(path.join(directory, file)).href))
     );
   } catch (error) {
     console.error("Error loading files:", error);
@@ -27,11 +27,16 @@ const readAndRequireFiles = async (directory) => {
 
 const initialize = async () => {
   console.log("\n╔══════════════════════════════╗");
-  console.log("║    ONYX UTILITY CORE v5.0.3  ║");
+  console.log("║    ONYX UTILITY CORE v5.0.4  ║");
   console.log("║   Baileys 7.0.0-rc13         ║");
   console.log("╚══════════════════════════════╝\n");
 
   try {
+
+    const plat = describe();
+    console.log(
+      `🌐 Platform: ${plat.platform}/${plat.arch} · node ${plat.node} · supervisor ${plat.supervisorLabel} (${plat.containerHint}) · tty ${plat.tty ? "yes" : "no"}`
+    );
 
     console.log(
       config.USE_POSTGRES
@@ -39,6 +44,15 @@ const initialize = async () => {
         : `⏳ Initializing SQLite auth (${config.SQLITE_PATH})...`
     );
     await useMultiDbAuthState();
+
+    try {
+      if (!(await hasFfmpeg())) {
+        console.warn(
+          "⚠️  FFmpeg not found on PATH — #ytmp3 / #tomp3 / voice effects / video stickers will fail."
+        );
+        console.warn("    Debian/Ubuntu: apt-get install -y ffmpeg · Alpine: apk add ffmpeg");
+      }
+    } catch {  }
 
     try {
       const { loadRuntimeConfig } = await import("./src/config/constants.js");
@@ -74,7 +88,11 @@ const initialize = async () => {
     await readAndRequireFiles(path.join(global.__basedir, "src/plugins"));
     console.log(`✅ ${commands.length} Plugins Loaded!`);
 
-    initTerminalHandler();
+    installSignalHandlers();
+
+    console.log(
+      "ℹ️  Control: chat `.reboot` `.logout` `.wipedb` (owner) · web dashboard · maintenance CLI: `node clear.js --help`"
+    );
 
     try {
       const { startAdminHttp } = await import("./src/enterprise/adminHttp.js");

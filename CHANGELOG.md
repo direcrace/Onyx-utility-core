@@ -7,7 +7,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 |                      | X-Asena                                   | Onyx Core                                                                                         |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | package name         | `x-asena`                                 | `onyx-utility-core`                                                                               |
-| version              | `4.0.0`                                   | `5.0.3`                                                                                           |
+| version              | `4.0.0`                                   | `5.0.4`                                                                                           |
 | description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
 | bot name             | `X-Asena`                                 | `ONYX UTILITY CORE` (runtime-changeable)                                                          |
 | default sticker pack | `X-Asena`                                 | `Onyx`                                                                                            |

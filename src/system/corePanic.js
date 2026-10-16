@@ -1,12 +1,20 @@
 
 
-import { exec, spawn } from "child_process";
+import { spawn } from "child_process";
 import fs from "fs/promises";
-import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { kvGet, kvSet } from "../database/botKv.js";
 import { isWatchEnabled } from "./watchSwitch.js";
+import {
+  pm2AppName,
+  killTree,
+  stopViaPm2,
+  detectSupervisor,
+  supervisorLabel,
+  forceSelfKill,
+  writableDir,
+} from "./platform.js";
 
 const CFG = {
   enabled: process.env.CORE_PANIC !== "off",
@@ -146,39 +154,46 @@ function heapMb() {
 }
 
 export function panicAppName() {
-  return (
-    process.env.PM2_APP_NAME ||
-    process.env.name ||
-    (process.env.PM2_ID ? `pm${process.env.PM2_ID}` : "") ||
-    ""
-  );
+  return pm2AppName();
 }
 
-function pm2StopApp() {
+function stopUnderSupervisor() {
   const app = panicAppName();
-  if (!app) return Promise.resolve(false);
-  return new Promise((resolve) => {
-    exec(`pm2 stop ${app}`, { windowsHide: true }, (err) => {
-      if (err) {
-        console.warn("[core-panic] pm2 stop failed:", err?.message);
-        resolve(false);
-      } else {
-        console.log(`[core-panic] pm2 stop ${app} issued.`);
-        resolve(true);
-      }
-    });
-  });
+  if (!app || detectSupervisor() !== "pm2") return Promise.resolve(false);
+  return stopViaPm2(app)
+    .then((ok) => {
+      if (ok) console.log(`[core-panic] pm2 stop ${app} issued.`);
+      else console.warn("[core-panic] pm2 stop failed.");
+      return ok;
+    })
+    .catch(() => false);
 }
 
 function hardKill(pid) {
-  return new Promise((resolve) => {
-    exec(`taskkill /PID ${pid} /T /F`, { windowsHide: true }, (err) => {
-      if (err && !/not found/i.test(err?.message || "")) {
-        console.warn("[core-panic] taskkill failed:", err?.message);
-      }
-      resolve(true);
-    });
-  });
+  if (Number(pid) === process.pid) {
+    return Promise.resolve(forceSelfKill());
+  }
+  return killTree(pid)
+    .then((ok) => {
+      if (!ok) console.warn("[core-panic] hard kill failed.");
+      return ok;
+    })
+    .catch(() => false);
+}
+
+function restartHint() {
+  switch (detectSupervisor()) {
+    case "pm2":
+      return "Restart with `pm2 start onyx`.";
+    case "panel":
+      return "Restart with the Start button in your hosting panel.";
+    case "docker":
+      return "Restart with `docker compose up -d` (or `docker restart <container>`).";
+    case "systemd":
+      return "Restart with `systemctl restart onyx-utility-core`.";
+    default:
+      return "Restart with `npm start`.";
+  }
 }
 
 async function triggerPanic(metrics, { hard = false, source = "monitor" } = {}) {
@@ -199,6 +214,7 @@ async function triggerPanic(metrics, { hard = false, source = "monitor" } = {}) 
     `• Message rate: ${metrics.rate}/min (limit ${CFG.msgRatePerMin})`,
     `• Outbound burst: ${metrics.burst ?? 0} msgs/${CFG.sendWindowMs / 1000}s (limit ${CFG.sendBurst})`,
     `• Source: ${source}`,
+    `• Supervisor: ${supervisorLabel()}`,
   ];
 
   const message =
@@ -209,7 +225,7 @@ async function triggerPanic(metrics, { hard = false, source = "monitor" } = {}) 
     lines.join("\n") +
     `\n\nUptime: ${Math.floor(process.uptime() / 60)} min` +
     (process.env.name ? `\nApp: ${process.env.name}` : "") +
-    "\nRestart with `pm2 start onyx`.";
+    `\n${restartHint()}`;
 
   console.error("\n\u{1F525} CORE PANIC — shutting down by safety mechanism\n" + message + "\n");
 
@@ -239,10 +255,12 @@ async function triggerPanic(metrics, { hard = false, source = "monitor" } = {}) 
   }, 8000);
   killTimer.unref?.();
 
-  const stopped = await pm2StopApp().catch(() => false);
+  const stopped = await stopUnderSupervisor().catch(() => false);
   if (!stopped) {
-    console.error("[core-panic] pm2 stop failed — force killing instead.");
-    await hardKill(process.pid);
+    console.error(
+      `[core-panic] no PM2 supervisor — exiting with code 1 (${restartHint()})`
+    );
+    await hardKill(process.pid).catch(() => false);
   }
   clearTimeout(killTimer);
 }
@@ -261,11 +279,7 @@ async function writeHeartbeat() {
 function heartbeatPath() {
   let dir = process.env.CORE_PANIC_HB_DIR || "";
   if (!dir) {
-    try {
-      dir = os.tmpdir();
-    } catch {
-      dir = ".";
-    }
+    dir = writableDir();
   }
   return path.join(dir, `onyx-hb-${process.pid}.json`);
 }

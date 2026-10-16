@@ -6,8 +6,12 @@ const commands = [];
 
 const commandIndex = new Map();
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function buildPattern(prefix, name) {
-  return new RegExp(`(${prefix})( ?${name}(?=\\b|$))(.*)`, "is");
+  return new RegExp(`^(${escapeRegExp(prefix)})( ?${escapeRegExp(name)}(?=\\b|$))(.*)`, "is");
 }
 
 class CommandBuilder {

@@ -1,6 +1,5 @@
 
 
-import { exec } from "child_process";
 import { command } from "../plugins.js";
 import {
   replyOk,
@@ -11,6 +10,13 @@ import {
 import { normalizeNumber, isPrivileged, getOwnerNumbers, senderCandidates } from "../utils/access.js";
 import { isSubConnection, restartSubSession, removeSubSession } from "../multi/sessionManager.js";
 import { BOT_INFO } from "../config/constants.js";
+import {
+  detectSupervisor,
+  supervisorLabel,
+  canStayStopped,
+  stopViaPm2,
+  pm2AppName,
+} from "../system/platform.js";
 
 function isSubOwner(conn, message) {
   if (!conn?.__isSub || !conn?.__subNumber) return false;
@@ -20,24 +26,30 @@ function isSubOwner(conn, message) {
   return owners.some((o) => candidates.has(o));
 }
 
-function pm2StopApp() {
-  return new Promise((resolve) => {
-    const app =
-      process.env.PM2_APP_NAME ||
-      process.env.name ||
-      (process.env.PM2_ID ? `pm${process.env.PM2_ID}` : "") ||
-      "onyx";
-    if (!app) return resolve(false);
-    exec(`pm2 stop ${app}`, { windowsHide: true }, (err) => {
-      if (err) {
-        console.warn("[system] pm2 stop failed, falling back to exit:", err?.message);
-        resolve(false);
-      } else {
-        console.log(`[system] pm2 stop ${app} issued.`);
-        resolve(true);
-      }
-    });
-  });
+async function stopMainService() {
+  const app = pm2AppName();
+  if (app && detectSupervisor() === "pm2") {
+    const ok = await stopViaPm2(app);
+    if (ok) return true;
+    console.warn("[system] pm2 stop failed, falling back to exit");
+  }
+  process.exit(0);
+  return true;
+}
+
+function restartHint() {
+  switch (detectSupervisor()) {
+    case "pm2":
+      return "`pm2 start onyx`";
+    case "panel":
+      return "the Start button in your hosting panel";
+    case "docker":
+      return "`docker compose up -d`";
+    case "systemd":
+      return "`systemctl restart onyx-utility-core`";
+    default:
+      return "`npm start`";
+  }
 }
 
 async function requireControl(conn, message) {
@@ -85,7 +97,14 @@ command(
       return;
     }
 
-    await replyOk(conn, message, await tr("♻️ Rebooting bot...", "♻️ Bot wird neu gestartet..."));
+    await replyOk(
+      conn,
+      message,
+      await tr(
+        `♻️ Rebooting bot... (${supervisorLabel()} detected — restart via ${restartHint()})`,
+        `♻️ Bot wird neu gestartet... (${supervisorLabel()} erkannt — Neustart via ${restartHint()})`
+      )
+    );
     if (args === "now") {
       process.exit(0);
     } else {
@@ -109,10 +128,23 @@ command(
       return;
     }
 
-    await replyOk(conn, message, await tr("👋 Shutting down... (pm2 stop — start again with `pm2 start onyx`)", "👋 Fahre herunter... (pm2 stop — erneut starten mit `pm2 start onyx`)"));
+    const stays = canStayStopped();
+    const hint = restartHint();
+    await replyOk(
+      conn,
+      message,
+      stays
+        ? await tr(
+            `👋 Shutting down... (${supervisorLabel()} stop — start again with ${hint})`,
+            `👋 Fahre herunter... (${supervisorLabel()} Stopp — erneut starten mit ${hint})`
+          )
+        : await tr(
+            `👋 Shutting down... (${supervisorLabel()} detected — this host may auto-restart the process. Start again with ${hint} if it stays down.)`,
+            `👋 Fahre herunter... (${supervisorLabel()} erkannt — dieser Host startet den Prozess evtl. automatisch neu. Falls er unten bleibt: ${hint})`
+          )
+    );
     setTimeout(async () => {
-      const stopped = await pm2StopApp();
-      if (!stopped) process.exit(0);
+      await stopMainService();
     }, 800);
   }
 );
@@ -158,6 +190,20 @@ command(
           ? `${Math.floor(snapshot.uptimeSec / 60)} min`
           : `${(snapshot.uptimeSec / 3600).toFixed(1)} h`;
 
+    let ffmpegLine = "";
+    try {
+      const { ffmpegVersion } = await import("../system/platform.js");
+      const ver = await ffmpegVersion();
+      ffmpegLine = ver ? ver.slice(0, 60) : "missing — audio/video/sticker conversion will fail";
+    } catch {  }
+
+    let platLine = "";
+    try {
+      const { describe } = await import("../system/platform.js");
+      const d = describe();
+      platLine = `• Supervisor: ${d.supervisorLabel}${d.pm2App ? ` (${d.pm2App})` : ""} · TTY ${d.tty ? "yes" : "no"}`;
+    } catch {  }
+
     const text = await tr(
       [
         `🖥️ *Host*`,
@@ -166,6 +212,8 @@ command(
         `• Disk: ${disk}`,
         `• PID ${snapshot.pid}${snapshot.pm2App ? ` · ${snapshot.pm2App}` : ""} · uptime ${uptime}`,
         `• RSS: ${snapshot.rssMb} MB · heap ${snapshot.heapMb} MB`,
+        platLine ? `${platLine}` : "",
+        ffmpegLine ? `• FFmpeg: ${ffmpegLine}` : "",
         ``,
         `🧠 *Core panic:* ${panic.enabled ? "armed" : "OFF"}`,
         `• EL > ${panic.elDelayMs}ms · mem > ${panic.memoryMb}MB`,
@@ -181,6 +229,8 @@ command(
         `• Festplatte: ${disk}`,
         `• PID ${snapshot.pid}${snapshot.pm2App ? ` · ${snapshot.pm2App}` : ""} · Uptime ${uptime}`,
         `• RSS: ${snapshot.rssMb} MB · Heap ${snapshot.heapMb} MB`,
+        platLine ? `${platLine}` : "",
+        ffmpegLine ? `• FFmpeg: ${ffmpegLine}` : "",
         ``,
         `🧠 *Core panic:* ${panic.enabled ? "aktiviert" : "AUS"}`,
         `• EL > ${panic.elDelayMs}ms · Speicher > ${panic.memoryMb}MB`,
@@ -367,7 +417,7 @@ command(
     await replyOk(
       conn,
       message,
-      "💥 Triggering *CORE PANIC* — the bot will stop itself (pm2 stop)."
+      `💥 Triggering *CORE PANIC* — the bot will stop itself (${supervisorLabel()}${detectSupervisor() === "pm2" ? " stop" : " → process exit"}).`
     );
     try {
       const { forceCorePanic } = await import("../system/corePanic.js");

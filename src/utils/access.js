@@ -21,6 +21,19 @@ export const PRIVILEGED_COMMANDS = new Set([
   "role",
   "backup",
   "metrics",
+  "reboot",
+  "shutdown",
+  "corepanic",
+  "syswatch",
+  "sys",
+  "dev",
+  "minilog",
+  "health",
+  "platform",
+  "control",
+  "logout",
+  "wipedb",
+  "wipekey",
 ]);
 
 export const OWNER_ONLY_COMMANDS = new Set([

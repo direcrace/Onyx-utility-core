@@ -37,6 +37,11 @@ const AUDIT_ACTIONS = new Set([
   "createlog",
   "reboot",
   "shutdown",
+  "logout",
+  "wipedb",
+  "wipekey",
+  "corepanic",
+  "syswatch",
 ]);
 
 const SUB_BLOCKED_COMMANDS = new Set([
@@ -63,6 +68,11 @@ const SUB_BLOCKED_COMMANDS = new Set([
   "metrics",
   "aiprompt",
   "maintenance",
+  "logout",
+  "wipedb",
+  "wipekey",
+  "platform",
+  "control",
 ]);
 
 export async function messageHandler(params) {

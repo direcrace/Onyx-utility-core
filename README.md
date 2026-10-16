@@ -4,7 +4,7 @@
 
 **Changelog: X-Asena → Onyx Core** — source-available WhatsApp bot on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13** · [N-SAL v1.0](LICENSE) (derived from MIT-licensed X-Asena)
 
-[![Version](https://img.shields.io/badge/version-5.0.3-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
+[![Version](https://img.shields.io/badge/version-5.0.4-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2020-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0f0f0f)](https://nodejs.org/)
 [![Baileys](https://img.shields.io/badge/Baileys-7.0.0--rc13-25D366?style=for-the-badge&logo=whatsapp&logoColor=white&labelColor=0f0f0f)](https://github.com/WhiskeySockets/Baileys)
 [![License](https://img.shields.io/badge/License-N--SAL--v1.0-1e3a8a?style=for-the-badge&logo=open-source-initiative&logoColor=white&labelColor=0f0f0f)](LICENSE)
@@ -53,7 +53,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
   </thead>
   <tbody>
     <tr><td><b>package name</b></td><td><code>x-asena</code></td><td><code>onyx-utility-core</code></td></tr>
-    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.3</code></td></tr>
+    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.4</code></td></tr>
     <tr><td><b>description</b></td><td>Open Source WhatsApp Bot (Baileys ^7.x.x)</td><td>"Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API"</td></tr>
     <tr><td><b>bot name</b></td><td><code>X-Asena</code></td><td><code>ONYX UTILITY CORE</code> (runtime-changeable)</td></tr>
     <tr><td><b>default sticker pack</b></td><td><code>X-Asena</code></td><td><code>Onyx</code></td></tr>
@@ -94,7 +94,7 @@ Samples host/bot CPU, RAM, disk, RSS every 15 s. Warn (log-group 🟡, once, ded
 
 ### 1.4 Dev Console — terminal + chat + web (`src/enterprise/devConsole.js`, `devTerm.js`, `src/utils/consoleRing.js`)
 
-- **Terminal** (`src/terminal/handler.js` overhaul): full command bus — `status`, `minis` (+ suspend/unsuspend/remove/respawn), `flags`, `flags clear`, `logs`, `logsgrep`, `sendtest`, `panic`, `reboot`, `shutdown`. Old `Q/R/A` shortcuts kept.
+- **Terminal**: removed — no interactive TTY console. Maintenance runs through `clear.js` (`--auth`, `--wipedb`, `--status`, `--platform`, `--restart`, `--shutdown`) or the owner chat commands. The dev command bus (`status`, `minis`, `flags`, `logs`, `sendtest`, `panic`, `reboot`, `shutdown`) is available via chat (`#dev`) and the web console.
 - **Chat**: `#dev` (overview), `#minilog <number> [lines]` (tail a Mini's console).
 - **Web**: `src/enterprise/dashboard/` SPA at `GET /ui`, JSON API (`GET /api/status`, `/api/dashboard`, `/api/stats`, `/api/bans`, `/api/help`) and SSE live log stream (`GET /api/events`), all driven by one `runDevAction(action, params)` action bus (40 actions).
 - `consoleRing.js` intercepts `console.*` into a bounded ring (default 2000 lines, env `DEV_CONSOLE_LOG_MAX`).

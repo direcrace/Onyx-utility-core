@@ -513,7 +513,7 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .term-out .log { margin: 2px 0; }
 .term-out .log:hover { background: rgba(255,255,255,.015); }
 .term-out .cmd { color: var(--ok); font-weight: 700; }
-.term-out .cmd::before { content: "â¯ "; color: var(--ok); }
+.term-out .cmd::before { content: "❯ "; color: var(--ok); }
 .term-out .error { color: var(--err); }
 .prompt { color: var(--ok); font-weight: 700; margin-right: 6px; }
 .term-in {

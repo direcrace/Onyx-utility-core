@@ -179,16 +179,29 @@ export function startAdminHttp() {
       const path = url.pathname;
 
       if (path === "/health") {
-        const ff = await checkFfmpeg();
+        const probe = async (fn, fallback = null) => {
+          try {
+            return await fn();
+          } catch {
+            return fallback;
+          }
+        };
+        const [ff, mode, setup, logGroup] = await Promise.all([
+          probe(() => checkFfmpeg(), { ok: false }),
+          probe(() => getMode(), "unknown"),
+          probe(() => isSetupDone(), false),
+          probe(() => getLogGroupJid(), null),
+        ]);
         return json(res, 200, {
           ok: true,
           name: BOT_INFO.NAME,
           version: BOT_INFO.VERSION,
-          mode: await getMode(),
-          ffmpeg: ff.ok,
-          setup: await isSetupDone(),
-          logGroup: !!(await getLogGroupJid()),
-          queue: queueStats(),
+          mode,
+          ffmpeg: ff?.ok === true,
+          setup,
+          logGroup: !!logGroup,
+          queue: probe(() => queueStats(), null),
+          uptime: Math.round(process.uptime()),
         });
       }
 

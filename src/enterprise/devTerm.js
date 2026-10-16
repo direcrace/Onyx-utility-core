@@ -2,6 +2,7 @@
 
 import { runDevAction, getDevSnapshot, formatDevSummary } from "./devConsole.js";
 import { BOT_INFO } from "../config/constants.js";
+import { supervisorLabel, describe as describePlatform } from "../system/platform.js";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
@@ -54,9 +55,25 @@ async function tailLogs(n, filter) {
   return { ok: true, text: `Last ${lines.length} console line(s):\n${formatted.join("\n")}` };
 }
 
+async function showPlatform() {
+  const d = describePlatform();
+  return {
+    ok: true,
+    text: [
+      `Platform: ${d.platform}/${d.arch} · node ${d.node}`,
+      `Supervisor: ${d.supervisorLabel}${d.pm2App ? ` (${d.pm2App})` : ""} [${d.supervisor}]`,
+      `Container: ${d.containerHint}`,
+      `TTY: ${d.tty ? "yes" : "no"} · maintenance: CLI (clear.js)`,
+      `Auto-restart: ${d.canAutoRestart ? "possible" : "no"} · stay-stopped: ${d.canStayStopped ? "yes" : "no"}`,
+      `PID ${d.pid} · cwd ${d.cwd}`,
+    ].join("\n"),
+  };
+}
+
 export const DEV_WEB_HELP = [
   "Available commands:",
   "  status                     system + mini snapshot",
+  "  platform                   detected OS / supervisor / TTY",
   "  minis                      list linked Onyx Minis",
   "  minis suspend <n> [reason]",
   "  minis unsuspend <n>",
@@ -68,8 +85,8 @@ export const DEV_WEB_HELP = [
   "  logsgrep <text> [count]    tail output filtered by text",
   "  sendtest <target> [mini] [text...]   send a test message",
   "  panic                      trigger a core panic (stops the bot)",
-  "  reboot                     restart the process (pm2 restarts)",
-  "  shutdown                   pm2 stop (stays off)",
+  "  reboot                     restart the process (supervisor restarts)",
+  "  shutdown                   stop the bot",
   "  help                       this list",
 ].join("\n");
 
@@ -90,6 +107,10 @@ export async function runDevCommandText(line) {
       case "status":
       case "st":
         return showStatus();
+
+      case "platform":
+      case "plat":
+        return showPlatform();
 
       case "minis":
         if (!rest.length) return showMinis();
@@ -145,7 +166,7 @@ export async function runDevCommandText(line) {
       }
       case "shutdown": {
         const r = await runDevAction("shutdown");
-        return { ok: r.ok, text: r.ok ? "shutting down (pm2 stop)…" : r.error };
+        return { ok: r.ok, text: r.ok ? `shutting down (${supervisorLabel()})…` : r.error };
       }
 
       default:

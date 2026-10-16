@@ -1,7 +1,7 @@
 
 
-import { exec } from "child_process";
 import fs from "fs";
+import { detectSupervisor, hardKillSync, killTree, pm2AppName, stopViaPm2, writableDir } from "./platform.js";
 
 const parentPid = Number(process.argv[2] || 0);
 const appName = process.argv[3] || "";
@@ -11,7 +11,7 @@ const checkMs = Math.max(500, Number(process.argv[6] || 3000));
 
 function log(msg) {
   try {
-    fs.appendFileSync("panic-watchdog.log", `[${new Date().toISOString()}] ${msg}\n`);
+    fs.appendFileSync(`${writableDir()}/panic-watchdog.log`, `[${new Date().toISOString()}] ${msg}\n`);
   } catch {  }
 }
 
@@ -33,18 +33,16 @@ function lastHeartbeat() {
   }
 }
 
-function pm2Stop() {
-  return new Promise((resolve) => {
-    if (!appName) return resolve(false);
-    exec(`pm2 stop ${appName}`, { windowsHide: true }, (err) => resolve(!err));
-  });
+function supervisorStop() {
+  const app = appName || pm2AppName();
+  if (!app || detectSupervisor() !== "pm2") return Promise.resolve(false);
+  return stopViaPm2(app).catch(() => false);
 }
 
 function hardKill() {
-  return new Promise((resolve) => {
-    exec(`taskkill /PID ${parentPid} /T /F`, { windowsHide: true }, () =>
-      resolve(true)
-    );
+  return killTree(parentPid).catch(() => {
+    hardKillSync(parentPid);
+    return true;
   });
 }
 
@@ -67,19 +65,17 @@ function check() {
   }
 
   log(
-    `WEDGED: parent ${parentPid} alive but heartbeat stale ${Math.round(age)}ms — forcing stop (app=${appName || "pm2-name-unset"}).`
+    `WEDGED: parent ${parentPid} alive but heartbeat stale ${Math.round(age)}ms — forcing stop (supervisor=${detectSupervisor()}, app=${appName || "n/a"}).`
   );
 
-  pm2Stop().then((stopped) => {
+  supervisorStop().then((stopped) => {
     if (!stopped) {
-
       setTimeout(async () => {
         await hardKill();
-        log("taskkill issued — leaving.");
+        log("hard kill issued — leaving.");
         process.exit(0);
       }, 800);
     } else {
-
       setTimeout(() => {
         log("pm2 stop issued — leaving.");
         process.exit(0);

@@ -150,7 +150,7 @@ export const setloggroup = async (conn, msg) => {
 
 
     try {
-      const { kvSet } = await import("../database/botKv.js");
+      const { kvSet } = await import("../../database/botKv.js");
       await kvSet("loggroup_jid", groupJid);
       await conn.sendMessage(sender, { text: `✅ Log group set to: ${groupMeta.subject}\n(JID: ${groupJid})` });
     } catch (err) {

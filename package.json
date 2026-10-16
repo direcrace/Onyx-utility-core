@@ -1,6 +1,6 @@
 {
   "name": "onyx-utility-core",
-  "version": "5.0.3",
+  "version": "5.0.4",
   "description": "Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI",
   "main": "index.js",
   "engines": {
@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "clear": "node clear.js"
   },
   "repository": "https://github.com/direcrace/Onyx-utility-core.git",
   "author": "Nero Venero <Puma.yt11@gmail.com>",
@@ -19,7 +20,7 @@
     "async-mutex": "^0.5.0",
     "axios": "^1.18.1",
     "baileys": "7.0.0-rc13",
-    "better-sqlite3": "^11.8.1",
+    "better-sqlite3": "^12.4.1",
     "dotenv": "^17.2.3",
     "file-type": "^22.0.1",
     "fluent-ffmpeg": "^2.1.3",
@@ -40,7 +41,7 @@
   },
   "allowScripts": {
     "baileys@7.0.0-rc13": true,
-    "better-sqlite3@11.10.0": true,
-    "protobufjs@7.6.5": true
+    "better-sqlite3": true,
+    "protobufjs": true
   }
 }

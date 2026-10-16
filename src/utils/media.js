@@ -174,6 +174,13 @@ export function assertVideoSize(bytes) {
 
 export async function ffmpegConvert(inputPath, outputPath, optionsFn) {
   const ffmpeg = (await import("fluent-ffmpeg")).default;
+  const bin = await (await import("../system/platform.js")).ffmpegPath();
+  if (!bin) {
+    throw new Error("FFmpeg is not available on this host (set FFMPEG_PATH or install ffmpeg).");
+  }
+  if (typeof ffmpeg.setFfmpegPath === "function") {
+    ffmpeg.setFfmpegPath(bin);
+  }
   return new Promise((resolve, reject) => {
     let cmd = ffmpeg(inputPath);
     if (typeof optionsFn === "function") {
