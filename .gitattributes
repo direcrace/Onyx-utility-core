@@ -1,0 +1,19 @@
+# Normalize line endings to LF so the bot runs cleanly on Linux servers
+# (Pterodactyl panels, VPS, Docker) regardless of the editor OS.
+* text=auto eol=lf
+
+# Binary assets - never convert
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svg text
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+*.ogg binary
+*.zip binary
+*.db binary
+*.node binary
