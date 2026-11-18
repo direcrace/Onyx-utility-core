@@ -26,8 +26,6 @@ const PINTEREST_URL_PROVIDER = {
 const DIRECT_URL_PROVIDER = { name: "direct-url", handle: directUrlProvider };
 const urlProviders = [PINTEREST_URL_PROVIDER, DIRECT_URL_PROVIDER];
 
-// A source that just returned 403/429/CAPTCHA gets a short break. Otherwise
-// every single #img would hammer the same blocked host before falling back.
 const blockCooldowns = new Map();
 
 export function resetProviderCooldowns() {
@@ -114,7 +112,6 @@ async function resolveFromProviders(providers, value, ctx, { cooldown = true } =
         if (cooldown) markCooling(provider.name);
         hardErrors.push(err);
       }
-      // Internal only. Details never include cookies/tokens or chat content.
       const detail = err?.detail || err?.message || "unknown error";
       ctx.log("warn", `[imageResolver] ${provider.name}: ${detail}`);
     }
@@ -181,8 +178,6 @@ export async function resolveImageUrl(url, options = {}) {
   const providers = isPinterestUrl(value)
     ? urlProviders.filter((p) => p.name !== DIRECT_URL_PROVIDER.name)
     : urlProviders;
-  // Explicit links are rare: always report their block error instead of
-  // silently skipping the provider during a cooldown.
   return resolveFromProviders(providers, value, ctx, { cooldown: false });
 }
 

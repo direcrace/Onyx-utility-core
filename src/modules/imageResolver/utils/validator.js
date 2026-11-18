@@ -44,7 +44,7 @@ const BLOCKED_V4_RANGES = [
   ["10.0.0.0", 8],
   ["100.64.0.0", 10],
   ["127.0.0.0", 8],
-  ["169.254.0.0", 16], // includes the cloud metadata endpoint
+  ["169.254.0.0", 16],
   ["172.16.0.0", 12],
   ["192.0.0.0", 24],
   ["192.0.2.0", 24],
@@ -65,9 +65,9 @@ export function isBlockedIp(ip) {
   }
   if (family === 6) {
     if (value === "::" || value === "::1") return true;
-    if (/^f[cd]/.test(value)) return true; // fc00::/7 unique local
-    if (/^fe[89ab]/.test(value)) return true; // fe80::/10 link local
-    if (value.startsWith("2001:db8")) return true; // documentation
+    if (/^f[cd]/.test(value)) return true;
+    if (/^fe[89ab]/.test(value)) return true;
+    if (value.startsWith("2001:db8")) return true;
     const mapped = value.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
     if (mapped) return isBlockedIp(mapped[1]);
     const mappedHex = value.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
@@ -117,9 +117,6 @@ export async function assertSafeUrl(input, ctx = {}) {
     throw new ImageError(IMAGE_ERRORS.INVALID_URL, "port not allowed");
   }
 
-  // WHATWG URL keeps brackets around IPv6 literals (e.g. "[::1]"), so strip
-  // them before the IP check — otherwise a bracketed loopback would slip
-  // through as a "hostname" and be resolved instead of blocked.
   const host = parsed.hostname
     .replace(/^\[/, "")
     .replace(/\]$/, "")

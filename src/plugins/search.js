@@ -420,8 +420,6 @@ command(
   }
 );
 
-// Image retrieval moved to src/modules/imageResolver/. These thin wrappers
-// keep the old named exports working for any external callers.
 export async function fetchPinterestPinImages(query) {
   const { pinterestImageUrls } = await import("../modules/imageResolver/providers/pinterest.js");
   return pinterestImageUrls(query);

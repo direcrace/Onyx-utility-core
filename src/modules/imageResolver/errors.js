@@ -1,6 +1,3 @@
-// Stable error codes for the image resolver. Technical detail stays internal;
-// the chat layer only ever shows the short user-facing message below.
-
 export const IMAGE_ERRORS = Object.freeze({
   IMAGE_NOT_FOUND: "IMAGE_NOT_FOUND",
   SOURCE_BLOCKED: "SOURCE_BLOCKED",
@@ -42,8 +39,6 @@ const USER_MESSAGES = {
   },
 };
 
-// Errors that mean "the source actively refused us". They take priority over
-// a generic IMAGE_NOT_FOUND when every provider fails.
 export const HARD_ERRORS = new Set([
   IMAGE_ERRORS.SOURCE_BLOCKED,
   IMAGE_ERRORS.AUTH_REQUIRED,
@@ -57,7 +52,6 @@ export class ImageError extends Error {
     this.code = Object.values(IMAGE_ERRORS).includes(code)
       ? code
       : IMAGE_ERRORS.IMAGE_NOT_FOUND;
-    // Internal only: never sent to chat or to the log group.
     this.detail = String(detail || "").slice(0, 240);
   }
 }

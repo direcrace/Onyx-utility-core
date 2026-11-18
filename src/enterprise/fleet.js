@@ -6,7 +6,6 @@ const cache = new Map();
 export function fleetPeers() {
   const raw = process.env.FLEET_PEERS || "";
   const configured = process.env.ADMIN_HTTP_HOST || "127.0.0.1";
-  // A server binding to 0.0.0.0 is reached as localhost from the same host.
   const host = configured === "0.0.0.0" ? "127.0.0.1" : configured;
   return raw
     .split(";")

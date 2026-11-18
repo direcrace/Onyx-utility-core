@@ -28,7 +28,6 @@ export async function gitPull({ cwd = global.__basedir || process.cwd() } = {}) 
   const remotes = remoteResult.code === 0 ? remoteResult.out.split(/\s+/).filter(Boolean) : [];
   const remote = remotes.includes("origin") ? "origin" : remotes[0] || "origin";
 
-  // Explicit remote+branch avoids "There is no tracking information".
   let pulling = await run(`git pull --ff-only ${remote} ${branch}`);
   if (pulling.code !== 0) {
     const firstError = pulling.err || pulling.out || "?";
@@ -45,7 +44,6 @@ export async function gitPull({ cwd = global.__basedir || process.cwd() } = {}) 
     }
   }
 
-  // Make a plain `git pull` work on later manual deploys too (best effort).
   await run(`git branch --set-upstream-to=${remote}/${branch} ${branch}`);
 
   return { ok: true, branch, remote, output: pulling.out };

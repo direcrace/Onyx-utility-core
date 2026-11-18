@@ -164,8 +164,6 @@ export async function pinterestUrlProvider(url, ctx) {
   const parsed = new URL(url);
   const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
 
-  // Already an accessible Pinterest CDN image — let the shared downloader
-  // validate and fetch it, but keep the Pinterest attribution.
   if (host === "pinimg.com" || host.endsWith(".pinimg.com")) {
     return [{ url: parsed.toString(), provider: "Pinterest", ua: PIN_UA }];
   }

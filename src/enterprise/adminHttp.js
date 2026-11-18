@@ -157,9 +157,6 @@ function handleSSE(req, res, token) {
 }
 
 export function getAdminHttpConfig() {
-  // Hosting panels (Pterodactyl/bot-hosting.net) inject SERVER_PORT and forward
-  // their proxy to it. Listening on ADMIN_HTTP_PORT/127.0.0.1 instead makes the
-  // proxy report "got nothing back on its port".
   const panelPort = Number(process.env.SERVER_PORT || 0);
   const fromPanel = Number.isFinite(panelPort) && panelPort > 0;
   const port = fromPanel ? panelPort : Number(process.env.ADMIN_HTTP_PORT || 0);
