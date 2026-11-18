@@ -31,8 +31,8 @@ Whoever runs a main instance controls what it stores, logs, and retains, includi
 
 ## 2. What the Bot Does
 
-* **Community** — registration (`#register`, `#unregister`), staff ranks/roles, the TEAM menu, member levels/titles (`#level`), activity statistics (`#mystats`, `#leaderboard`), profile lookup (`#whois`) and `#resetstats`.
-* **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Replies use `#answer <text>` in the support group.
+* **Community** — registration (`#register`, `#unregister`), staff ranks/roles, the TEAM menu, member levels/titles (`#level`), badges (`#badges`), thanks/karma (`#thanks`, `#tophelpers`), activity statistics (`#mystats`, `#leaderboard`), profile lookup (`#whois`), `#resetstats` and self-service data export/deletion (`#mydata`, `#forgetai`).
+* **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`) and `#setticketroute` for per-category groups. Replies use `#answer <text>` in the support or routed category group. `#setsla` controls one-shot reminders for unanswered tickets.
 * **Moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group tools.
 * **AI chat** (`#chat`, `#aiprompt`) via a connected backend, plus media processing and search/utilities.
 * **Personal utilities** — notes, to-dos, reminders, polls.
@@ -50,7 +50,8 @@ Depending on the features you use:
 * Command text and, where required to execute a command, the message content (e.g. text to translate, a caption to convert, a replied-to message).
 * Media you deliberately send to media-processing commands — processed only as long as needed to return the result, **never stored for logging**.
 * Group metadata for groups the Bot is in: group name, ID, member/admin lists, and moderation settings the Bot manages.
-* Data you deliberately store: notes, to-dos, reminders, polls, AI chat history (until you clear it with `#aiclear`).
+* Data you deliberately store: notes, to-dos, reminders, polls, AI chat history (until you clear it with `#aiclear` or `#forgetai`).
+* Derived community data: XP/levels, titles, badges, thanks given/received and weekly helper rankings. These are operational counters, not message archives.
 * Basic operational metadata (timestamps, command names, error states) for debugging and abuse prevention.
 
 ### 3.2 Registration data (community members)
@@ -110,7 +111,8 @@ When you use `#report`, `#ticket` / `#support`, or manage them via `#mytickets` 
 
 * your number, the subject and message text/description you provide, any mentioned/replied-to target, the chat/group context, and a timestamp,
 * the ticket status (open/answered/closed), any answer text, the registered name of the support member who answered, and who closed it,
-* the delivery destination and mode configured by the operator (`#setsupportgroup`, `#setticketdelivery`). With `dm`, full ticket content goes only to you; the support group receives just a short notice with the ticket ID and sender. An `#answer` reply is sent to you and reposted in the support group with the original ticket content and the responder's registered name (no mention/number).
+* the delivery destination and mode configured by the operator (`#setsupportgroup`, `#setticketdelivery`, `#setticketroute`). With `dm`, full ticket content goes only to you; the support group receives just a short notice with the ticket ID and sender. An `#answer` reply is sent to you and reposted in the support or routed category group with the original ticket content and the responder's registered name (no mention/number).
+* the ticket category and a one-shot SLA flag (`slaNotifiedAt`) recording whether an unanswered-ticket reminder was already sent. The reminder goes only to the configured support/category group and contains the ticket ID, category, age and subject — not the full ticket body.
 
 This data is used only to handle your request and to keep an audit trail. False or abusive reports may be rejected (Terms, Sections 4 and 5).
 
@@ -118,7 +120,9 @@ This data is used only to handle your request and to keep an audit trail. False 
 
 The Bot keeps activity counters (messages, commands, reports, tickets, points/XP) to build member levels, cosmetic titles, `#level`, `#mystats` and `#leaderboard`. These are derived from operational metadata only — no message text is stored for this purpose — and are informational, may be inaccurate or reset. Member levels/titles never grant staff permissions; staff ranks are separate. They are associated with your WhatsApp number and/or registered name. You can delete your own counters with `#resetstats` or ask us under Section 10.
 
-`#whois` shows your registered name, staff rank, member level/title and activity counters. You can always view your own profile; other members' profiles are visible only to Mod+ staff, and each such lookup is written to the audit log. Mod+ results show names and status, not bare phone numbers; your own number is only shown to you.
+`#whois` shows your registered name, staff rank, member level/title, badges and activity counters. You can always view your own profile; other members' profiles are visible only to Mod+ staff, and each such lookup is written to the audit log. Mod+ results show names and status, not bare phone numbers; your own number is only shown to you.
+
+`#thanks` stores only normalized numbers, a timestamp and a 24-hour cooldown per pair; the recipient receives 8 helpful XP. Badges are derived from those counters and your existing stats/tickets — no additional message content is stored for them.
 
 ---
 
@@ -128,7 +132,7 @@ The Bot keeps activity counters (messages, commands, reports, tickets, points/XP
 * **Registration & consent records** — to know who accepted which document version (legal compliance / legitimate interest in proving consent).
 * **To secure the service and enforce the Terms** — the ToS monitor, the RAM snapshot and `audit`-level logs exist to detect and prove abuse. `audit` is the default; higher levels are an explicit operator choice.
 * **To handle reports/tickets** — to respond to your request and keep an audit trail (legitimate interest / performance of a requested service).
-* **To run community features** — ranks, statistics and leaderboard (legitimate interest in operating the community; you may request deletion under Section 10).
+* **To run community features** — ranks, statistics, leaderboard, thanks and badges (legitimate interest in operating the community; you may request deletion under Section 10).
 * **Consent** — where no other basis applies (e.g. voluntary `#pair`, storing notes/reminders).
 
 ---
@@ -151,12 +155,12 @@ Once data reaches a third party, that party's own privacy policy applies. We do 
 ## 6. Data Retention
 
 * **Transient data** (e.g. a one-off sticker conversion) is not retained beyond delivering the result.
-* **Your stored data** (notes, to-dos, reminders, AI chat history, group settings) stays until you delete it, you clear it via the relevant command, or the operator removes it (e.g. after a ban).
+* **Your stored data** (notes, to-dos, reminders, AI chat history, group settings, community stats, tickets, thanks) stays until you delete it via the relevant command or `#mydata delete` / `#forgetme`, or the operator removes it (e.g. after a ban).
 * **Registration** stays until `#unregister`; a 30-day cooldown record remains after deletion.
 * **Consent records** are kept as proof of acceptance; we may prune them when no longer needed for legal/audit purposes.
 * **Plaintext log files** are append-only daily files. They are retained until the operator deletes or rotates them. Where technically feasible, entries tied to a flag that was **not** a violation are removed after **30 days**; entries tied to a confirmed case are kept for its resolution and then deleted, or as law requires. The RAM snapshot itself is never written to disk.
-* **Report/ticket data** is kept as long as needed to resolve the case and for audit, then deleted or as law requires.
-* **Statistics/leaderboard** entries are kept until you request deletion, you unregister, or the operator resets them.
+* **Report/ticket data** is kept as long as needed to resolve the case and for audit. You can delete your own ticket records with `#mydata delete`; append-only audit evidence is not rewritten.
+* **Statistics/leaderboard/thanks** entries are kept until you delete them with `#resetstats` / `#mydata delete`, you unregister, or the operator resets them.
 
 For self-hosted instances, the local operator controls all retention and is responsible for deleting logs and stored data.
 
@@ -178,9 +182,9 @@ The Bot is not directed at children and is not knowingly used to collect data fr
 
 Under the GDPR or similar law you may have the right to:
 
-* **Access** the data we hold about you (registration, consent version, notes, reminders, report/ticket entries, log entries tied to your number, statistics).
+* **Access** the data we hold about you (registration, consent version, notes, reminders, report/ticket entries, statistics, AI history, thanks). Use `#mydata` in a private chat for a JSON export; log entries tied to your number are available on request.
 * **Correction** of inaccurate data.
-* **Deletion** of your data — use `#unregister` for registration, `#aiclear` for chat history, and contact us for notes, tickets, statistics or log entries.
+* **Deletion** of your data — use `#unregister` for registration, `#forgetai` / `#aiclear` for AI history and `#mydata delete` / `#forgetme` for stored community data (tickets, stats, thanks, notes, to-dos, reminders). Append-only audit logs are not rewritten; contact us for those and for registration/consent proof.
 * **Object/restrict** certain processing — e.g. stop using `#pair` to end that session's monitoring; `#autoflag off` (operator) disables the ToS monitor entirely.
 * **Portability** of your data where technically feasible.
 * **Complaint** to your local data protection authority.

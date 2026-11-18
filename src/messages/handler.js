@@ -104,6 +104,9 @@ const REGISTRATION_EXEMPT = new Set([
   "resetstats",
   "level",
   "whois",
+  "mydata",
+  "forgetme",
+  "forgetai",
 ]);
 
 const REGISTRATION_NOTICE_MS = 5 * 60 * 1000;

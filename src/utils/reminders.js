@@ -36,6 +36,17 @@ export async function cancelReminder(id) {
   return before !== list.length;
 }
 
+export async function deleteRemindersByCreator(creator) {
+  if (!creator) return 0;
+  const needle = String(creator).replace(/\D/g, "");
+  if (!needle) return 0;
+  const list = await loadReminders();
+  const kept = list.filter((r) => String(r.createdBy || "").replace(/\D/g, "") !== needle);
+  const removed = list.length - kept.length;
+  if (removed) await saveReminders(kept);
+  return removed;
+}
+
 async function tick() {
   if (!connRef) return;
   try {

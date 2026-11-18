@@ -4,10 +4,18 @@ import { normalizeNumber } from "./access.js";
 const TICKETS_KEY = "community:tickets";
 const SUPPORT_GROUP_KEY = "community:supportGroup";
 const DELIVERY_KEY = "community:ticketDelivery";
+const ROUTES_KEY = "community:ticketRoutes";
+const SLA_KEY = "community:ticketSlaMinutes";
 const MAX_TICKETS = 300;
 
 export const DELIVERY_MODES = ["group", "dm", "both", "off"];
 export const DEFAULT_DELIVERY = "group";
+export const DEFAULT_CATEGORY = "general";
+
+const envSla = Number.parseInt(process.env.TICKET_SLA_MINUTES ?? "360", 10);
+export const DEFAULT_SLA_MINUTES = Number.isFinite(envSla) && envSla >= 0
+  ? Math.min(10080, envSla)
+  : 360;
 
 function norm(number) {
   return normalizeNumber(number) || String(number || "").replace(/\D/g, "");
@@ -46,6 +54,59 @@ export async function setTicketDelivery(mode) {
   return value;
 }
 
+export async function getTicketRoutes() {
+  const raw = await kvGet(ROUTES_KEY);
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+}
+
+export async function getTicketRoute(category) {
+  const key = trim(category, 48).toLowerCase();
+  if (!key) return null;
+  const routes = await getTicketRoutes();
+  return routes[key] || null;
+}
+
+export async function setTicketRoute(category, jid) {
+  const key = trim(category, 48).toLowerCase();
+  const value = trim(jid, 256);
+  if (!key || !value) throw new Error("Invalid category route");
+  const routes = await getTicketRoutes();
+  routes[key] = value;
+  await kvSet(ROUTES_KEY, routes);
+  return { category: key, jid: value };
+}
+
+export async function removeTicketRoute(category) {
+  const key = trim(category, 48).toLowerCase();
+  const routes = await getTicketRoutes();
+  if (!key || !routes[key]) return false;
+  delete routes[key];
+  await kvSet(ROUTES_KEY, routes);
+  return true;
+}
+
+export async function getTicketSlaMinutes() {
+  const raw = await kvGet(SLA_KEY);
+  if (raw === 0 || raw === "0") return 0;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0
+    ? Math.min(10080, value)
+    : DEFAULT_SLA_MINUTES;
+}
+
+export async function setTicketSlaMinutes(minutes) {
+  const raw = String(minutes ?? "").trim().toLowerCase();
+  if (raw === "off" || raw === "0" || raw === "false") {
+    await kvSet(SLA_KEY, 0);
+    return 0;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) throw new Error("Invalid SLA minutes");
+  const minutesValue = Math.min(10080, Math.round(value));
+  await kvSet(SLA_KEY, minutesValue);
+  return minutesValue;
+}
+
 export async function createTicket({
   number = null,
   sender = null,
@@ -54,6 +115,7 @@ export async function createTicket({
   body = "",
   target = null,
   source = "ticket",
+  category = DEFAULT_CATEGORY,
 } = {}) {
   const n = norm(number);
   if (!n) throw new Error("Invalid ticket number");
@@ -66,6 +128,7 @@ export async function createTicket({
     sender: sender ? String(sender).slice(0, 256) : null,
     chat: chat ? String(chat).slice(0, 256) : null,
     source: source === "report" ? "report" : "ticket",
+    category: trim(category, 48).toLowerCase() || DEFAULT_CATEGORY,
     subject: trim(subject, 120) || "Support request",
     body: trim(body, 2000),
     target: target ? String(target).slice(0, 256) : null,
@@ -76,6 +139,7 @@ export async function createTicket({
     answeredBy: null,
     supportMessageId: null,
     supportChat: null,
+    slaNotifiedAt: null,
     closedAt: null,
     closedBy: null,
   };
@@ -144,7 +208,16 @@ export async function listTickets({ number = null, status = null, limit = 20 } =
       return true;
     })
     .sort((a, b) => (b.ts || 0) - (a.ts || 0))
-    .slice(0, Math.max(1, Math.min(100, Number(limit) || 20)));
+    .slice(0, Math.max(1, Math.min(MAX_TICKETS, Number(limit) || 20)));
+}
+
+export async function markTicketSlaNotified(id, at = Date.now()) {
+  const key = trim(id, 64).toUpperCase();
+  const map = await readTickets();
+  if (!key || !map[key] || map[key].slaNotifiedAt) return null;
+  map[key] = { ...map[key], slaNotifiedAt: Number(at) || Date.now() };
+  await kvSet(TICKETS_KEY, map);
+  return map[key];
 }
 
 export async function closeTicket(id, actor = null) {
@@ -159,4 +232,14 @@ export async function closeTicket(id, actor = null) {
   };
   await kvSet(TICKETS_KEY, map);
   return map[key];
+}
+
+export async function deleteTicketsFor(number) {
+  const n = norm(number);
+  if (!n) return 0;
+  const map = await readTickets();
+  const ids = Object.keys(map).filter((id) => map[id]?.number === n);
+  for (const id of ids) delete map[id];
+  if (ids.length) await kvSet(TICKETS_KEY, map);
+  return ids.length;
 }

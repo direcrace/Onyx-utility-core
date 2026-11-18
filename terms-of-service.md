@@ -12,8 +12,8 @@ These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot,
 
 The Bot provides automated WhatsApp functionality, including:
 
-* **Community access** — registration (`#register`, `#unregister`), staff ranks and role-based permissions, the TEAM menu (`#team`, `#teamlist`, `#teamstatus`, `#teamset`), member XP/levels and cosmetic member titles (`#level`, `#mystats`, `#leaderboard`), profile lookup (`#whois`, self or Mod+) and deletion of your own counters (`#resetstats`).
-* **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Support staff reply with `#answer <text>` in the support group; the answer goes to the reporter and is reposted there with the ticket content and the responder's registered name. Users can check `#mytickets` and close with `#closeticket`.
+* **Community access** — registration (`#register`, `#unregister`), staff ranks and role-based permissions, the TEAM menu (`#team`, `#teamlist`, `#teamstatus`, `#teamset`), member XP/levels and cosmetic member titles (`#level`, `#mystats`, `#leaderboard`), badges (`#badges`), thanks (`#thanks`, `#tophelpers`), profile lookup (`#whois`, self or Mod+), deletion of your own counters (`#resetstats`) and self-service data export/deletion (`#mydata`, `#forgetai`, `#forgetme`).
+* **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`), `#setticketroute` (per-category groups) and `#setsla` (unanswered-ticket reminders). Support staff reply with `#answer <text>` in the support or routed category group; the answer goes to the reporter and is reposted there with the ticket content and the responder's registered name. Users can check `#mytickets` and close with `#closeticket`.
 * **Group moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group management tools.
 * **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) via a connected AI backend.
 * **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) and search/utilities (`#anime`, `#github`, `#movie`, `#lyrics`, `#translate`, `#img`).
@@ -60,8 +60,10 @@ Group admins remain responsible for moderation decisions made with the Bot's too
 ## 5. Community Features
 
 * **Ranks** are assigned by the operator and grant tier-dependent permissions. Ranks can be reviewed and changed by the operator; having a rank is a privilege, not a right.
-* **Reports** (`#report`) and **support tickets** are forwarded to the configured support group. You must provide truthful information; repeatedly submitting false or abusive reports is a violation of Section 4.
+* **Reports** (`#report`) and **support tickets** are forwarded to the configured support group or a routed category group. You must provide truthful information; repeatedly submitting false or abusive reports is a violation of Section 4. Unanswered tickets may trigger one automated SLA reminder to that support/category group; it contains only the ticket ID, category, age and subject.
 * **Community statistics / leaderboard** (`#mystats`, `#leaderboard`) are derived from activity counters (messages, commands, reports, tickets, points). They are informational only and may be inaccurate or reset at any time. You can delete your own counters with `#resetstats`. See the Privacy Policy for what is stored.
+* **Thanks & badges** are cosmetic: `#thanks @user` can be used once per recipient within 24 hours and grants the recipient 8 helpful XP. `#tophelpers` and `#badges` only display derived counters. They never grant staff permissions and may be reset or removed at any time.
+* **Your data** can be exported with `#mydata` (private chat only) and deleted with `#mydata delete` / `#forgetme` (`#forgetai` for AI history only). Registration/consent proof and append-only audit logs remain; use `#unregister` for registration.
 * The operator may disable, limit, or reshape any community feature at any time.
 
 ---

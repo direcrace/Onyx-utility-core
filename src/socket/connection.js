@@ -18,6 +18,10 @@ import {
   startReminderScheduler,
   stopReminderScheduler,
 } from "../utils/reminders.js";
+import {
+  startTicketSlaScheduler,
+  stopTicketSlaScheduler,
+} from "../utils/ticketSla.js";
 import { processGroupGuards, processGroupMessageGate } from "../messages/groupGuards.js";
 import { getPrefix } from "../config/constants.js";
 
@@ -162,6 +166,7 @@ async function connect() {
         reconnectAttempt = 0;
         console.log("✅ Connected successfully!");
         startReminderScheduler(conn);
+        startTicketSlaScheduler(conn);
 
         try {
           const { syncGroups } = await import("../enterprise/chatIndex.js");
@@ -211,6 +216,7 @@ async function connect() {
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
         stopReminderScheduler();
+        stopTicketSlaScheduler();
         cleanupSocket(conn);
         if (globalConnection === conn) {
           globalConnection = null;

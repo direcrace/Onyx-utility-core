@@ -27,8 +27,12 @@ export async function isAiMessage(id) {
 }
 
 export async function getHistory(sender) {
+  return (await getFullHistory(sender)).slice(-HIST_LIMIT);
+}
+
+export async function getFullHistory(sender) {
   const raw = await kvGet(`${HIST_PREFIX}${sender}`);
-  return Array.isArray(raw) ? raw.slice(-HIST_LIMIT) : [];
+  return Array.isArray(raw) ? raw : [];
 }
 
 export async function addMessage(sender, msg) {

@@ -1,6 +1,6 @@
 
 
-import { kvGet, kvSet } from "../database/botKv.js";
+import { kvGet, kvSet, kvDel } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";
 
 function userKey(ownerNorm) {
@@ -43,4 +43,12 @@ export async function listNotes(ownerId) {
   const owner = normalizeNumber(ownerId) || ownerId;
   const notes = await load(owner);
   return Object.entries(notes).map(([id, v]) => ({ id, ...v }));
+}
+
+export async function deleteAllNotes(ownerId) {
+  const owner = normalizeNumber(ownerId) || ownerId;
+  const notes = await load(owner);
+  const count = Object.keys(notes).length;
+  if (count) await kvDel(userKey(owner));
+  return count;
 }

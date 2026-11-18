@@ -1,6 +1,6 @@
 
 
-import { kvGet, kvSet } from "../database/botKv.js";
+import { kvGet, kvSet, kvDel } from "../database/botKv.js";
 import { normalizeNumber } from "./access.js";
 
 function todoKey(ownerNorm) {
@@ -41,6 +41,11 @@ export async function removeTodo(ownerId, index1) {
 
 export async function clearTodos(ownerId) {
   const owner = normalizeNumber(ownerId) || ownerId;
-  await save(owner, []);
+  await kvDel(todoKey(owner));
   return true;
+}
+
+export async function countTodos(ownerId) {
+  const owner = normalizeNumber(ownerId) || ownerId;
+  return (await load(owner)).length;
 }

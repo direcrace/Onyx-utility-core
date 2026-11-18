@@ -242,12 +242,14 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Community (`src/plugins/community.js`, `src/utils/communityStats.js`, `src/utils/supportTickets.js`)
 
-- `#ticket` / `#support` (`<subject> | <message>`) and `#report <reason>` create tracked tickets; `#mytickets` lists yours, `#closeticket <id>` closes one (reporter or mod+).
+- `#ticket` / `#support` (`[category] <subject> | <message>`) and `#report <reason>` create tracked tickets; `#mytickets` lists yours, `#closeticket <id>` closes one (reporter or mod+).
 - In the support group, reply to the bot's ticket message with `#answer <text>`. The answer is sent back to the reporter and posted in the support group with the original ticket content and the responder's **registered name** (never a mention/number).
-- Owner/sudo setup: `#setsupportgroup` inside the destination group (or `#setsupportgroup <group-jid>` / `status`) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
-- Member progression: XP is the existing points counter (100 XP = one member level). Titles: `Newcomer → Member → Regular → Veteran → Legend`. `#level` shows progress; `#mystats` and `#leaderboard` show level/title. Titles are cosmetic and never grant staff permissions.
+- Owner/sudo setup: `#setsupportgroup` inside the destination group (or `#setsupportgroup <group-jid>` / `status`), `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice), `#setticketroute <category> here|<jid>|clear` for per-category routing and `#setsla <minutes|off>` for unanswered-ticket reminders (default 360 min, 5-min check cycle). `#answer` also works inside a routed category group. Reminders are one-shot per ticket and tracked via `slaNotifiedAt`.
+- Member progression: XP is the existing points counter (100 XP = one member level). Titles: `Newcomer → Member → Regular → Veteran → Legend`. `#level` shows progress and badges; `#mystats` and `#leaderboard` show level/title. Titles are cosmetic and never grant staff permissions.
+- Karma: `#thanks @user` (24 h cooldown per pair, 8 helpful XP for the recipient), `#tophelpers` for the weekly ranking. Earned achievements are shown with `#badges` and in `#level` / `#whois` (`Registered`, `First Ticket`, `Responder`, `Helper`, `Top Helper`, `Thanked`, `Chatter`, `Commander`, `Reporter`, `Veteran`, `Legend`).
 - `#whois` shows your own profile at any time; other members' profiles require Mod+ and are audit-logged. Mod+ results show registered names/status, not bare numbers.
 - Stats: `#mystats`, `#leaderboard`, `#resetstats`. Counters (messages/commands/reports/tickets) are stored per number in BotKV; no message text is kept for stats.
+- Data rights: `#mydata` sends a private JSON export of your stored data (registration, consent, stats, AI history, tickets, thanks, notes, to-dos, reminders). `#mydata delete` / `#forgetme` deletes those records; `#forgetai` clears only the AI history. Registration/consent proof and append-only audit logs are intentionally retained (use `#unregister` for registration).
 
 ### Team (`src/plugins/team.js`, `src/plugins/ranks.js`)
 

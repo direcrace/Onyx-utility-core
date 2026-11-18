@@ -11,6 +11,10 @@ import { systemLog } from "../utils/logGroup.js";
 import { BOT_INFO } from "../config/constants.js";
 import { getRegistration } from "../utils/registration.js";
 import { getRank, RANK_LABELS } from "../utils/ranks.js";
+import { getHistory, clearHistory } from "../utils/aiHistory.js";
+import { giveThanks, getThanksStats, getTopHelpers } from "../utils/karma.js";
+import { getBadges, formatBadges } from "../utils/badges.js";
+import { exportUserData, deleteUserData, deleteAiHistory } from "../utils/userData.js";
 import {
   getLeaderboard,
   getUserStats,
@@ -22,8 +26,16 @@ import {
 } from "../utils/communityStats.js";
 import {
   DELIVERY_MODES,
+  DEFAULT_CATEGORY,
   getSupportGroup,
   setSupportGroup,
+  getTicketRoutes,
+  getTicketRoute,
+  setTicketRoute,
+  removeTicketRoute,
+  DEFAULT_SLA_MINUTES,
+  getTicketSlaMinutes,
+  setTicketSlaMinutes,
   getTicketDelivery,
   setTicketDelivery,
   createTicket,
@@ -62,19 +74,40 @@ function toGroupJid(value) {
   return digits ? `${digits}@g.us` : null;
 }
 
-function parseTicketText(text) {
+const BUILTIN_CATEGORIES = new Set([
+  DEFAULT_CATEGORY, "bug", "feedback", "question", "abuse", "report", "other",
+]);
+
+async function parseTicketText(text, fallbackCategory = DEFAULT_CATEGORY) {
   const raw = String(text || "").trim();
   if (!raw) return null;
   const parts = raw.split(/\s*\|\s*|\s+—\s+|\s+–\s+/);
-  if (parts.length >= 2) {
-    return { subject: parts[0].trim().slice(0, 120), body: parts.slice(1).join(" | ").trim() };
+  const routes = await getTicketRoutes();
+  const known = new Set([...BUILTIN_CATEGORIES, ...Object.keys(routes)]);
+
+  let category = fallbackCategory;
+  let first = parts[0].trim();
+  const bracketed = first.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if (bracketed) {
+    category = bracketed[1].trim().toLowerCase() || fallbackCategory;
+    first = bracketed[2].trim();
+  } else {
+    const split = first.match(/^(\S+)\s+(.*)$/);
+    if (split && known.has(split[1].toLowerCase())) {
+      category = split[1].toLowerCase();
+      first = split[2].trim();
+    }
   }
-  return { subject: raw.slice(0, 80), body: raw };
+
+  const subject = (parts.length >= 2 ? first : first.slice(0, 80)) || "Support request";
+  const body = parts.length >= 2 ? parts.slice(1).join(" | ").trim() : raw;
+  return { category: category.slice(0, 48), subject: subject.slice(0, 120), body };
 }
 
 function formatTicket(ticket, { full = true } = {}) {
   const head = [
     `🎫 *Ticket ${ticket.id}* · ${ticket.source === "report" ? "Report" : "Support"}`,
+    `*Category:* ${ticket.category || DEFAULT_CATEGORY}`,
     `*From:* ${ticket.sender || ticket.number}${ticket.target ? `\n*Target:* ${ticket.target}` : ""}`,
     `*Chat:* ${ticket.chat || "DM"}`,
     `*Time:* ${fmtDate(ticket.ts)}`,
@@ -107,7 +140,7 @@ async function deliverTicket(conn, ticket, mode, supportJid) {
   return supportMessageId ? { supportMessageId, supportChat: supportJid } : null;
 }
 
-async function openTicket(message, conn, { source, subject, body, target }) {
+async function openTicket(message, conn, { source, subject, body, target, category = DEFAULT_CATEGORY }) {
   const mode = await getTicketDelivery();
   if (mode === "off") {
     await replyFail(
@@ -118,7 +151,7 @@ async function openTicket(message, conn, { source, subject, body, target }) {
     return;
   }
 
-  const supportJid = await getSupportGroup();
+  const supportJid = (await getTicketRoute(category)) || (await getSupportGroup());
   if ((mode === "group" || mode === "both") && !supportJid) {
     await replyFail(
       conn,
@@ -140,6 +173,7 @@ async function openTicket(message, conn, { source, subject, body, target }) {
     body,
     target,
     source,
+    category,
   });
 
   await recordUserActivity(number, {
@@ -150,11 +184,11 @@ async function openTicket(message, conn, { source, subject, body, target }) {
     action: source === "report" ? "community.report" : "community.ticket",
     target: target || null,
     reason: body,
-    meta: { ticketId: ticket.id, subject: ticket.subject, delivery: mode },
+    meta: { ticketId: ticket.id, category: ticket.category, subject: ticket.subject, delivery: mode },
   });
   await systemLog(
     source === "report" ? "warn" : "info",
-    `🎫 ${source === "report" ? "Report" : "Ticket"} ${ticket.id} from ${ticket.number}${target ? ` → ${target}` : ""}`,
+    `🎫 ${source === "report" ? "Report" : "Ticket"} ${ticket.id} [${ticket.category}] from ${ticket.number}${target ? ` → ${target}` : ""}`,
     ticket.subject
   );
 
@@ -307,6 +341,113 @@ command(
   }
 );
 
+command(
+  {
+    pattern: "setticketroute",
+    fromMe: true,
+    desc: "Route ticket categories to groups (owner/sudo)",
+    type: "owner",
+  },
+  async (message, conn) => {
+    if (!(await ownerOnly(conn, message))) return;
+
+    const raw = (getCommandArgs(message.body, "setticketroute") || "").trim();
+    const [first, ...rest] = raw.split(/\s+/);
+    const key = (first || "").toLowerCase();
+
+    if (!key || key === "status" || key === "?") {
+      const routes = await getTicketRoutes();
+      const lines = Object.entries(routes).map(([category, jid]) => `• \`${category}\` → \`${jid}\``);
+      await reply(
+        conn,
+        message,
+        await tr(
+          `🎫 *Category routes*\n${lines.length ? lines.join("\n") : "_(none — all tickets use the main support group)_"}\nDefault group: \`${(await getSupportGroup()) || "not set"}\`\nSet: \`${BOT_INFO.PREFIX}setticketroute <category> here|<jid>|clear\`.`,
+          `🎫 *Kategorie-Routen*\n${lines.length ? lines.join("\n") : "_(keine — alle Tickets gehen in die Haupt-Support-Gruppe)_"}\nStandardgruppe: \`${(await getSupportGroup()) || "nicht gesetzt"}\`\nSetzen: \`${BOT_INFO.PREFIX}setticketroute <kategorie> here|<jid>|clear\`.`
+        )
+      );
+      return;
+    }
+
+    if (!/^[a-z0-9_-]{1,48}$/.test(key)) {
+      await replyFail(conn, message, await tr("⚠️ Invalid category.", "⚠️ Ungültige Kategorie."));
+      return;
+    }
+
+    const value = rest.join(" ").trim();
+    if (!value) {
+      await replyFail(
+        conn,
+        message,
+        await tr(`Usage: \`${BOT_INFO.PREFIX}setticketroute ${key} here|<jid>|clear\`.`, `Benutzung: \`${BOT_INFO.PREFIX}setticketroute ${key} here|<jid>|clear\`.`)
+      );
+      return;
+    }
+
+    if (value.toLowerCase() === "clear") {
+      const removed = await removeTicketRoute(key);
+      await auditMessage(message, { action: "ticketroute.clear", target: key });
+      await replyOk(conn, message, removed
+        ? await tr(`🎫 Route \`${key}\` removed.`, `🎫 Route \`${key}\` entfernt.`)
+        : await tr(`🎫 Route \`${key}\` did not exist.`, `🎫 Route \`${key}\` existierte nicht.`));
+      return;
+    }
+
+    const jid = value.toLowerCase() === "here" ? message.from : toGroupJid(value);
+    if (!jid) {
+      await replyFail(conn, message, await tr("⚠️ Invalid group JID.", "⚠️ Ungültige Gruppen-JID."));
+      return;
+    }
+
+    const route = await setTicketRoute(key, jid);
+    await auditMessage(message, { action: "ticketroute.set", target: route.category, meta: { jid: route.jid } });
+    await systemLog("success", `Ticket route ${route.category} → ${route.jid}`);
+    await replyOk(conn, message, await tr(
+      `🎫 Category \`${route.category}\` now goes to \`${route.jid}\`.`,
+      `🎫 Kategorie \`${route.category}\` geht jetzt an \`${route.jid}\`.`
+    ));
+  }
+);
+
+command(
+  {
+    pattern: "setsla",
+    fromMe: true,
+    desc: "Configure the unanswered-ticket reminder (owner/sudo)",
+    type: "owner",
+  },
+  async (message, conn) => {
+    if (!(await ownerOnly(conn, message))) return;
+
+    const raw = (getCommandArgs(message.body, "setsla") || "").trim().toLowerCase();
+    const current = await getTicketSlaMinutes();
+    if (!raw || raw === "status" || raw === "?") {
+      await reply(
+        conn,
+        message,
+        await tr(
+          `⏰ Ticket SLA: ${current ? `\`${current} min\`` : "`off`"}\nDefault: \`${DEFAULT_SLA_MINUTES} min\`\nChange: \`${BOT_INFO.PREFIX}setsla <minutes|off>\`.`,
+          `⏰ Ticket-SLA: ${current ? `\`${current} Min.\`` : "`aus`"}\nStandard: \`${DEFAULT_SLA_MINUTES} Min.\`\nÄndern: \`${BOT_INFO.PREFIX}setsla <Minuten|off>\`.`
+        )
+      );
+      return;
+    }
+
+    try {
+      const minutes = await setTicketSlaMinutes(raw);
+      await auditMessage(message, { action: "ticketsla.set", target: String(minutes) });
+      await replyOk(conn, message, minutes
+        ? await tr(`⏰ Ticket SLA is now \`${minutes} min\`.`, `⏰ Ticket-SLA ist jetzt \`${minutes} Min.\`.`)
+        : await tr("⏰ Ticket SLA disabled.", "⏰ Ticket-SLA deaktiviert."));
+    } catch {
+      await replyFail(conn, message, await tr(
+        `⚠️ Use minutes 1–10080 or \`off\`.`,
+        `⚠️ Nutze Minuten 1–10080 oder \`off\`.`
+      ));
+    }
+  }
+);
+
 async function ticketCommand(message, conn, pattern) {
   const text = (getCommandArgs(message.body, pattern) || "").trim();
   if (!text) {
@@ -314,13 +455,13 @@ async function ticketCommand(message, conn, pattern) {
       conn,
       message,
       await tr(
-        `🎫 *Support ticket*\nUsage: \`${BOT_INFO.PREFIX}${pattern} <subject> | <message>\`\nExample: \`${BOT_INFO.PREFIX}${pattern} Login issue | It started today\`.`,
-        `🎫 *Support-Ticket*\nBenutzung: \`${BOT_INFO.PREFIX}${pattern} <Betreff> | <Nachricht>\`\nBeispiel: \`${BOT_INFO.PREFIX}${pattern} Login-Problem | Seit heute\`.`
+        `🎫 *Support ticket*\nUsage: \`${BOT_INFO.PREFIX}${pattern} [category] <subject> | <message>\`\nExample: \`${BOT_INFO.PREFIX}${pattern} bug Login issue | It started today\`.\nCategories can be routed with \`${BOT_INFO.PREFIX}setticketroute\`.`,
+        `🎫 *Support-Ticket*\nBenutzung: \`${BOT_INFO.PREFIX}${pattern} [Kategorie] <Betreff> | <Nachricht>\`\nBeispiel: \`${BOT_INFO.PREFIX}${pattern} bug Login-Problem | Seit heute\`.\nKategorien lassen sich mit \`${BOT_INFO.PREFIX}setticketroute\` routen.`
       )
     );
     return;
   }
-  const parsed = parseTicketText(text);
+  const parsed = await parseTicketText(text);
   await openTicket(message, conn, { source: "ticket", ...parsed, target: resolveTargetUser(message) });
 }
 
@@ -364,10 +505,12 @@ command(
       );
       return;
     }
+    const parsed = await parseTicketText(body, "report");
     await openTicket(message, conn, {
       source: "report",
-      subject: "Community report",
-      body,
+      subject: parsed.subject === body ? "Community report" : parsed.subject,
+      body: parsed.body,
+      category: parsed.category,
       target: resolveTargetUser(message),
     });
   }
@@ -447,19 +590,6 @@ command(
     type: "info",
   },
   async (message, conn) => {
-    const supportJid = await getSupportGroup();
-    if (!supportJid || message.from !== supportJid) {
-      await replyFail(
-        conn,
-        message,
-        await tr(
-          "🎫 Use `#answer` inside the configured support group.",
-          "🎫 Nutze `#answer` in der konfigurierten Support-Gruppe."
-        )
-      );
-      return;
-    }
-
     const answer = (getCommandArgs(message.body, "answer") || "").trim();
     if (!answer) {
       await reply(
@@ -474,6 +604,20 @@ command(
     }
 
     const ticket = await findTicketForAnswer(message);
+    const globalJid = await getSupportGroup();
+    const routeJid = ticket?.category ? await getTicketRoute(ticket.category) : null;
+    const validJids = [globalJid, routeJid, ticket?.supportChat].filter(Boolean);
+    if (!validJids.includes(message.from)) {
+      await replyFail(
+        conn,
+        message,
+        await tr(
+          "🎫 Use `#answer` inside the configured support or category group.",
+          "🎫 Nutze `#answer` in der konfigurierten Support- oder Kategorie-Gruppe."
+        )
+      );
+      return;
+    }
     if (!ticket) {
       await replyFail(
         conn,
@@ -486,6 +630,7 @@ command(
       return;
     }
 
+    const supportJid = message.from;
     const number = normalizeNumber(message.sender || message.from);
     const registration = await getRegistration(number);
     const name = registration?.name || ((await isPrivileged(message, conn)) ? "Owner" : null);
@@ -581,12 +726,13 @@ command(
     const xp = stats.points || 0;
     const xpLevel = levelFromXp(xp);
     const intoLevel = xp % XP_PER_LEVEL;
+    const thanks = await getThanksStats(number);
     await reply(
       conn,
       message,
       await tr(
-        `📊 *Your stats* · ${rank}\n• Member level: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} to next level\n• Commands: ${stats.commands || 0}\n• Messages: ${stats.messages || 0}\n• Reports: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Last activity: ${fmtDate(stats.lastAt)}`,
-        `📊 *Deine Statistiken* · ${rank}\n• Member-Stufe: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} bis zur nächsten Stufe\n• Befehle: ${stats.commands || 0}\n• Nachrichten: ${stats.messages || 0}\n• Meldungen: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Letzte Aktivität: ${fmtDate(stats.lastAt)}`
+        `📊 *Your stats* · ${rank}\n• Member level: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} to next level\n• Commands: ${stats.commands || 0}\n• Messages: ${stats.messages || 0}\n• Reports: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Thanks received: ${thanks.received} · given: ${thanks.given}\n• Last activity: ${fmtDate(stats.lastAt)}`,
+        `📊 *Deine Statistiken* · ${rank}\n• Member-Stufe: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} bis zur nächsten Stufe\n• Befehle: ${stats.commands || 0}\n• Nachrichten: ${stats.messages || 0}\n• Meldungen: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Danke erhalten: ${thanks.received} · gegeben: ${thanks.given}\n• Letzte Aktivität: ${fmtDate(stats.lastAt)}`
       )
     );
   }
@@ -630,8 +776,10 @@ command(
     const xp = stats?.points || 0;
     const level = levelFromXp(xp);
     const next = (level * XP_PER_LEVEL) - xp;
+    const badges = await getBadges(number);
     const lines = [
       `🏆 *Member level ${level}* — ${memberTier(level)}`,
+      `• ${await tr("Badges", "Abzeichen")}: ${formatBadges(badges)}`,
       `• XP: ${xp}`,
       `• Next level in: ${next} XP`,
       "",
@@ -639,6 +787,199 @@ command(
       await tr("Member titles are cosmetic — staff ranks use `#setrank`.", "Member-Titel sind kosmetisch — Staff-Ränge laufen über `#setrank`."),
     ];
     await reply(conn, message, lines.join("\n"));
+  }
+);
+
+command(
+  {
+    pattern: "thanks",
+    fromMe: false,
+    desc: "Thank a helpful member (24h cooldown per pair)",
+    type: "info",
+  },
+  async (message, conn) => {
+    const self = normalizeNumber(message.sender || message.from);
+    const raw = (getCommandArgs(message.body, "thanks") || "").trim();
+    const targetRef = resolveTargetUser(message) || raw.split(/\s+/)[0] || "";
+    const target = normalizeNumber(targetRef);
+
+    if (!target) {
+      await replyFail(conn, message, await tr(
+        `🤝 Usage: \`${BOT_INFO.PREFIX}thanks @user\` (or reply to their message).`,
+        `🤝 Benutzung: \`${BOT_INFO.PREFIX}thanks @user\` (oder auf ihre Nachricht antworten).`
+      ));
+      return;
+    }
+
+    const result = await giveThanks(self, target);
+    if (!result.ok) {
+      if (result.error === "self") {
+        await replyFail(conn, message, await tr("🤝 You cannot thank yourself.", "🤝 Du kannst dir nicht selbst danken."));
+      } else if (result.error === "cooldown") {
+        await replyFail(conn, message, await tr(
+          `⏳ You already thanked that member. Try again in ${result.hours}h.`,
+          `⏳ Du hast diesem Mitglied schon gedankt. Versuche es in ${result.hours} Std. wieder.`
+        ));
+      } else {
+        await replyFail(conn, message, await tr("⚠️ Invalid target.", "⚠️ Ungültiges Ziel."));
+      }
+      return;
+    }
+
+    await recordUserActivity(target, { kind: "helpful", chat: message.from });
+    const targetReg = await getRegistration(target);
+    const shown = targetReg?.name || await tr("that member", "dieses Mitglied");
+    await replyOk(conn, message, await tr(
+      `🤝 You thanked *${shown}*. They earned 8 helpful XP.`,
+      `🤝 Du hast *${shown}* gedankt. Sie erhalten 8 Hilfs-XP.`
+    ));
+  }
+);
+
+command(
+  {
+    pattern: "tophelpers",
+    fromMe: false,
+    desc: "Show the most thanked members this week",
+    type: "info",
+  },
+  async (message, conn) => {
+    const rows = [];
+    for (const entry of await getTopHelpers(10)) {
+      const reg = await getRegistration(entry.number);
+      if (!reg) continue;
+      rows.push(`• *${reg.name}* — ${entry.count}×`);
+    }
+    await reply(conn, message, rows.length
+      ? `🤝 *Top helpers this week*\n${rows.join("\n")}`
+      : await tr("🤝 No thanks recorded this week.", "🤝 Diese Woche wurde noch kein Dank erfasst."));
+  }
+);
+
+command(
+  {
+    pattern: "badges",
+    fromMe: false,
+    desc: "Show your earned badges",
+    type: "info",
+  },
+  async (message, conn) => {
+    const number = normalizeNumber(message.sender || message.from);
+    const badges = await getBadges(number);
+    const lines = badges.length
+      ? badges.map((b) => `${b.emoji} *${b.name}* — ${b.desc}`)
+      : [await tr("No badges yet.", "Noch keine Abzeichen.")];
+    await reply(conn, message, `🏅 *${await tr("Your badges", "Deine Abzeichen")}*\n${lines.join("\n")}`);
+  }
+);
+
+function chunkText(text, max = 3500) {
+  const parts = [];
+  let rest = String(text || "");
+  while (rest.length > max) {
+    let cut = rest.lastIndexOf("\n", max);
+    if (cut <= 0) cut = max;
+    parts.push(rest.slice(0, cut));
+    rest = rest.slice(cut);
+  }
+  if (rest) parts.push(rest);
+  return parts;
+}
+
+async function sendDataExport(conn, message, number, data) {
+  const json = JSON.stringify(data, null, 2);
+  const caption = await tr(
+    "🔒 Your YumBot data export. Keep this file private.",
+    "🔒 Dein YumBot-Datenexport. Bitte privat aufbewahren."
+  );
+  try {
+    await sendMessage(conn, message.from, {
+      document: Buffer.from(json, "utf8"),
+      fileName: `yumbot-mydata-${number}.json`,
+      mimetype: "application/json",
+      caption,
+    }, { quoted: { key: message.key, message: message.message } });
+    return;
+  } catch {
+    // Fallback for providers that reject buffer documents.
+  }
+
+  const parts = chunkText(json);
+  for (const part of parts) {
+    await sendMessage(conn, message.from, part);
+    if (parts.length > 1) await new Promise((r) => setTimeout(r, 500));
+  }
+}
+
+command(
+  {
+    pattern: "mydata",
+    fromMe: false,
+    desc: "Export your stored data (DM only) · `#mydata delete`",
+    type: "info",
+  },
+  async (message, conn) => {
+    const number = normalizeNumber(message.sender || message.from);
+    if (message.isGroup || /@g\.us$/i.test(message.from)) {
+      await replyFail(conn, message, await tr(
+        "🔒 Use `#mydata` in a private chat so your data is not exposed.",
+        "🔒 Nutze `#mydata` im Privatchat, damit deine Daten nicht sichtbar werden."
+      ));
+      return;
+    }
+
+    const args = (getCommandArgs(message.body, "mydata") || "").trim().toLowerCase();
+    if (args === "delete" || args === "forget" || args === "erase") {
+      const result = await deleteUserData(number);
+      await auditMessage(message, { action: "mydata.delete", target: number, meta: result.deleted });
+      const counts = Object.entries(result.deleted)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(" · ");
+      await replyOk(conn, message, await tr(
+        `🗑 Deleted your stored data (${counts}). Registration/consent proof and append-only audit logs are retained.`,
+        `🗑 Deine gespeicherten Daten gelöscht (${counts}). Registrierung/Zustimmungsnachweis und unveränderbare Audit-Logs bleiben erhalten.`
+      ));
+      return;
+    }
+
+    const data = await exportUserData(number);
+    await auditMessage(message, { action: "mydata.export", target: number });
+    await sendDataExport(conn, message, number, data);
+  }
+);
+
+command(
+  {
+    pattern: "forgetai",
+    fromMe: false,
+    desc: "Delete your AI conversation history",
+    type: "info",
+  },
+  async (message, conn) => {
+    const number = normalizeNumber(message.sender || message.from);
+    const removed = await deleteAiHistory(number);
+    await replyOk(conn, message, removed
+      ? await tr(`🧠 AI history deleted (${removed} messages).`, `🧠 KI-Verlauf gelöscht (${removed} Nachrichten).`)
+      : await tr("🧠 No AI history to delete.", "🧠 Kein KI-Verlauf zum Löschen."));
+  }
+);
+
+command(
+  {
+    pattern: "forgetme",
+    fromMe: false,
+    desc: "Alias for #mydata delete",
+    type: "info",
+    dontAddCommandList: true,
+  },
+  async (message, conn) => {
+    const number = normalizeNumber(message.sender || message.from);
+    const result = await deleteUserData(number);
+    await auditMessage(message, { action: "mydata.delete", target: number, meta: result.deleted });
+    await replyOk(conn, message, await tr(
+      "🗑 Stored community/AI data deleted. Use `#unregister` to delete registration and consent proof.",
+      "🗑 Gespeicherte Community-/KI-Daten gelöscht. Mit `#unregister` löschst du Registrierung und Zustimmungsnachweis."
+    ));
   }
 );
 
@@ -679,6 +1020,7 @@ command(
     const xp = stats?.points || 0;
     const level = levelFromXp(xp);
     const openTickets = (await listTickets({ number: targetNumber, status: "open", limit: 100 })).length;
+    const badges = await getBadges(targetNumber);
     const name = reg?.name || message.pushName || (isSelf ? targetNumber : await tr("Unknown member", "Unbekanntes Mitglied"));
 
     const lines = [
@@ -686,6 +1028,7 @@ command(
       `• ${await tr("Name", "Name")}: *${name}*`,
       `• ${await tr("Rank", "Rang")}: ${label(rank)}`,
       `• ${await tr("Member level", "Member-Stufe")}: ${level} (${memberTier(level)})`,
+      `• ${await tr("Badges", "Abzeichen")}: ${formatBadges(badges)}`,
       `• XP: ${xp}`,
       `• ${await tr("Activity", "Aktivität")}: ${stats?.messages || 0} msgs · ${stats?.commands || 0} cmds · ${stats?.reports || 0} reports · ${stats?.tickets || 0} tickets`,
       `• ${await tr("Open tickets", "Offene Tickets")}: ${openTickets}`,
