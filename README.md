@@ -238,6 +238,12 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 - `#terms` / `#terms full` and `#privacy` / `#privacy full` — bilingual summaries or the complete documents (`terms-of-service.md`, `privacy-policy.md` at repo root), chunked + paced to avoid send-burst panics. Includes no-warranty wording and contact info.
 
+### Community (`src/plugins/community.js`, `src/utils/communityStats.js`, `src/utils/supportTickets.js`)
+
+- `#ticket` / `#support` (`<subject> | <message>`) and `#report <reason>` create tracked tickets; `#mytickets` lists yours, `#closeticket <id>` closes one (reporter or mod+).
+- Owner setup: `#setsupportgroup` (run inside the destination group, `status` to check) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
+- Stats: `#mystats`, `#leaderboard`, `#resetstats`. Counters (messages/commands/reports/tickets) are stored per number in BotKV; no message text is kept for stats.
+
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)
 
 - `#uptime`, `#version`, `#update` (creator: git pull + npm install + restart), `#restart`, `#logs`, `#health`, `#config` (runtime prefix/botname/mode/policies), `#permissions`, `#whoami`, `#session`, `#sessions`, `#ratelimit`, `#diagnostics`, `#debug`, `#setcreator`, `#creatormenu`, `#setowner`.

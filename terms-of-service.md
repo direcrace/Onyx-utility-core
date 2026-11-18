@@ -1,118 +1,160 @@
 # Terms of Service
 
-**Last updated:** 14.09.2026
+**Last updated:** 18.11.2026
 
-These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot," "we," "us"), including all standard commands and the account-linking feature ("Onyx Mini," accessed via `#pair`). There is no account registration step — **by sending any command to the Bot, adding it to a group, or using `#pair`, you agree to these Terms.** If you do not agree, do not use the Bot.
+These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot," "we," "us"), including its community features, group tools, personal utilities, and the optional linked-account feature ("Onyx Mini," accessed via `#pair`).
+
+**Registration is required.** To use commands, register once with `#register <Name> accept`. Registering records your explicit acceptance of these Terms and the Privacy Policy. If you do not agree, do not register or use the Bot.
 
 ---
 
 ## 1. The Service
 
-The Bot provides automated WhatsApp functionality across categories including AI chat, group moderation, media conversion/download, search utilities, group management, personal utilities (notes, reminders, to-dos, polls), and — for users who opt in — a linked-account feature ("Onyx Mini") via `#pair`.
+The Bot provides automated WhatsApp functionality, including:
 
-The Bot is provided **"as is" and on a best-effort basis**. Some commands (e.g., `#tiktok`, `#ig`, `#fb`, `#ytmp3`) depend on third-party platforms and are explicitly best-effort; they may break, be rate-limited, or stop working without notice if those platforms change.
+* **Community access** — registration (`#register`, `#unregister`), ranks and role-based permissions, community activity statistics (`#mystats`, `#leaderboard`) and deletion of your own counters (`#resetstats`).
+* **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Users can check `#mytickets` and close with `#closeticket`.
+* **Group moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group management tools.
+* **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) via a connected AI backend.
+* **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) and search/utilities (`#anime`, `#github`, `#movie`, `#lyrics`, `#translate`, `#img`).
+* **Personal utilities** — notes, to-dos, reminders, polls.
+* **Onyx Mini** (`#pair`) — optional linking of your own WhatsApp number as a bot-controlled sub-session.
+
+The Bot is provided **"as is" and on a best-effort basis**. Third-party-dependent commands may break, be rate-limited, or stop working without notice.
 
 ---
 
 ## 2. Eligibility
 
-You must be able to lawfully use WhatsApp and this Bot in your jurisdiction, and meet WhatsApp's own minimum age requirement, to use the Bot. If you are a group admin, you are responsible for ensuring the group's use of the Bot complies with these Terms.
+You must be able to lawfully use WhatsApp and this Bot in your jurisdiction, and meet WhatsApp's own minimum age requirement. Group admins are responsible for how they configure and use the Bot's moderation tools in their groups. You must not use the Bot if you are not legally allowed to accept these Terms.
 
 ---
 
-## 3. Acceptable Use
+## 3. Registration, Consent & Version Changes
+
+* `#register <Name>` stores your display name, your WhatsApp number and a timestamp, together with the **version hashes** of these Terms and the Privacy Policy.
+* `#register <Name> accept` is your explicit declaration that you have read and accepted both documents.
+* `#unregister` deletes your registration (and, on request, your consent record). A **30-day cooldown** applies before you can register again.
+* We may update these Terms or the Privacy Policy as the Bot changes. Because consent is tied to document version hashes, **material updates require you to re-accept**: the Bot will treat previously stored consents as outdated and ask you to renew them. Continued use after an update constitutes acceptance of the revised documents.
+* Registration does not create a paid account. The Bot is currently free.
+
+---
+
+## 4. Acceptable Use
 
 You agree **not** to use the Bot to:
 
-* Send, request, or generate illegal content, including but not limited to content involving child sexual abuse material (CSAM) in any form — this is prohibited absolutely and without exception.
-* Harass, threaten, defame, or abuse other users.
+* Send, request, or generate illegal content, including child sexual abuse material (CSAM) in any form — prohibited absolutely and without exception.
+* Harass, threaten, defame, stalk, or abuse other users or community members.
 * Send spam, phishing links, malware, or unsolicited bulk messages.
-* Attempt to circumvent group moderation features (`#antilink`, `#antispam`, `#antibot`, etc.) that a group admin has enabled.
-* Use the Bot's download/media commands to infringe copyright or redistribute content you don't have rights to.
-* Use owner/administrative commands without authorization.
-* Attempt to exploit, reverse-engineer for malicious purposes, overload, or disrupt the Bot's infrastructure.
-* Use a linked Onyx Mini session for any activity that violates WhatsApp's own Terms of Service (e.g., unsolicited bulk messaging, automated abuse, impersonation).
+* Circumvent moderation features a group admin has enabled, or evade a ban/warning using another number or account.
+* Impersonate other users, operators, or support staff; file false reports or abuse the ticket/support system.
+* Use media/download commands to infringe copyright or redistribute content you do not have rights to.
+* Use owner/administrative commands without authorization, or attempt to exploit, overload, or disrupt the Bot or its infrastructure.
+* Use an Onyx Mini session for any activity violating WhatsApp's own Terms of Service.
 
-Group admins enabling moderation features (mute, kick, ban, warn, anti-* tools) are responsible for how those tools are configured and used within their own group; we are not responsible for moderation decisions made by group admins using the Bot's tools.
-
-**Enforcement & your chats:** to enforce these Terms, the Bot automatically keeps a short, **non-persistent** (RAM-only) snapshot of recent messages; it is cleared on every restart and is never written to disk. If an automated safety monitor **flags** a message, the related context may be logged for review — and only when enforcement requires it may the operator look at that flagged activity. The operator does **not** read, browse, or export chats through the Bot. Details are in the Privacy Policy.
+Group admins remain responsible for moderation decisions made with the Bot's tools in their own groups.
 
 ---
 
-## 4. Onyx Mini (`#pair`) — Specific Terms
+## 5. Community Features
 
-Using `#pair` to link your own WhatsApp number to the Bot is **optional** and comes with additional terms beyond general use:
+* **Ranks** are assigned by the operator and grant tier-dependent permissions. Ranks can be reviewed and changed by the operator; having a rank is a privilege, not a right.
+* **Reports** (`#report`) and **support tickets** are forwarded to the configured support group. You must provide truthful information; repeatedly submitting false or abusive reports is a violation of Section 4.
+* **Community statistics / leaderboard** (`#mystats`, `#leaderboard`) are derived from activity counters (messages, commands, reports, tickets, points). They are informational only and may be inaccurate or reset at any time. You can delete your own counters with `#resetstats`. See the Privacy Policy for what is stored.
+* The operator may disable, limit, or reshape any community feature at any time.
+
+---
+
+## 6. Onyx Mini (`#pair`) — Specific Terms
+
+Using `#pair` to link your own WhatsApp number is **optional** and adds the following terms:
 
 * **Your own session:** linking creates a dedicated session/database tied to your number, separate from other users.
-* **Operational visibility:** because the Bot operates using your linked account to function, it necessarily has access to the activity passing through that session.
-* **Continuous automated monitoring:** an automated system actively and continuously monitors linked sessions for specific triggers associated with abuse, spam, illegal activity, or violations of WhatsApp's Terms of Service. This is an ongoing, always-on system — not a one-time or occasional check.
-* **Consequences of a flag:** if your session is flagged, your related messages/activity may be logged, and/or the operator may personally review the flagged activity to determine whether a violation occurred.
-* **Termination without notice:** we may suspend or permanently terminate your linked session, at any time, at our sole discretion — including but not limited to when the monitoring system raises a flag, on suspicion of abuse, or for any other reason we deem appropriate. We do not guarantee advance notice or an explanation.
-* **No guaranteed uptime or data retention:** we do not guarantee that a linked session, or any data associated with it (notes, reminders, chat history), will remain available indefinitely. Termination may result in loss of that data.
-* **Your responsibility:** you remain responsible for your own WhatsApp account and for complying with WhatsApp's own Terms of Service while your account is linked. We are not responsible for any action WhatsApp takes against your number (including bans) as a result of using Onyx Mini.
-* **Consent:** running `#pair` constitutes your explicit agreement to the above, in addition to these Terms as a whole and the Privacy Policy referenced in Section 9.
+* **Operational visibility:** because the Bot operates as your linked account, it necessarily sees activity passing through that session.
+* **Continuous automated monitoring:** an always-on automated system watches linked sessions for abuse, spam, illegal activity, and violations of WhatsApp's Terms of Service. It is not occasional. The operator can switch this monitoring off (`#autoflag off`); while it is off, no flags, notices, auto-suspensions or auto-bans are produced.
+* **Consequences of a flag:** related activity may be logged for review and/or reviewed by the operator to verify a violation.
+* **Termination without notice:** we may suspend or terminate a linked session at any time, at our sole discretion, without guaranteed notice or explanation.
+* **No guaranteed uptime or retention:** linked sessions and their data may be lost.
+* **Your responsibility:** you remain responsible for your WhatsApp account and any action WhatsApp takes against your number.
+* **Consent:** running `#pair` is your explicit agreement to the above.
 
 ---
 
-## 5. Third-Party Services
+## 7. Monitoring, Logging & Enforcement
 
-Several commands rely on third-party APIs and platforms (e.g., GitHub, IMDb-linked sources, Pinterest, lyrics providers, translation services, background-removal APIs, YouTube, TikTok, Instagram, Facebook). We do not control these services, do not guarantee their availability or accuracy, and are not responsible for their content, downtime, or policy changes. Your use of commands that call these services is also subject to those services' own terms.
+To enforce these Terms and to keep audit proof for moderation actions, the Bot processes data as follows:
 
----
-
-## 6. Intellectual Property
-
-Media you send to the Bot for processing (e.g., stickers, conversions) remains yours; we claim no ownership over it. You are solely responsible for ensuring you have the right to use, convert, or redistribute any content you submit to the Bot. Content generated by AI chat features is provided for convenience and may not be accurate, original, or suitable for any particular purpose.
-
----
-
-## 7. Disclaimers
-
-The Bot is provided **without warranties of any kind**, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, accuracy, or non-infringement. We do not warrant that the Bot will be uninterrupted, error-free, or secure.
-
-AI-generated responses (`#chat`) may be inaccurate, outdated, or inappropriate; do not rely on them for legal, medical, financial, or safety-critical decisions.
+* **Audit logging (default):** moderation and safety events are written to append-only **plaintext log files** under `logs/` (one file per day). Ban/kick audit records include the actor, target, chat/group, reason, message body and message ID so an action can be proven.
+* **Log levels:** the operator chooses between `off`, `audit` (default), `messages` and `raw` via `#log level` / `#fulllog on|off`. `messages` additionally covers message, call, edit and delete events; `raw` adds truncated raw JSON metadata.
+* **No media download:** at no level does the Bot download media for logging. `raw` stores metadata and truncated JSON only — never attachment bytes or thumbnails.
+* **System log group:** only important safety/system notices are sent there; mere "logged that" confirmations are never posted.
+* **No routine chat reading by the operator:** logging exists for enforcement and audit, not for browsing conversations. Where full logging is enabled by the operator, it is an explicit configuration choice and is described transparently in the Privacy Policy.
+* **Non-persistent safety snapshot:** in addition to log files, a short RAM-only snapshot of recent messages supports automated checks; it is cleared on restart.
 
 ---
 
-## 8. Limitation of Liability
+## 8. Third-Party Services
 
-To the maximum extent permitted by law, we are not liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Bot — including but not limited to loss of data, loss of access to a linked WhatsApp account, group moderation outcomes, or reliance on AI-generated content. Our total liability for any claim arising from these Terms is limited to the amount (if any) you paid to use the Bot, which is currently free.
-
----
-
-## 9. Privacy
-
-Our collection and use of data, including the specifics of the Onyx Mini monitoring system, is described in our [Privacy Policy](./privacy-policy.md). By using the Bot you also agree to that policy.
-
-To summarise what matters for enforcement: messages are only held in a short, RAM-only, restart-cleared snapshot; logging happens only when an automated safety monitor flags activity (to enforce these Terms); and the operator does not read chats through the Bot. If you operate a self-hosted main instance yourself, you are the data controller of that instance (Privacy Policy, Section 1.1).
+Commands may call third-party APIs and platforms (AI backend, GitHub, IMDb-linked sources, Pinterest, lyrics and translation providers, background-removal API, YouTube, TikTok, Instagram, Facebook, file hosting). We do not control them, do not guarantee their availability or accuracy, and are not responsible for their content or policy changes. Their own terms apply to data once it reaches them.
 
 ---
 
-## 10. Enforcement & Termination
+## 9. Intellectual Property
+
+Media you send for processing remains yours; we claim no ownership over it. You are responsible for having the right to submit, convert, and redistribute it. AI-generated output is provided for convenience and may be inaccurate or non-original.
+
+---
+
+## 10. Disclaimers
+
+The Bot is provided **without warranties of any kind**. AI responses may be inaccurate, outdated, or inappropriate; do not rely on them for legal, medical, financial, or safety-critical decisions. Community statistics and leaderboard data are informational and may be wrong or reset.
+
+---
+
+## 11. Limitation of Liability
+
+To the maximum extent permitted by law, we are not liable for indirect, incidental, special, consequential, or punitive damages arising from use of the Bot — including loss of data, loss of a linked account, moderation outcomes, or reliance on AI/statistics. Our total liability for any claim is limited to the amount (if any) you paid, which is currently free.
+
+---
+
+## 12. Privacy
+
+Our collection, storage and use of data — including registration data, plaintext log files, report/ticket contents, statistics and the Onyx Mini monitoring system — is described in the [Privacy Policy](./privacy-policy.md). By registering and using the Bot you also agree to that policy.
+
+If you operate a self-hosted main instance yourself, you are the data controller of that instance (Privacy Policy, Section 1.1).
+
+---
+
+## 13. Enforcement & Termination
 
 We may, at our sole discretion and without prior notice:
 
-* Disable specific commands for a group (`#disable`) or globally (`#flag`).
-* Warn, mute, kick, or ban a user from a group (via admin-configured moderation tools).
-* Globally ban a user from using the Bot (`#ban`).
-* Suspend or terminate any Onyx Mini linked session (see Section 4).
+* Require re-registration or re-acceptance of updated documents.
+* Disable commands for a group (`#disable`) or globally (`#flag`).
+* Warn, mute, kick, or ban a user (via admin-configured moderation tools).
+* Globally ban a user from the Bot (`#ban`).
+* Suspend or terminate an Onyx Mini session (Section 6).
+* Reject, close, or ignore reports/tickets that are abusive or false.
+* Remove ranks, leaderboard entries, or stored user data where permitted.
 * Refuse service to anyone for any lawful reason.
 
 ---
 
-## 11. Changes to These Terms
+## 14. Changes to These Terms
 
-We may update these Terms as the Bot's features change. Material changes will be reflected by updating the "Last updated" date above. Continued use of the Bot — including continuing to use a linked Onyx Mini session — after changes take effect constitutes acceptance of the revised Terms.
+We may update these Terms as features change. Material changes are reflected by the "Last updated" date. Because consent is version-hashed, you will be asked to re-accept when documents change. Continued use after changes take effect constitutes acceptance.
 
 ---
 
-## 12. Governing Law
+## 15. Governing Law
 
 These Terms are governed by the laws of Germany/EU, without regard to conflict-of-law principles, except where mandatory consumer-protection law in your country of residence provides otherwise.
 
 ---
 
-## 13. Contact
+## 16. Contact
 
 Questions about these Terms can be sent to:
- (WhatsApp contact not included) · discord: directorace · email: teamtestdevteam@gmx.net
+
+WhatsApp: +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net

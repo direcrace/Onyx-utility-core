@@ -1,183 +1,205 @@
 # Privacy Policy
 
-**Last updated:** 14.09.2026
+**Last updated:** 18.11.2026
 
-> **Using `#pair` (Onyx Mini)?** Read Section 3.2 before linking your number — it explains the monitoring, logging, and termination that come with a linked session. A short version of this is repeated below so it can be shown directly at pairing time.
-> **Running or using a self-hosted "main" instance?** Read Section 1 and Section 3.3 — the privacy commitments there (non-persistent log, flag-driven logging, the operator not reading chats) apply to whoever operates the instance you use.
+> **Using `#pair` (Onyx Mini)?** Read Section 3.3 before linking your number — it explains the monitoring, logging, and termination that come with a linked session.
+> **Using a self-hosted "main" instance?** Read Section 1.1 — the operator of the instance you use is the controller responsible for it.
+> **Registered as a community member?** Sections 3.2, 3.5, 3.6 and 3.7 describe the data stored about you.
 
-This Privacy Policy explains how this WhatsApp bot ("the Bot," "we," "us") collects, uses, stores, and protects information when you interact with it, including through group commands, private chat, and the linked-account ("pairing") feature.
+This Privacy Policy explains how this WhatsApp bot ("the Bot," "we," "us") collects, uses, stores, and protects information when you interact with it — in groups, private chat, through registration, support tickets, reports, and the linked-account ("pairing") feature.
 
-By sending any command to the Bot, adding it to a group, or using `#pair` to link your own WhatsApp account, you agree to the practices described in this policy. There is no separate account registration (no `#register` step) — **use of the Bot constitutes your consent** to this policy.
+By registering (`#register`), sending commands, adding the Bot to a group, or using `#pair`, you agree to the practices described here.
 
 ---
 
 ## 1. Who Operates the Bot
 
 The Bot is operated by Nero.
-Contact: +49 160 95344704 (WhatsApp) · discord: directorace · email: teamtestdevteam@gmx.net
 
-If you are subject to the EU General Data Protection Regulation (GDPR) or a similar law, this section identifies the data controller for that purpose.
+Contact: WhatsApp +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net
+
+If you are subject to the EU General Data Protection Regulation (GDPR) or similar law, this section identifies the data controller.
 
 ### 1.1 Self-hosted "main" instances
 
-"Main" instances are full, independently configured installations of the Bot's software — as opposed to the paired "Mini" sessions described in Section 3.2. When you or someone else run a main instance (on your own hardware, a VPS, or anywhere else), the person operating **that** instance is the data controller responsible for it — not Nero — even where components were copied from this project.
+"Main" instances are full, independently configured installations of the Bot's software — as opposed to paired "Mini" sessions (Section 3.3). When you or a third party run a main instance, **the person operating that instance is the controller** — not Nero — even if the software originated from this project. Nero has no access to, and takes no responsibility for, instances Nero does not operate.
 
-The privacy commitments in this policy — in particular the non-persistent safety snapshot (Section 3.3), flag-driven logging, and the statement that **the operator does not read chats** — apply to whichever person operates the instance you are actually using:
-
-* If Nero runs the main instance for you, those commitments are Nero's.
-* If you (or a third party) run the main instance yourself, those commitments are that operator's responsibility. Nero has no access to — and takes no responsibility for — instances Nero does not operate.
-
-The code, configuration, and legal documents for a main instance travel with the instance itself, so whoever runs it is in full control of what it stores, logs, and does.
+Whoever runs a main instance controls what it stores, logs, and retains, including the log level (`off` / `audit` / `messages` / `raw`) and whether the ToS monitor is enabled. The commitments in this policy apply to whichever operator runs the instance you actually use.
 
 ---
 
 ## 2. What the Bot Does
 
-The Bot provides commands across several categories, including but not limited to:
-
-* **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) — conversational replies generated via a connected AI backend (LM Studio).
-* **Moderation** (`#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, etc.) — automated and manual group management tools for group admins.
-* **Fun / utility commands** (reactions, voice effects, calculators, stickers).
-* **Search** (`#anime`, `#github`, `#movie`, `#lyrics`, `#translate`, `#img`) — queries relayed to third-party APIs.
-* **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) — download, conversion, or extraction of media you or others in a group send.
-* **Group management tools** (`#tagall`, `#promote`, `#demote`, `#groupinfo`).
-* **Personal utilities** (`#note`, `#todo`, `#remind`, `#poll`).
-* **Account linking** (`#pair`) — lets a user connect their own WhatsApp number as a bot-controlled session ("Onyx Mini" sub-session).
-* **Owner/administrative tools** — used solely by the Bot operator to run, moderate, and secure the service (e.g. `#broadcast`, `#ban`, `#audit`, `#backup`, `#sudo`).
+* **Community** — registration (`#register`, `#unregister`), ranks/roles, activity statistics (`#mystats`, `#leaderboard`) and `#resetstats`.
+* **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`).
+* **Moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group tools.
+* **AI chat** (`#chat`, `#aiprompt`) via a connected backend, plus media processing and search/utilities.
+* **Personal utilities** — notes, to-dos, reminders, polls.
+* **Onyx Mini** (`#pair`) — optional linking of your own WhatsApp number as a sub-session.
 
 ---
 
 ## 3. Information We Collect
 
-Depending on which features you use, we may process:
-
 ### 3.1 Standard usage data
-* Your WhatsApp ID / phone number, as needed to respond to you or attribute a command.
-* The text of commands you send and, where a command requires it, the message content needed to execute that command (e.g., text to translate, a caption to convert to a sticker, a message you reply to for `#del` or `#vv`).
-* Media you send to media-processing commands (images, video, audio, stickers), for the time needed to process and return the result.
-* Group metadata for groups the Bot is added to: group name, ID, member list, admin list, and group settings the Bot manages (e.g., anti-link, anti-spam, welcome/goodbye configuration).
-* Data you deliberately ask the Bot to store on your behalf: notes (`#note`), to-do items (`#todo`), reminders (`#remind`), poll data.
-* AI chat history, where retained, until you clear it with `#aiclear` or it is otherwise purged.
-* Basic operational logs (timestamps, command names, error states) used for debugging and abuse prevention.
 
-### 3.2 Data specific to paired accounts (`#pair`)
-If you use `#pair` to link your own WhatsApp number to the Bot:
+Depending on the features you use:
 
-* You receive a **separate, dedicated database/session** used only for your linked account and its activity.
-* Because the Bot operates *as* your account in this mode, it necessarily has visibility into the messages and events passing through that session in order to function.
-* **Automated monitoring:** an automated system continuously watches sessions created through `#pair` for specific events and behavioral triggers (for example, patterns consistent with abuse, spam, illegal activity, or violations of WhatsApp's own terms of service). This system is not a token gesture — it actively scans for defined trigger conditions on an ongoing basis.
-* **What happens on a flag:** if the automated system flags a session, one or both of the following may occur:
-  - Messages or events related to the flagged activity may be logged for review, and/or
-  - A human operator (the Bot owner) may personally review the flagged activity to verify whether a violation occurred.
-* **Termination:** the Bot operator may suspend or terminate any paired session at any time, at their sole discretion — including but not limited to cases where the monitoring system raises a flag. No prior notice or justification is guaranteed.
-* There is no registration or identity-verification step beyond the WhatsApp pairing process itself. **Choosing to pair your account is your consent** to this monitoring and to the possibility of logging, review, and termination described above.
+* Your WhatsApp ID / number, as needed to attribute a command or respond to you.
+* Command text and, where required to execute a command, the message content (e.g. text to translate, a caption to convert, a replied-to message).
+* Media you deliberately send to media-processing commands — processed only as long as needed to return the result, **never stored for logging**.
+* Group metadata for groups the Bot is in: group name, ID, member/admin lists, and moderation settings the Bot manages.
+* Data you deliberately store: notes, to-dos, reminders, polls, AI chat history (until you clear it with `#aiclear`).
+* Basic operational metadata (timestamps, command names, error states) for debugging and abuse prevention.
+
+### 3.2 Registration data (community members)
+
+When you run `#register <Name> accept` we store:
+
+* your WhatsApp number (digits only),
+* the name you chose (max. 32 characters),
+* the timestamp of registration,
+* the **version hashes** of the Terms of Service and this Privacy Policy at the time you accepted,
+* and, where applicable, the sender number of the confirming message.
+
+`#unregister` deletes the registration and starts a **30-day cooldown** before you can register again. Consent records are kept so we can show when and to which document version you agreed.
+
+### 3.3 Data specific to paired accounts (`#pair`)
+
+If you link your own WhatsApp number:
+
+* You receive a **separate, dedicated database/session** used only for your linked account.
+* Because the Bot operates *as* your account, it necessarily sees activity passing through that session.
+* **Automated monitoring:** an always-on system watches linked sessions for defined abuse/spam/illegal-activity/ToS triggers. The operator can disable it entirely with `#autoflag off`; while off, no flags, log-group notices, auto-suspensions or auto-bans occur.
+* **On a flag:** related messages/events may be logged for review, and/or the operator may review the flagged activity to verify a violation.
+* **Termination:** the operator may suspend or terminate any linked session at any time, at sole discretion, without guaranteed notice or justification.
+* **Consent:** running `#pair` is your consent to this monitoring, logging, review and possible termination.
+
+### 3.4 Short-lived safety snapshot (RAM only)
+
+The Bot keeps a short, capped, heavily truncated snapshot of recent messages in working memory so automated safety checks can judge context.
+
+* It lives **only in RAM**, is never written to disk, and is cleared on the next restart — irrecoverably.
+* It contains no full history, no attachment bytes and no thumbnails.
+* It is captured identically for everyone; it is not a "who talked to whom" archive.
+* Only when a defined trigger fires may related context be written to the log files described below.
+
+### 3.5 Plaintext audit and message logs (persistent)
+
+In addition to the RAM snapshot, the Bot can write **append-only plaintext log files** under `logs/` (or the configured `AUDIT_LOG_DIR`), one file per day:
+
+| Level | What is written |
+|---|---|
+| `off` | nothing |
+| `audit` **(default)** | moderation and safety events only |
+| `messages` | audit plus message/call/edit/delete events |
+| `raw` | everything above plus truncated raw JSON metadata |
+
+* **Audit proof:** ban/kick and similar actions record actor, target, chat/group, reason, message body and message ID so an action can be verified.
+* **No media download:** at no level does the Bot download media for logging. `raw` stores metadata and truncated JSON only — never attachment bytes, thumbnails, or full media.
+* **Operator control:** the level is chosen by the operator via `#log level` or `#fulllog on|off` and can be changed at runtime. The default is `audit`.
+* **System log group:** only important safety/system notices are sent there; no per-log "logged that" confirmations.
+* **Access:** the files are local to the instance and intended for the operator/auditor.
+
+If you run a main instance yourself, you are responsible for these files, their protection, and their deletion (Section 7).
+
+### 3.6 Reports and support tickets
+
+When you use `#report`, `#ticket` / `#support`, or manage them via `#mytickets` / `#closeticket` we store:
+
+* your number, the subject and message text/description you provide, any mentioned/replied-to target, the chat/group context, and a timestamp,
+* the ticket status (open/closed) and who closed it,
+* the delivery destination and mode configured by the operator (`#setsupportgroup`, `#setticketdelivery`). With `dm`, full ticket content goes only to you; the support group receives just a short notice with the ticket ID and sender.
+
+This data is used only to handle your request and to keep an audit trail. False or abusive reports may be rejected (Terms, Sections 4 and 5).
+
+### 3.7 Community statistics and leaderboard
+
+The Bot keeps activity counters (messages, commands, reports, tickets, points) to build `#mystats` and `#leaderboard`. These are derived from operational metadata only — no message text is stored for this purpose — and are informational, may be inaccurate or reset. They are associated with your WhatsApp number and/or registered name. You can delete your own counters with `#resetstats` or ask us under Section 10.
 
 ---
 
-### 3.3 Safety log for ToS enforcement (general messages — non-persistent)
+## 4. Why We Process This Data (Purpose & Legal Basis)
 
-Beyond the paired-session monitoring above, the Bot automatically keeps a short, in-memory snapshot of the recent messages it processes — in normal chats **and** linked sessions — so its safety systems can judge, in context, whether a message or behaviour violated the Bot's Terms of Service. This snapshot is **not** a message archive and is **not** a way for anyone to read your chats:
-
-* **What it is:** only the most recent messages the Bot has seen, capped in number and heavily truncated — short snippets only, no full history, no attachment bytes, no thumbnails.
-* **Non-persistent by design:** the snapshot lives purely in the Bot's working memory (RAM). It is **never** written to disk, the database, or any other storage. **A single restart/reboot clears it completely — nothing survives, as if it never happened** — and it cannot be recovered afterwards.
-* **Why it exists:** so the automated safety monitors can verify whether a message actually crossed a ToS line, and to record that enforcement. It is captured automatically and identically for every user; it is not a record of "who talked to whom" or "what was said."
-* **When it becomes more than a snapshot:** only when a safety monitor **flags** a message or event may the related context be logged (see "Data Retention") so the flag can be investigated. Where enforcement requires it, the operator may review **that flagged activity, and only that**, to decide whether a violation occurred.
-* **The operator does not read chats:** the operator does not read, browse, or export your conversations through the Bot — not routinely, not selectively, not as a service convenience. Nothing in this policy authorises the operator to observe who you talk to or what you say. Logging exists for the single purpose of enforcing the Terms when a defined trigger fires, and even then only the flagged activity is reviewable.
-* **Your own stored data** (notes `#note`, to-dos `#todo`, reminders `#remind`, poll data, configured group settings) is a separate, persistent thing governed by "Data Retention" below — it is not part of this snapshot and never stored in it.
+* **To provide the requested feature** — executing a command you send is necessary to deliver the service (performance of a requested service / legitimate interest).
+* **Registration & consent records** — to know who accepted which document version (legal compliance / legitimate interest in proving consent).
+* **To secure the service and enforce the Terms** — the ToS monitor, the RAM snapshot and `audit`-level logs exist to detect and prove abuse. `audit` is the default; higher levels are an explicit operator choice.
+* **To handle reports/tickets** — to respond to your request and keep an audit trail (legitimate interest / performance of a requested service).
+* **To run community features** — ranks, statistics and leaderboard (legitimate interest in operating the community; you may request deletion under Section 10).
+* **Consent** — where no other basis applies (e.g. voluntary `#pair`, storing notes/reminders).
 
 ---
 
-### 3.4 Onyx Mini Pairing Notice (short form)
+## 5. Third-Party Services
 
-This is a condensed version of Section 3.2, meant to be shown to a user at the moment they run `#pair` — before their session is created:
-
-> **Before you link your number with `#pair`:**
-> - Your linked account gets its own separate database/session.
-> - Because the Bot runs as your account in this mode, it can see the activity in that session.
-> - An automated system continuously monitors linked sessions for specific abuse/violation triggers — this is always on, not occasional.
-> - If flagged: your messages related to the flag may be logged, and/or the operator may personally review the flagged activity.
-> - The operator can suspend or terminate your linked session at any time, at their sole discretion, with no guaranteed notice.
-> - There is no separate signup — **running `#pair` means you agree to this.**
-
----
-
-## 5. Why We Process This Data (Purpose & Legal Basis)
-
-* **To provide the service you request** — executing the command you sent is a contractual/functional necessity (legitimate interest / performance of a requested service).
-* **To secure the Bot and its infrastructure** — the monitoring system for paired sessions exists to detect and stop abuse (spam, illegal content, ToS violations) that could compromise other users, the linked WhatsApp numbers, or the Bot itself (legitimate interest in platform safety and legal compliance).
-* **To enforce the Terms of Service** — the non-persistent safety snapshot and the flag-driven logging in Section 3.3 exist solely so the automated safety systems can verify, in context, and record whether a message violated the Terms. This processing is automated and flag-driven only; **the operator does not read chats through the Bot**, and nothing in this policy provides a basis for systematically browsing conversations.
-* **To operate group moderation features** that a group admin has explicitly enabled.
-* **Consent** — where there is no other legal basis (e.g., voluntary use of `#pair`, storage of notes/reminders), your continued use of the feature is treated as consent.
-
----
-
-## 6. Third-Party Services
-
-Certain commands send data to external services to function. This may include, depending on the command used:
+Commands may send only the data needed for the specific request to external services, including:
 
 * AI inference backend (LM Studio) for `#chat` / `#aiprompt`
 * GitHub (public profile lookups)
-* IMDb-linked sources (`#movie`)
-* Pinterest (`#img`)
-* Lyrics data providers (`#lyrics`)
-* Translation services (`#translate`)
+* IMDb-linked sources (`#movie`), Pinterest (`#img`), lyrics providers, translation services
 * Background-removal API (`#removebg`)
-* YouTube, TikTok, Instagram, Facebook (media download commands — best-effort, subject to those platforms' own availability and terms)
-* Media/file hosting used by `#toururl` to generate a shareable link
+* YouTube, TikTok, Instagram, Facebook (media commands — best-effort, subject to their terms)
+* Media/file hosting used by `#toururl`
 
-Only the data necessary for the specific request (e.g., the search term, the media file, the text to translate) is sent to the relevant service. We do not control these third parties' own data practices; their own privacy policies apply to data once it reaches them.
-
----
-
-## 7. Data Retention
-
-* Command inputs/outputs that are not explicitly stored (e.g., a one-off sticker conversion) are processed transiently and not retained beyond what's needed to deliver the result.
-* Data you explicitly ask to be stored (notes, to-dos, reminders, AI chat history) is kept until you delete it yourself, you clear it via the relevant command, or the Bot operator removes it (e.g., following a ban or termination).
-* Logs from the automated monitoring system for paired sessions are retained only as long as needed to review a flag and resolve it, unless retention is legally required for longer. **Concrete cap:** logs tied to a flag that is **not** found to be a violation are **automatically purged after 30 days**; logs tied to a confirmed violation are kept for the resolution of that case and then deleted, or as required by law.
-* Logs from a safety flag on **any** chat (not only paired sessions) follow the same rule: kept only as long as needed to resolve the flag, **automatically purged after 30 days** when no violation is found, and deleted once a confirmed case is resolved (or retained as law requires). The general non-persistent snapshot itself (Section 3.3) is **never written to disk at all** — it exists only in RAM and is gone on the next restart.
-* Group settings persist for as long as the Bot remains in the group.
+Once data reaches a third party, that party's own privacy policy applies. We do not control their practices.
 
 ---
 
-## 8. Data Security
+## 6. Data Retention
 
-We take reasonable technical measures to protect stored data (e.g., access restricted to the Bot operator/owner tools). No system is completely secure, and we cannot guarantee absolute security of data transmitted over WhatsApp or third-party APIs.
+* **Transient data** (e.g. a one-off sticker conversion) is not retained beyond delivering the result.
+* **Your stored data** (notes, to-dos, reminders, AI chat history, group settings) stays until you delete it, you clear it via the relevant command, or the operator removes it (e.g. after a ban).
+* **Registration** stays until `#unregister`; a 30-day cooldown record remains after deletion.
+* **Consent records** are kept as proof of acceptance; we may prune them when no longer needed for legal/audit purposes.
+* **Plaintext log files** are append-only daily files. They are retained until the operator deletes or rotates them. Where technically feasible, entries tied to a flag that was **not** a violation are removed after **30 days**; entries tied to a confirmed case are kept for its resolution and then deleted, or as law requires. The RAM snapshot itself is never written to disk.
+* **Report/ticket data** is kept as long as needed to resolve the case and for audit, then deleted or as law requires.
+* **Statistics/leaderboard** entries are kept until you request deletion, you unregister, or the operator resets them.
 
----
-
-## 9. Children
-
-The Bot is not directed at children and is not knowingly used to collect data from children under the minimum age required by WhatsApp's own terms of service (13, or higher where local law requires). If you believe a child has used the Bot in a way that raises concerns, contact us using the details above.
-
----
-
-## 10. Your Rights
-
-Depending on your jurisdiction (e.g., under GDPR), you may have the right to:
-
-* Request access to the data we hold about you (e.g., stored notes, reminders, or logs tied to your number).
-* Request correction or deletion of that data.
-* Object to or restrict certain processing (e.g., disable AI chat with `#aiclear`, or stop using `#pair` to end monitoring of that session).
-* Request a copy of your data in a portable format, where technically feasible.
-* Lodge a complaint with your local data protection authority.
-
-To exercise these rights, contact us using the details in Section 1. Because there is no account/registration system, we may need to verify your request through the WhatsApp number associated with it.
+For self-hosted instances, the local operator controls all retention and is responsible for deleting logs and stored data.
 
 ---
 
-## 11. International Data Transfers
+## 7. Data Security
 
-Because several features rely on third-party APIs (Section 6) that may operate outside your country, data sent to those commands may be processed abroad. Use of those specific commands implies acceptance of that transfer.
-
----
-
-## 12. Changes to This Policy
-
-We may update this policy as the Bot's features change. Material changes will be reflected by updating the "Last updated" date above. Continued use of the Bot after changes take effect constitutes acceptance of the revised policy.
+We use reasonable technical measures (operator/owner-only tools, restricted access). No system is completely secure; data sent over WhatsApp or third-party APIs cannot be guaranteed absolutely secure. Plaintext log files are only as secure as the machine and filesystem they live on — self-hosters should restrict filesystem access accordingly.
 
 ---
 
-## 13. Contact
+## 8. Children
 
-Questions about this policy or your data can be sent to:
- (WhatsApp NOT included ) · discord: directorace · email: teamtestdevteam@gmx.net
+The Bot is not directed at children and is not knowingly used to collect data from children under WhatsApp's minimum age (13, or higher where local law requires). Contact us if you believe a child used the Bot in a concerning way.
+
+---
+
+## 9. Your Rights
+
+Under the GDPR or similar law you may have the right to:
+
+* **Access** the data we hold about you (registration, consent version, notes, reminders, report/ticket entries, log entries tied to your number, statistics).
+* **Correction** of inaccurate data.
+* **Deletion** of your data — use `#unregister` for registration, `#aiclear` for chat history, and contact us for notes, tickets, statistics or log entries.
+* **Object/restrict** certain processing — e.g. stop using `#pair` to end that session's monitoring; `#autoflag off` (operator) disables the ToS monitor entirely.
+* **Portability** of your data where technically feasible.
+* **Complaint** to your local data protection authority.
+
+To exercise these rights, contact us using Section 1. Because we now have a registration system, we will normally verify you through the WhatsApp number on the registration.
+
+---
+
+## 10. International Data Transfers
+
+Some features use third-party services that may operate outside your country. Data sent to those commands may be processed abroad; use of those commands implies acceptance of that transfer.
+
+---
+
+## 11. Changes to This Policy
+
+We update this policy as the Bot's features change, reflected by the "Last updated" date. **Consent is bound to document version hashes.** When this policy or the Terms change materially, existing consents become outdated and you will be asked to re-accept via `#register <Name> accept`. Continued use after changes take effect constitutes acceptance.
+
+---
+
+## 12. Contact
+
+Questions about this policy or your data:
+
+WhatsApp +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net

@@ -2,12 +2,13 @@ import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";
 import { BOT_INFO } from "../config/constants.js";
 import { normalizeNumber, isPrivileged } from "../utils/access.js";
-import { recordConsent, legalVersions } from "../utils/consent.js";
+import { recordConsent, legalVersions, getConsent, consentIsCurrent } from "../utils/consent.js";
 import {
   getRegistration,
   isRegistered,
   getCooldown,
   registerUser,
+  refreshRegistrationConsent,
   unregisterUser,
 } from "../utils/registration.js";
 
@@ -86,14 +87,54 @@ command(
       return;
     }
 
+    const versions = legalVersions();
     const existing = await getRegistration(number);
     if (existing) {
-      await reply(
+      const current =
+        existing.terms === versions.terms &&
+        existing.privacy === versions.privacy &&
+        consentIsCurrent(await getConsent(number), versions);
+
+      if (current) {
+        await reply(
+          conn,
+          message,
+          await tr(
+            `ℹ️ You're already registered as *${existing.name || "—"}* (since ${fmtDate(existing.ts)}).\nUse \`${BOT_INFO.PREFIX}unregister\` first if you want to change it.`,
+            `ℹ️ Du bist bereits als *${existing.name || "—"}* registriert (seit ${fmtDate(existing.ts)}).\nNutze zuerst \`${BOT_INFO.PREFIX}unregister\`, wenn du das ändern willst.`
+          )
+        );
+        return;
+      }
+
+      const { wantsAccept } = parseArgs(message, "register");
+      if (!wantsAccept) {
+        await reply(
+          conn,
+          message,
+          await tr(
+            `📝 The Terms/Privacy changed. Renew your consent with:\n*${BOT_INFO.PREFIX}register ${existing.name || "Name"} accept*\n\nNew versions: ToS v${versions.terms} · Privacy v${versions.privacy}.\nDocuments: \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`.`,
+            `📝 Nutzbedingungen/Datenschutz haben sich geändert. Erneuere deine Zustimmung mit:\n*${BOT_INFO.PREFIX}register ${existing.name || "Name"} accept*\n\nNeue Versionen: ToS v${versions.terms} · Datenschutz v${versions.privacy}.\nDokumente: \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`.`
+          )
+        );
+        return;
+      }
+
+      await recordConsent(number, {
+        source: "register-reaccept",
+        sender: message.sender || message.from,
+      });
+      const rec = await refreshRegistrationConsent(number, {
+        terms: versions.terms,
+        privacy: versions.privacy,
+        sender: message.sender || message.from,
+      });
+      await replyOk(
         conn,
         message,
         await tr(
-          `ℹ️ You're already registered as *${existing.name || "—"}* (since ${fmtDate(existing.ts)}).\nUse \`${BOT_INFO.PREFIX}unregister\` first if you want to change it.`,
-          `ℹ️ Du bist bereits als *${existing.name || "—"}* registriert (seit ${fmtDate(existing.ts)}).\nNutze zuerst \`${BOT_INFO.PREFIX}unregister\`, wenn du das ändern willst.`
+          `✅ Consent renewed as *${rec?.name || existing.name || "—"}*.\nCurrent versions: ToS v${versions.terms} · Privacy v${versions.privacy}. You can keep using my commands.`,
+          `✅ Zustimmung erneuert als *${rec?.name || existing.name || "—"}*.\nAktuelle Versionen: ToS v${versions.terms} · Datenschutz v${versions.privacy}. Du kannst meine Befehle weiter nutzen.`
         )
       );
       return;
@@ -117,8 +158,6 @@ command(
       await usage(conn, message);
       return;
     }
-
-    const versions = legalVersions();
 
     if (!wantsAccept) {
       await askConsent(conn, message, name, versions);

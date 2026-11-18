@@ -1,4 +1,5 @@
 import { kvGet, kvSet } from "../database/botKv.js";
+import { getConsent, consentIsCurrent, legalVersions } from "./consent.js";
 
 const KEY = "community:registered";
 const COOLDOWN_KEY = "community:registerCooldown";
@@ -28,6 +29,21 @@ export async function getRegistration(number) {
 
 export async function isRegistered(number) {
   return !!(await getRegistration(number));
+}
+
+export async function getRegistrationStatus(number, versions = legalVersions()) {
+  const n = norm(number);
+  if (!n) return { registered: false, current: false, record: null };
+
+  const record = await getRegistration(n);
+  if (!record) return { registered: false, current: false, record: null };
+
+  const current =
+    record.terms === versions.terms &&
+    record.privacy === versions.privacy &&
+    consentIsCurrent(await getConsent(n), versions);
+
+  return { registered: true, current, record };
 }
 
 export async function listRegistrations() {
@@ -73,6 +89,24 @@ export async function registerUser(number, { name, terms = null, privacy = null,
   map[n] = rec;
   await kvSet(KEY, map);
   return rec;
+}
+
+export async function refreshRegistrationConsent(number, { terms = null, privacy = null, sender = null } = {}) {
+  const n = norm(number);
+  if (!n) throw new Error("Invalid number");
+
+  const map = await readMap();
+  if (!map[n]) return null;
+
+  map[n] = {
+    ...map[n],
+    terms,
+    privacy,
+    sender: sender ? norm(sender) : map[n].sender || null,
+    reacceptedAt: Date.now(),
+  };
+  await kvSet(KEY, map);
+  return map[n];
 }
 
 export async function unregisterUser(number) {

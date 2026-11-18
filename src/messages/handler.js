@@ -12,7 +12,8 @@ import { t } from "../utils/i18n.js";
 import logger from "../utils/logger.js";
 import { systemLog, isLogGroupAsync } from "../utils/logGroup.js";
 import { isBotBanned } from "../utils/globalBan.js";
-import { isRegistered } from "../utils/registration.js";
+import { getRegistrationStatus } from "../utils/registration.js";
+import { recordUserActivity } from "../utils/communityStats.js";
 import { checkCommandFlag } from "../enterprise/flags.js";
 import { evaluatePolicy } from "../enterprise/policy.js";
 import { writeAudit } from "../enterprise/audit.js";
@@ -93,6 +94,12 @@ const REGISTRATION_EXEMPT = new Set([
   "uptime",
   "status",
   "report",
+  "ticket",
+  "support",
+  "mytickets",
+  "closeticket",
+  "mystats",
+  "resetstats",
 ]);
 
 const REGISTRATION_NOTICE_MS = 5 * 60 * 1000;
@@ -107,19 +114,23 @@ async function checkRegistration(message, conn, command, name, privileged) {
 
     const number = normalizeNumber(message.sender || message.from);
     if (!number) return true;
-    if (await isRegistered(number)) return true;
+
+    const status = await getRegistrationStatus(number);
+    if (status.registered && status.current) return true;
 
     const now = Date.now();
     if (now - (registerNoticeAt.get(number) || 0) >= REGISTRATION_NOTICE_MS) {
       registerNoticeAt.set(number, now);
-      await sendError(
-        conn,
-        message.from,
-        await tr(
-          `📝 You must register first. Send \`${BOT_INFO.PREFIX}register <Name>\` and accept the Terms + Privacy (see \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`,
-          `📝 Du musst dich zuerst registrieren. Sende \`${BOT_INFO.PREFIX}register <Name>\` und akzeptiere die Nutzungsbedingungen + Datenschutz (siehe \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`
-        )
-      );
+      const text = status.registered
+        ? await tr(
+            `📝 The Terms/Privacy changed since you registered. Please renew your consent: \`${BOT_INFO.PREFIX}register ${status.record.name || "Name"} accept\` (see \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`,
+            `📝 Nutzbedingungen/Datenschutz haben sich seit deiner Registrierung geändert. Bitte erneuere deine Zustimmung: \`${BOT_INFO.PREFIX}register ${status.record.name || "Name"} accept\` (siehe \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`
+          )
+        : await tr(
+            `📝 You must register first. Send \`${BOT_INFO.PREFIX}register <Name>\` and accept the Terms + Privacy (see \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`,
+            `📝 Du musst dich zuerst registrieren. Sende \`${BOT_INFO.PREFIX}register <Name>\` und akzeptiere die Nutzungsbedingungen + Datenschutz (siehe \`${BOT_INFO.PREFIX}terms\` / \`${BOT_INFO.PREFIX}privacy\`).`
+          );
+      await sendError(conn, message.from, text);
     }
     return false;
   } catch (err) {
@@ -144,11 +155,15 @@ export async function messageHandler(params) {
       }
     }
 
-    if (!message.body.startsWith(BOT_INFO.PREFIX)) return;
-
     if (!(await isPrivileged(message, conn)) && (await isBotBanned(message.sender))) {
       return;
     }
+
+    if (!message.isBotMessage && !conn?.__isSub) {
+      recordUserActivity(message.sender || message.from, { kind: "message", chat: message.from }).catch(() => {});
+    }
+
+    if (!message.body.startsWith(BOT_INFO.PREFIX)) return;
 
     const command = findCommand(message.body);
     if (!command) return;
@@ -251,6 +266,7 @@ export async function messageHandler(params) {
 
     await ackCommand(conn, message);
     recordCommand(name || "unknown");
+    recordUserActivity(message.sender || message.from, { kind: "command", command: name, chat: message.from }).catch(() => {});
 
     await command.function(message, conn);
 
