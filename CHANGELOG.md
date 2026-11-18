@@ -2,12 +2,24 @@
 
 This changelog documents **everything that is different in `onyx-core`** compared to its upstream base **X-Asena v4.0.0**. Onyx Core is a heavily extended fork of X-Asena: it renames the project, adds multi-account ("Onyx Mini") support, a web dashboard / dev console, self-protection ("core panic") systems, AI chat, games/economy, expanded moderation, and replaces the language set with English + German.
 
+## 0. Release 5.0.5 — generic core backports (no community features)
+
+Onyx stays the lean core: these are infrastructure/search/AI fixes only. No
+ranks, tickets, DSGVO flows or bot-specific branding were imported.
+
+- **Dashboard / panel hosting:** `SERVER_PORT` (injected by hosting panels) now takes precedence over `ADMIN_HTTP_PORT`, and the HTTP server binds `0.0.0.0` unless `ADMIN_HTTP_HOST` is set explicitly. New `getAdminHttpConfig()` is reused by `#control`, fleet peer mapping and the startup banner, so the reported port/host matches reality. `/ui?token=<ADMIN_HTTP_TOKEN>` is the canonical link; walkthrough in `DASHBOARD-TUNNEL.md`.
+- **`#update` / dev console git update:** new shared `src/utils/gitUpdate.js` resolves the current branch/remote and uses `git pull --ff-only <remote> <branch>`, so panel clones without upstream tracking no longer fail with "There is no tracking information". Also sets upstream as best effort and uses `npm install --no-fund --no-audit --silent`.
+- **Free image resolver:** Pinterest/Openverse/Commons retrieval moved out of `src/plugins/search.js` into `src/modules/imageResolver/` with pluggable providers, guarded fetch (SSRF + per-redirect validation, hard size cap/timeout), magic-byte MIME checks and stable error codes. `#img` keeps its command and additionally accepts direct/Pinterest URLs. CAPTCHA/login/403/429 sources fail gracefully (`SOURCE_BLOCKED` / `AUTH_REQUIRED`), get a 10-minute cooldown (`PROVIDER_BLOCK_COOLDOWN_MS`) and fall through to the next free source; no bypass, no blocked-source retries, no API key and no new dependency. Docs: `IMAGE-RESOLVER.md`.
+- **Search hardening:** `#anime` falls back from Jikan to AniList; `#img` reports source/license attribution.
+- **Chatbot continuity:** `#chatbot off` now suppresses ordinary auto-replies while replies to remembered AI answers still continue their thread. `#chatbot status` shows the current state without toggling. AI message IDs are remembered in `aiHistory.js` (bounded, 500 IDs).
+- **Tests:** `npm test` runs the mocked `node:test` suite in `test/imageResolver.test.mjs` (17 cases: direct URLs, Pinterest search, CAPTCHA/login blocks, pin links, SSRF/invalid URLs, unsafe redirects, unsupported formats, oversized bodies, timeouts, empty results, provider cooldown and the WhatsApp send path). No live network, no CAPTCHA bypass.
+
 **Project identity changes**
 
 |                      | X-Asena                                   | Onyx Core                                                                                         |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | package name         | `x-asena`                                 | `onyx-utility-core`                                                                               |
-| version              | `4.0.0`                                   | `5.0.4`                                                                                           |
+| version              | `4.0.0`                                   | `5.0.5`                                                                                           |
 | description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
 | bot name             | `X-Asena`                                 | `ONYX UTILITY CORE` (runtime-changeable)                                                          |
 | default sticker pack | `X-Asena`                                 | `Onyx`                                                                                            |

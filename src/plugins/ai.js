@@ -15,9 +15,26 @@ import {
   addUser,
   removeUser,
   listAllowedUsers,
+  rememberAiMessage,
+  isAiMessage,
 } from "../utils/aiHistory.js";
 import { isPrivileged } from "../utils/access.js";
 import { isBotBanned } from "../utils/globalBan.js";
+import { systemLog } from "../utils/logGroup.js";
+
+function quotedMessageId(message) {
+  const ctx = message?.message?.contextInfo || {};
+  return ctx.stanzaId || message?.quoted?.id || message?.quoted?.key?.id || null;
+}
+
+async function isReplyToAi(message) {
+  // Only a reply to a message we actually produced as an AI answer may bypass
+  // the chatbot on/off and allowlist gates. The previous heuristic treated any
+  // reply to any bot message as an AI thread, which made `#chatbot off` answer
+  // to everything.
+  const id = quotedMessageId(message);
+  return !!(id && (await isAiMessage(id)));
+}
 
 const LM_URL = "http://localhost:1234/v1/chat/completions";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -76,7 +93,8 @@ command(
         await addMessage(message.sender, { role: "user", content: text });
         await addMessage(message.sender, { role: "assistant", content: reply_text });
         const note = backend === "Groq" ? `\n\n_via ${backend}_` : "";
-        await reply(conn, message, reply_text + note);
+        const sent = await reply(conn, message, reply_text + note);
+        await rememberAiMessage(sent?.key?.id || sent?.id);
       } catch (err) {
         await replyFail(conn, message, await tr(`AI error: ${err?.message || "LM Studio not running?"}`, `KI-Fehler: ${err?.message || "LM Studio läuft nicht?"}`));
       }
@@ -91,6 +109,9 @@ command(
     if (args === "on" || args === "off") {
       await toggleChatbot(args === "on");
       await replyOk(conn, message, `Chatbot: *${args === "on" ? "ON" : "OFF"}*`);
+    } else if (args === "status" || args === "state") {
+      const cur = await isChatbotEnabled();
+      await replyOk(conn, message, `Chatbot: *${cur ? "ON" : "OFF"}*`);
     } else {
       const cur = await isChatbotEnabled();
       await toggleChatbot(!cur);
@@ -138,16 +159,23 @@ command(
 
 export async function handleChatbotReply({ message, conn }) {
   try {
-    const chatbotOn = await isChatbotEnabled();
-    if (!chatbotOn) return;
     if (message?.key?.fromMe) return;
-    const sender = message.sender || "";
-    if (await isBotBanned(sender)) return;
-    const allowed = await isUserAllowed(sender);
-    const privileged = await isPrivileged(message, conn);
-    if (!allowed && !privileged) return;
     const text = message.body || "";
     if (!text || text.startsWith(getPrefix())) return;
+
+    const sender = message.sender || "";
+    if (await isBotBanned(sender)) return;
+
+    // Replying to a remembered AI answer always continues that conversation —
+    // even when chatbot mode is off or the user is not on the allowlist.
+    // Everything else still needs chatbot mode plus the allowlist/rank gate.
+    const threadReply = await isReplyToAi(message);
+    if (!threadReply) {
+      if (!(await isChatbotEnabled())) return;
+      const allowed = await isUserAllowed(sender);
+      const privileged = await isPrivileged(message, conn);
+      if (!allowed && !privileged) return;
+    }
     const history = await getHistory(sender);
     const sys = await getSystemPrompt();
     const msgs = [];
@@ -156,6 +184,16 @@ export async function handleChatbotReply({ message, conn }) {
     const { content: reply_text } = await callAI(msgs);
     await addMessage(sender, { role: "user", content: text });
     await addMessage(sender, { role: "assistant", content: reply_text });
-    await conn.sendMessage(message.from, { text: reply_text }, { quoted: { key: message.key, message: message.message } });
-  } catch {  }
+    const sent = await conn.sendMessage(
+      message.from,
+      { text: reply_text },
+      { quoted: { key: message.key, message: message.message } }
+    );
+    await rememberAiMessage(sent?.key?.id || sent?.id);
+  } catch (err) {
+    await systemLog("error", `AI reply failed: ${err?.message || "unknown error"}`);
+    try {
+      await replyFail(conn, message, await tr("AI error while continuing the conversation.", "KI-Fehler beim Fortsetzen der Unterhaltung."));
+    } catch {  }
+  }
 }

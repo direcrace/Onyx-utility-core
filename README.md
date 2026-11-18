@@ -4,7 +4,7 @@
 
 **Changelog: X-Asena → Onyx Core** — source-available WhatsApp bot on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13** · [N-SAL v1.0](LICENSE) (derived from MIT-licensed X-Asena)
 
-[![Version](https://img.shields.io/badge/version-5.0.4-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
+[![Version](https://img.shields.io/badge/version-5.0.5-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2020-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0f0f0f)](https://nodejs.org/)
 [![Baileys](https://img.shields.io/badge/Baileys-7.0.0--rc13-25D366?style=for-the-badge&logo=whatsapp&logoColor=white&labelColor=0f0f0f)](https://github.com/WhiskeySockets/Baileys)
 [![License](https://img.shields.io/badge/License-N--SAL--v1.0-1e3a8a?style=for-the-badge&logo=open-source-initiative&logoColor=white&labelColor=0f0f0f)](LICENSE)
@@ -53,7 +53,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
   </thead>
   <tbody>
     <tr><td><b>package name</b></td><td><code>x-asena</code></td><td><code>onyx-utility-core</code></td></tr>
-    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.4</code></td></tr>
+    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.5</code></td></tr>
     <tr><td><b>description</b></td><td>Open Source WhatsApp Bot (Baileys ^7.x.x)</td><td>"Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API"</td></tr>
     <tr><td><b>bot name</b></td><td><code>X-Asena</code></td><td><code>ONYX UTILITY CORE</code> (runtime-changeable)</td></tr>
     <tr><td><b>default sticker pack</b></td><td><code>X-Asena</code></td><td><code>Onyx</code></td></tr>
@@ -159,7 +159,8 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Search (`src/plugins/search.js`)
 
-- `#movie` (OMDB), `#anime` (Jikan), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest legacy search API → real `i.pinimg.com` URLs), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
+- `#movie` (OMDB), `#anime` (Jikan → AniList fallback), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest → Openverse → Wikimedia Commons fallback chain with source/license caption; also accepts a direct/pinterest image URL), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
+- `#img` uses the modular, free [`src/modules/imageResolver/`](src/modules/imageResolver/index.js): SSRF/redirect validation, streamed size caps, magic-byte MIME checks, graceful Pinterest CAPTCHA/auth failures and pluggable providers. Details, error codes and config: [`IMAGE-RESOLVER.md`](IMAGE-RESOLVER.md).
 
 ### Fun & novelty (`src/plugins/fun.js`, `src/plugins/bloat.js`, `src/plugins/voice.js`)
 

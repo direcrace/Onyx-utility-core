@@ -1,6 +1,6 @@
 {
   "name": "onyx-utility-core",
-  "version": "5.0.4",
+  "version": "5.0.5",
   "description": "Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI",
   "main": "index.js",
   "engines": {
@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "clear": "node clear.js"
+    "clear": "node clear.js",
+    "test": "node --test test/*.test.mjs"
   },
   "repository": "https://github.com/direcrace/Onyx-utility-core.git",
   "author": "Nero Venero <Puma.yt11@gmail.com>",
