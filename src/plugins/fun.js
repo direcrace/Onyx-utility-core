@@ -120,9 +120,17 @@ command(
     await withTyping(conn, message.from, async () => {
       try {
         const axios = (await import("axios")).default;
-        const res = await axios.get("https://shizoapi.onrender.com/api/texts/flirt?apikey=shizo");
+        const res = await axios.get("https://shizoapi.onrender.com/api/texts/flirt?apikey=shizo", {
+          timeout: 15000,
+          headers: { "User-Agent": "YumBot/1.0", Accept: "application/json" },
+        });
         await reply(conn, message, res.data?.result || "Connection error.");
-      } catch { await replyFail(conn, message, await tr("Could not fetch flirt text.", "Konnte Flirt-Text nicht abrufen.")); }
+      } catch (err) {
+        await replyFail(conn, message, await tr(
+          `Could not fetch flirt text: ${err?.message || "network error"}`,
+          `Konnte Flirt-Text nicht abrufen: ${err?.message || "Netzwerkfehler"}`
+        ));
+      }
     });
   }
 );
@@ -139,32 +147,59 @@ command(
       if (!tenorKey) { await replyFail(conn, message, await tr("Emoji mix is not configured (missing TENOR_API_KEY).", "Emoji-Mischung ist nicht konfiguriert (TENOR_API_KEY fehlt).")); return; }
       try {
         const fetch = (await import("node-fetch")).default;
-        const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(tenorKey)}&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`);
+        const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(tenorKey)}&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`, { signal: AbortSignal.timeout(15000) });
+        if (!res.ok) throw new Error(`Tenor ${res.status}`);
         const data = await res.json();
         if (!data.results?.length) { await replyFail(conn, message, await tr("No mix found.", "Keine Emoji-Mischung gefunden.")); return; }
         for (const r of data.results) {
           await conn.sendMessage(message.from, { sticker: { url: r.url } },
             { quoted: { key: message.key, message: message.message } });
         }
-      } catch { await replyFail(conn, message, await tr("Emoji mix failed.", "Emoji-Mischung fehlgeschlagen.")); }
+      } catch (err) {
+        await replyFail(conn, message, await tr(
+          `Emoji mix failed: ${err?.message || "network error"}`,
+          `Emoji-Mischung fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`
+        ));
+      }
     });
   }
 );
 
 const REACTIONS = ["cry","kiss","kill","hug","pat","lick","bite","yeet","bully","bonk","wink","poke","nom","slap","smile","wave","awoo","blush","smug","dance","happy","sad","cuddle","glomp","highfive"];
 
+// waifu.pics is dead (DNS ENOTFOUND). nekos.best v2 is the replacement; a few
+// categories don't exist there, so map them to a close, supported one.
+const NEKOS_CATEGORY = {
+  kill: "bonk",
+  lick: "kiss",
+  bully: "bonk",
+  awoo: "neko",
+  sad: "cry",
+  glomp: "hug",
+};
+
 for (const reaction of REACTIONS) {
   command(
     { pattern: reaction, fromMe: false, desc: `Send a ${reaction} reaction`, type: "fun" },
     async (message, conn) => {
       await withTyping(conn, message.from, async () => {
+        const category = NEKOS_CATEGORY[reaction] || reaction;
         try {
           const axios = (await import("axios")).default;
-          const { data } = await axios.get(`https://api.waifu.pics/sfw/${reaction}`);
-          if (data?.url) { await conn.sendMessage(message.from, { image: { url: data.url }, caption: `*${reaction}*` },
-            { quoted: { key: message.key, message: message.message } }); }
-          else { await replyFail(conn, message, await tr("Could not fetch reaction.", "Konnte Reaktion nicht abrufen.")); }
-        } catch { await replyFail(conn, message, await tr("Reaction fetch failed.", "Reaktion abrufen fehlgeschlagen.")); }
+          const { data } = await axios.get(
+            `https://nekos.best/api/v2/${encodeURIComponent(category)}`,
+            { timeout: 15000, headers: { "User-Agent": "YumBot/1.0", Accept: "application/json" } }
+          );
+          const url = data?.results?.[0]?.url;
+          if (!url) throw new Error("no result from nekos.best");
+          await conn.sendMessage(message.from, { image: { url }, caption: `*${reaction}*` },
+            { quoted: { key: message.key, message: message.message } });
+        } catch (err) {
+          await replyFail(conn, message, await tr(
+            `Reaction fetch failed: ${err?.message || "network error"}`,
+            `Reaktion fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`
+          ));
+        }
       });
     }
   );

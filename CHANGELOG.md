@@ -24,6 +24,11 @@ This changelog documents **everything that is different in `onyx-core`** compare
 - Ticket replies: `#answer <text>` in the support group, used as a reply to the ticket message, sends the answer to the reporter and reposts it in the support group with the original ticket content and the responder's registered name.
 - Per-number activity counters in BotKV (`community:stats`) and persisted tickets (`community:tickets`); no message text is stored for stats.
 - New TEAM menu/category: `#team`, `#teamlist`, `#teamstatus`, `#teamset` with rank hierarchy display, registered-name team list and rank-ceiling protection for co-owners.
+- Rank hierarchy corrected: `admin` now outranks `mod`. `#whoami` resolves the community rank live, and `#setrank` / `#rank` show registered names instead of raw JIDs/numbers.
+- Member progression: XP/levels (`#level`) with cosmetic titles `Newcomer → Member → Regular → Veteran → Legend`, shown in `#mystats`, `#leaderboard`, `#rank` and `#whoami`. `#whois` is self-service or Mod+ (audit-logged, no bare numbers for staff results).
+- `#img` now falls back Pinterest → Openverse → Wikimedia Commons when Pinterest serves captchas on VPS IPs; captions credit source and license. `#anime` falls back to AniList; reactions moved from dead waifu.pics to nekos.best; `#fetch` reports the real network cause.
+- AI replies to the bot's own AI messages continue the conversation even with chatbot mode off, with visible errors instead of silent catches.
+- Aliases `#tos` / `#dsgvo`; ToS/Privacy updated with the Impressum (WhatsApp +49 15679 830332, Meros.Basement@gmx.net, postal address on request).
 
 ---
 

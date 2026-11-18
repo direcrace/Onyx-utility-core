@@ -12,7 +12,7 @@ These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot,
 
 The Bot provides automated WhatsApp functionality, including:
 
-* **Community access** — registration (`#register`, `#unregister`), ranks and role-based permissions, community activity statistics (`#mystats`, `#leaderboard`) and deletion of your own counters (`#resetstats`).
+* **Community access** — registration (`#register`, `#unregister`), staff ranks and role-based permissions, the TEAM menu (`#team`, `#teamlist`, `#teamstatus`, `#teamset`), member XP/levels and cosmetic member titles (`#level`, `#mystats`, `#leaderboard`), profile lookup (`#whois`, self or Mod+) and deletion of your own counters (`#resetstats`).
 * **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Support staff reply with `#answer <text>` in the support group; the answer goes to the reporter and is reposted there with the ticket content and the responder's registered name. Users can check `#mytickets` and close with `#closeticket`.
 * **Group moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group management tools.
 * **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) via a connected AI backend.
@@ -153,8 +153,10 @@ These Terms are governed by the laws of Germany/EU, without regard to conflict-o
 
 ---
 
-## 16. Contact
+## 16. Impressum & Contact
 
 Questions about these Terms can be sent to:
 
-WhatsApp: +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net
+WhatsApp: +49 15679 830332 · email: Meros.Basement@gmx.net
+
+Postal address: available on request. For privacy reasons, no publicly listed/actionable postal address is published; it can be requested via the email address above.

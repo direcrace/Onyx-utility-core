@@ -1,13 +1,13 @@
 
 import { kvGet, kvSet } from "../database/botKv.js";
-import { normalizeNumber } from "./access.js";
+import { normalizeNumber, senderCandidates } from "./access.js";
 
 const RANKS_KEY = "community:ranks";
 
 export const RANKS = [
   "user",
-  "admin",
   "mod",
+  "admin",
   "team",
   "co-owner",
   "owner",
@@ -15,8 +15,8 @@ export const RANKS = [
 
 export const RANK_LEVELS = {
   user: 1,
-  admin: 2,
-  mod: 3,
+  mod: 2,
+  admin: 3,
   team: 4,
   "co-owner": 5,
   owner: 6,
@@ -24,8 +24,8 @@ export const RANK_LEVELS = {
 
 export const ASSIGNABLE_RANKS = [
   "user",
-  "admin",
   "mod",
+  "admin",
   "team",
   "co-owner",
 ];
@@ -86,6 +86,25 @@ export async function getRank(number) {
   const map = await load();
   const rank = map[n];
   return RANKS.includes(rank) ? rank : "user";
+}
+
+// Single authority for "what rank is this sender?" — used by #whoami, #whois
+// and the team menu. Walks all LID/PN candidates so a rank assigned to a phone
+// number still resolves when WhatsApp delivers the message from a LID.
+export async function resolveEffectiveRank(message, conn) {
+  if (message?.key?.fromMe) return "owner";
+  let best = "user";
+  let bestLevel = 0;
+  for (const candidate of senderCandidates(message, conn)) {
+    const rank = await getRank(candidate);
+    const level = RANK_LEVELS[rank] || 0;
+    if (level === Infinity || (isRoot(candidate) && level >= (RANK_LEVELS.owner || 6))) return "owner";
+    if (level > bestLevel) {
+      bestLevel = level;
+      best = rank;
+    }
+  }
+  return best;
 }
 
 export async function getRankLevel(number) {

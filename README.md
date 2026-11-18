@@ -22,9 +22,11 @@ community features in as self-contained plugins, and how to deploy the bot on
   - `/rank [@user]` — show a user's rank
   - `/ranks` — list ranked users
   - `/setrank <@user|number> <rank>` — assign a rank (owner only)
-  - Rank ladder: `user < admin < mod < team < co-owner`. `owner` and `root`
+  - Rank ladder: `user < mod < admin < team < co-owner`. `owner` and `root`
     are reserved (driven by `OWNER_NUMBER` / `CREATOR_NUMBERS`) and cannot be
     assigned. Stored in the `BotKV` table under `community:ranks`.
+  - `#setrank` and `#rank` prefer the registered name instead of printing a
+    raw number/JID; `#whoami` resolves the rank live from `community:ranks`.
 - **Ban reasons** — `src/utils/globalBan.js`, `src/plugins/moderation.js`,
   `src/multi/miniMonitor.js`
   - `/ban <@user|number> [reason]` · `/unban` · `/banlist`
@@ -236,18 +238,20 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Legal (`src/plugins/legal.js`)
 
-- `#terms` / `#terms full` and `#privacy` / `#privacy full` — bilingual summaries or the complete documents (`terms-of-service.md`, `privacy-policy.md` at repo root), chunked + paced to avoid send-burst panics. Includes no-warranty wording and contact info.
+- `#terms` / `#tos` and `#privacy` / `#dsgvo` (append `full` for the complete document) — bilingual summaries or the complete documents (`terms-of-service.md`, `privacy-policy.md` at repo root), chunked + paced to avoid send-burst panics. ToS include an Impressum section with the operator's contact data.
 
 ### Community (`src/plugins/community.js`, `src/utils/communityStats.js`, `src/utils/supportTickets.js`)
 
 - `#ticket` / `#support` (`<subject> | <message>`) and `#report <reason>` create tracked tickets; `#mytickets` lists yours, `#closeticket <id>` closes one (reporter or mod+).
 - In the support group, reply to the bot's ticket message with `#answer <text>`. The answer is sent back to the reporter and posted in the support group with the original ticket content and the responder's **registered name** (never a mention/number).
 - Owner/sudo setup: `#setsupportgroup` inside the destination group (or `#setsupportgroup <group-jid>` / `status`) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
+- Member progression: XP is the existing points counter (100 XP = one member level). Titles: `Newcomer → Member → Regular → Veteran → Legend`. `#level` shows progress; `#mystats` and `#leaderboard` show level/title. Titles are cosmetic and never grant staff permissions.
+- `#whois` shows your own profile at any time; other members' profiles require Mod+ and are audit-logged. Mod+ results show registered names/status, not bare numbers.
 - Stats: `#mystats`, `#leaderboard`, `#resetstats`. Counters (messages/commands/reports/tickets) are stored per number in BotKV; no message text is kept for stats.
 
 ### Team (`src/plugins/team.js`, `src/plugins/ranks.js`)
 
-- `#team` shows the rank hierarchy (`owner > co-owner > team > mod > admin > user`), your current rank/level, and only the team commands your rank can use. `#team all` is owner/root only.
+- `#team` shows the rank hierarchy (`owner > co-owner > team > admin > mod > user`), your current rank/level, and only the team commands your rank can use. `#team all` is owner/root only.
 - `#teamlist` lists ranked members grouped by tier using registered names; `#teamstatus` shows mode, log level, autoflag, support/ticket config, open tickets and team size.
 - `#teamset <@user|number> <rank>` (co-owner+) assigns ranks with hierarchy protection: you cannot grant a rank equal to or higher than your own, and owner/root cannot be changed.
 - Ranks live in `community:ranks` BotKV. The `team` category also appears in `#menu team`; `#rank` / `#ranks` / `#setrank` are grouped there too.
@@ -265,11 +269,11 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Search (`src/plugins/search.js`)
 
-- `#movie` (OMDB), `#anime` (Jikan), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest legacy search API → real `i.pinimg.com` URLs), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
+- `#movie` (OMDB), `#anime` (Jikan → AniList fallback), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest → Openverse → Wikimedia Commons fallback chain with source/license caption), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
 
 ### Fun & novelty (`src/plugins/fun.js`, `src/plugins/bloat.js`, `src/plugins/voice.js`)
 
-- `#cal`, `#solve`, `#ebinary`, `#dbinary`, `#mock`, `#flirt`, `#emix`, plus 25 anime reaction images from waifu.pics (`#cry`, `#hug`, `#slap`, `#bonk`, …).
+- `#cal`, `#solve`, `#ebinary`, `#dbinary`, `#mock`, `#flirt`, `#emix`, plus 25 anime reaction images from nekos.best (`#cry`, `#hug`, `#slap`, `#wave`, `#bonk`, …). The old waifu.pics domain no longer resolves.
 - "BLOAT CORE" (hidden from menu): `#rate`, `#ship`, `#dice`, `#flip`, `#say`, `#screm`, `#how`, `#pp`, `#mood`, `#8ball`, `#rng`, `#boo`, `#sus`, `#vibe`, `#amogus`, `#time`, `#date`, `#bloatmode`.
 - Voice changer (FFmpeg audio filters, reply to audio): `#bass`, `#blown`, `#deep`, `#earrape`, `#fast`, `#fat`, `#nightcore`, `#reverse`, `#robot`, `#slow`, `#smooth`, `#tupai`.
 

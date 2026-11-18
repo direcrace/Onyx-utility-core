@@ -11,6 +11,8 @@ import { getPolicies } from "../enterprise/policy.js";
 import { ROLES, listRoles } from "../enterprise/rbac.js";
 import { getFlags } from "../enterprise/flags.js";
 import { getMode, listSudo } from "../utils/access.js";
+import { resolveEffectiveRank, RANK_LABELS } from "../utils/ranks.js";
+import { getUserStats, levelFromXp, memberTier } from "../utils/communityStats.js";
 
 async function requireControl(conn, message) {
   if (isSubConnection(conn)) {
@@ -363,9 +365,15 @@ command(
     const owner = await (await import("../utils/access.js")).isOwnerMessage(message, conn);
     const creator = isCreatorMessage(message, conn);
     const roleName = creator ? "creator" : owner ? "owner" : role;
+    const rank = await resolveEffectiveRank(message, conn);
+    const rankName = RANK_LABELS[rank] || rank;
+    const number = normalizeNumber(message.sender);
+    const stats = await getUserStats(number);
+    const level = levelFromXp(stats?.points || 0);
+    const memberTitle = memberTier(level);
     await reply(conn, message, await tr(
-      `👤 *Who am I*\n• Name: ${message.pushName || "unknown"}\n• Number: ${normalizeNumber(message.sender) || message.sender}\n• Role: *${roleName}*\n• Creator: ${creator ? "yes" : "no"} · Owner: ${owner ? "yes" : "no"} · Sudo: ${sudo ? "yes" : "no"}${isGw}`,
-      `👤 *Wer bin ich*\n• Name: ${message.pushName || "unbekannt"}\n• Nummer: ${normalizeNumber(message.sender) || message.sender}\n• Rolle: *${roleName}*\n• Ersteller: ${creator ? "ja" : "nein"} · Besitzer: ${owner ? "ja" : "nein"} · Sudo: ${sudo ? "ja" : "nein"}${isGw}`
+      `👤 *Who am I*\n• Name: ${message.pushName || "unknown"}\n• Number: ${number || message.sender}\n• Rank: *${rankName}* · Level ${level} (${memberTitle})\n• RBAC role: ${roleName}\n• Creator: ${creator ? "yes" : "no"} · Owner: ${owner ? "yes" : "no"} · Sudo: ${sudo ? "yes" : "no"}${isGw}\n\n_Rank updates live after \`#setrank\` / \`#teamset\`. HP: \`#whois\`.`,
+      `👤 *Wer bin ich*\n• Name: ${message.pushName || "unbekannt"}\n• Nummer: ${number || message.sender}\n• Rang: *${rankName}* · Stufe ${level} (${memberTitle})\n• RBAC-Rolle: ${roleName}\n• Ersteller: ${creator ? "ja" : "nein"} · Besitzer: ${owner ? "ja" : "nein"} · Sudo: ${sudo ? "ja" : "nein"}${isGw}\n\n_Rang aktualisiert sich live nach \`#setrank\` / \`#teamset\`. Details: \`#whois\`.`
     ));
   }
 );

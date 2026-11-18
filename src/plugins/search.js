@@ -28,19 +28,78 @@ command(
   }
 );
 
+async function fetchAnimeInfo(query) {
+  const axios = (await import("axios")).default;
+  const cfg = { timeout: 15000, headers: { "User-Agent": BOT_UA, Accept: "application/json" } };
+
+  try {
+    const res = await axios.get(
+      `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=1`,
+      cfg
+    );
+    const d = res.data?.data?.[0];
+    if (d) {
+      return {
+        title: d.title,
+        score: d.score ?? "?",
+        genres: (d.genres || []).map((g) => g.name).join(", ") || "-",
+        episodes: d.episodes ?? "?",
+        synopsis: d.synopsis || "-",
+        url: d.url || "",
+        source: "Jikan",
+      };
+    }
+  } catch {  }
+
+  const gql = `
+    query ($search: String) {
+      Media(search: $search, type: ANIME) {
+        title { romaji english }
+        averageScore
+        genres
+        episodes
+        description(asHtml: false)
+        siteUrl
+      }
+    }
+  `;
+  const res = await axios.post(
+    "https://graphql.anilist.co",
+    { query: gql, variables: { search: query } },
+    { ...cfg, headers: { ...cfg.headers, "Content-Type": "application/json" } }
+  );
+  const m = res.data?.data?.Media;
+  if (!m) return null;
+  return {
+    title: m.title?.english || m.title?.romaji || query,
+    score: m.averageScore ? (m.averageScore / 10).toFixed(1) : "?",
+    genres: (m.genres || []).join(", ") || "-",
+    episodes: m.episodes ?? "?",
+    synopsis: String(m.description || "-").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+    url: m.siteUrl || "",
+    source: "AniList",
+  };
+}
+
 command(
-  { pattern: "anime", fromMe: false, desc: "Search anime info", type: "search" },
+  { pattern: "anime", fromMe: false, desc: "Search anime info (Jikan → AniList)", type: "search" },
   async (message, conn) => {
     await withTyping(conn, message.from, async () => {
       const text = getCommandArgs(message.body, "anime");
       if (!text) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}anime <name>\``, `Benutzung: \`${BOT_INFO.PREFIX}anime <name>\``)); return; }
       try {
-        const axios = (await import("axios")).default;
-        const res = await axios.get(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(text)}&limit=1`);
-        const d = res.data?.data?.[0];
+        const d = await fetchAnimeInfo(text);
         if (!d) { await replyFail(conn, message, await tr("No anime found.", "Kein Anime gefunden.")); return; }
-        await reply(conn, message, await tr(`*${d.title}*\n\n⭐ Score: ${d.score}/10\n🌀 Genres: ${d.genres.map((g) => g.name).join(", ")}\n📺 Episodes: ${d.episodes}\n📖 Synopsis: ${d.synopsis}\n🔗 ${d.url}`, `*${d.title}*\n\n⭐ Bewertung: ${d.score}/10\n🌀 Genres: ${d.genres.map((g) => g.name).join(", ")}\n📺 Folgen: ${d.episodes}\n📖 Handlung: ${d.synopsis}\n🔗 ${d.url}`));
-      } catch { await replyFail(conn, message, await tr("Error fetching anime data.", "Fehler beim Abrufen der Anime-Daten.")); }
+        await reply(conn, message, await tr(
+          `*${d.title}* _(${d.source})_\n\n⭐ Score: ${d.score}/10\n🌀 Genres: ${d.genres}\n📺 Episodes: ${d.episodes}\n📖 Synopsis: ${d.synopsis}\n🔗 ${d.url}`,
+          `*${d.title}* _(${d.source})_\n\n⭐ Bewertung: ${d.score}/10\n🌀 Genres: ${d.genres}\n📺 Folgen: ${d.episodes}\n📖 Handlung: ${d.synopsis}\n🔗 ${d.url}`
+        ));
+      } catch (err) {
+        await replyFail(conn, message, await tr(
+          `Error fetching anime data: ${err?.message || "network error"}`,
+          `Fehler beim Abrufen der Anime-Daten: ${err?.message || "Netzwerkfehler"}`
+        ));
+      }
     });
   }
 );
@@ -117,28 +176,30 @@ command(
 );
 
 command(
-  { pattern: "img", fromMe: false, desc: "Get one random Pinterest image for a query", type: "search" },
+  { pattern: "img", fromMe: false, desc: "Find an image (Pinterest → Openverse → Wikimedia)", type: "search" },
   async (message, conn) => {
     await withTyping(conn, message.from, async () => {
       const text = getCommandArgs(message.body, "img")?.trim();
       if (!text) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}img <query>\``, `Benutzung: \`${BOT_INFO.PREFIX}img <suche>\``)); return; }
 
-      let urls = [];
-      try { urls = await fetchPinterestPinImages(text); } catch {  }
-      if (!urls.length) { await replyFail(conn, message, await tr("No Pinterest results for that query.", "Keine Pinterest-Ergebnisse für diese Suche.")); return; }
-
-      const url = urls[Math.floor(Math.random() * urls.length)];
-      try {
-        const res = await fetch(url, { redirect: "follow" });
-        if (!res.ok) throw new Error("download failed");
-        const buf = Buffer.from(await res.arrayBuffer());
-        if (!buf.length) throw new Error("empty response");
-        await conn.sendMessage(message.from, { image: buf, caption: `*${text}*` },
-          { quoted: { key: message.key, message: message.message } });
+      const hit = await searchImage(text);
+      if (!hit) {
+        await replyFail(conn, message, await tr(
+          "No image found right now. Try a different search term.",
+          "Gerade kein Bild gefunden. Versuch einen anderen Suchbegriff."
+        ));
         return;
-      } catch {
-        await replyFail(conn, message, await tr("Could not download that Pinterest image.", "Das Pinterest-Bild konnte nicht heruntergeladen werden."));
       }
+
+      const credit = [
+        `📷 ${hit.provider}`,
+        hit.credit ? String(hit.credit).replace(/\s+/g, " ").slice(0, 110) : null,
+        hit.license ? `(${hit.license})` : null,
+      ].filter(Boolean).join(" · ");
+      const caption = `*${text}*\n_${credit}_${hit.page ? `\n${String(hit.page).slice(0, 180)}` : ""}`;
+
+      await conn.sendMessage(message.from, { image: hit.buffer, caption },
+        { quoted: { key: message.key, message: message.message } });
     });
   }
 );
@@ -345,12 +406,22 @@ command(
   }
 );
 
-const PIN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+const PIN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+const BOT_UA = "YumBot/1.0 (WhatsApp community bot; contact via #terms) Node/24";
 const PIN_LANDING = "https://www.pinterest.com/";
 const PIN_SEARCH = "https://www.pinterest.com/resource/BaseSearchResource/get/";
 
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
 async function pinterestCookies() {
-  const res = await fetch(PIN_LANDING, { headers: { "User-Agent": PIN_UA } });
+  const res = await fetch(PIN_LANDING, {
+    headers: {
+      "User-Agent": PIN_UA,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+    signal: AbortSignal.timeout(8000),
+  });
   let setCookies;
   if (typeof res.headers.getSetCookie === "function") {
     setCookies = res.headers.getSetCookie();
@@ -376,15 +447,24 @@ export async function fetchPinterestPinImages(query) {
     method: "POST",
     headers: {
       "User-Agent": PIN_UA,
-      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json, text/plain, */*",
+      "Accept-Language": "en-US,en;q=0.9",
+      Referer: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`,
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "X-Requested-With": "XMLHttpRequest",
       "X-CSRFToken": csrf,
       Cookie: cookies,
     },
     body: body.toString(),
+    signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) throw new Error(`Pinterest API ${res.status}`);
-  const json = await res.json();
+  const contentType = res.headers.get("content-type") || "";
+  const text = await res.text();
+  if (/i am not a robot|px-captcha|captcha|unusual traffic/i.test(text)) {
+    throw new Error("Pinterest captcha/block");
+  }
+  if (!res.ok || !contentType.includes("json")) throw new Error(`Pinterest API ${res.status}`);
+  const json = JSON.parse(text);
   const results = json?.resource_response?.data?.results || [];
   const urls = [];
   for (const item of results) {
@@ -400,4 +480,104 @@ export async function fetchPinterestPinImages(query) {
     }
   }
   return urls;
+}
+
+async function pinterestProvider(query) {
+  const urls = await fetchPinterestPinImages(query);
+  if (!urls.length) return null;
+  return { url: pick(urls), provider: "Pinterest", ua: PIN_UA };
+}
+
+async function openverseProvider(query) {
+  const u = new URL("https://api.openverse.org/v1/images/");
+  u.search = new URLSearchParams({
+    q: query,
+    page_size: "12",
+    license_type: "commercial",
+    license: "cc0,pdm,by",
+    mature: "false",
+  }).toString();
+  const res = await fetch(u, {
+    headers: { "User-Agent": BOT_UA, Accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Openverse ${res.status}`);
+  const json = await res.json();
+  const results = (json.results || []).filter((r) => /^https?:\/\//i.test(r?.url || ""));
+  if (!results.length) return null;
+  const hit = pick(results);
+  return {
+    url: hit.thumbnail || hit.url,
+    provider: "Openverse",
+    credit: hit.attribution || hit.creator || null,
+    license: hit.license || null,
+    page: hit.foreign_landing_url || null,
+    ua: BOT_UA,
+  };
+}
+
+async function commonsProvider(query) {
+  const u = new URL("https://commons.wikimedia.org/w/api.php");
+  u.search = new URLSearchParams({
+    action: "query",
+    generator: "search",
+    gsrsearch: `filetype:bitmap ${query}`,
+    gsrnamespace: "6",
+    gsrlimit: "12",
+    prop: "imageinfo",
+    iiprop: "url|extmetadata",
+    iiurlwidth: "1200",
+    format: "json",
+  }).toString();
+  const res = await fetch(u, {
+    headers: { "User-Agent": BOT_UA, Accept: "application/json" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Commons ${res.status}`);
+  const json = await res.json();
+  const pages = Object.values(json?.query?.pages || {})
+    .filter((p) => p?.imageinfo?.[0]?.thumburl)
+    .sort((a, b) => (a.index ?? 99) - (b.index ?? 99));
+  if (!pages.length) return null;
+  const info = pick(pages).imageinfo[0];
+  const em = info.extmetadata || {};
+  const strip = (s) => String(s?.value ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return {
+    url: info.thumburl,
+    provider: "Wikimedia Commons",
+    credit: strip(em.Artist) || "Wikimedia Commons",
+    license: strip(em.LicenseShortName) || null,
+    page: info.descriptionurl || null,
+    ua: BOT_UA,
+  };
+}
+
+const IMAGE_PROVIDERS = [pinterestProvider, openverseProvider, commonsProvider];
+
+async function downloadImage(hit) {
+  const res = await fetch(hit.url, {
+    redirect: "follow",
+    headers: { "User-Agent": hit.ua || BOT_UA, Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`download ${res.status}`);
+  const buffer = Buffer.from(await res.arrayBuffer());
+  if (!buffer.length) throw new Error("empty image");
+  return buffer;
+}
+
+export async function searchImage(query) {
+  const q = String(query || "").trim().slice(0, 80);
+  if (!q) return null;
+  for (const provider of IMAGE_PROVIDERS) {
+    try {
+      const hit = await provider(q);
+      if (!hit?.url) continue;
+      const buffer = await downloadImage(hit);
+      return { ...hit, buffer };
+    } catch (err) {
+      console.warn(`[img] ${provider.name} failed: ${err?.message || "unknown"}`);
+    }
+  }
+  return null;
 }

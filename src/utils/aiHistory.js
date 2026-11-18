@@ -7,6 +7,24 @@ const HIST_LIMIT = 20;
 const SYSTEM_KEY = "ai_system_prompt";
 const CHATBOT_KEY = "chatbot_enabled";
 const USERS_KEY = "chatbot_users";
+const AI_MSG_KEY = "ai:message_ids";
+const AI_MSG_LIMIT = 500;
+
+export async function rememberAiMessage(id) {
+  if (!id) return;
+  const raw = await kvGet(AI_MSG_KEY);
+  const ids = Array.isArray(raw) ? raw.map(String) : [];
+  ids.push(String(id));
+  while (ids.length > AI_MSG_LIMIT) ids.shift();
+  await kvSet(AI_MSG_KEY, ids);
+}
+
+export async function isAiMessage(id) {
+  if (!id) return false;
+  const raw = await kvGet(AI_MSG_KEY);
+  const ids = Array.isArray(raw) ? raw.map(String) : [];
+  return ids.includes(String(id));
+}
 
 export async function getHistory(sender) {
   const raw = await kvGet(`${HIST_PREFIX}${sender}`);

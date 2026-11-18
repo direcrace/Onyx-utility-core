@@ -86,6 +86,8 @@ const REGISTRATION_EXEMPT = new Set([
   "unregister",
   "terms",
   "privacy",
+  "tos",
+  "dsgvo",
   "menu",
   "help",
   "bot",
@@ -100,6 +102,8 @@ const REGISTRATION_EXEMPT = new Set([
   "closeticket",
   "mystats",
   "resetstats",
+  "level",
+  "whois",
 ]);
 
 const REGISTRATION_NOTICE_MS = 5 * 60 * 1000;
@@ -319,7 +323,8 @@ export async function tryChatbotReply({ message, conn }) {
   try {
     const { handleChatbotReply } = await import("../plugins/ai.js");
     await handleChatbotReply({ message, conn });
-  } catch {
-
+  } catch (err) {
+    const { systemLog } = await import("../utils/logGroup.js");
+    await systemLog("error", `Chatbot hook failed: ${err?.message || "unknown error"}`);
   }
 }

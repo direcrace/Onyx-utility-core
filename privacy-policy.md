@@ -16,7 +16,8 @@ By registering (`#register`), sending commands, adding the Bot to a group, or us
 
 The Bot is operated by Nero.
 
-Contact: WhatsApp +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net
+Contact: WhatsApp +49 15679 830332 · email: Meros.Basement@gmx.net
+Postal address available on request; no publicly listed address for privacy reasons.
 
 If you are subject to the EU General Data Protection Regulation (GDPR) or similar law, this section identifies the data controller.
 
@@ -30,7 +31,7 @@ Whoever runs a main instance controls what it stores, logs, and retains, includi
 
 ## 2. What the Bot Does
 
-* **Community** — registration (`#register`, `#unregister`), ranks/roles, activity statistics (`#mystats`, `#leaderboard`) and `#resetstats`.
+* **Community** — registration (`#register`, `#unregister`), staff ranks/roles, the TEAM menu, member levels/titles (`#level`), activity statistics (`#mystats`, `#leaderboard`), profile lookup (`#whois`) and `#resetstats`.
 * **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Replies use `#answer <text>` in the support group.
 * **Moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group tools.
 * **AI chat** (`#chat`, `#aiprompt`) via a connected backend, plus media processing and search/utilities.
@@ -115,7 +116,9 @@ This data is used only to handle your request and to keep an audit trail. False 
 
 ### 3.7 Community statistics and leaderboard
 
-The Bot keeps activity counters (messages, commands, reports, tickets, points) to build `#mystats` and `#leaderboard`. These are derived from operational metadata only — no message text is stored for this purpose — and are informational, may be inaccurate or reset. They are associated with your WhatsApp number and/or registered name. You can delete your own counters with `#resetstats` or ask us under Section 10.
+The Bot keeps activity counters (messages, commands, reports, tickets, points/XP) to build member levels, cosmetic titles, `#level`, `#mystats` and `#leaderboard`. These are derived from operational metadata only — no message text is stored for this purpose — and are informational, may be inaccurate or reset. Member levels/titles never grant staff permissions; staff ranks are separate. They are associated with your WhatsApp number and/or registered name. You can delete your own counters with `#resetstats` or ask us under Section 10.
+
+`#whois` shows your registered name, staff rank, member level/title and activity counters. You can always view your own profile; other members' profiles are visible only to Mod+ staff, and each such lookup is written to the audit log. Mod+ results show names and status, not bare phone numbers; your own number is only shown to you.
 
 ---
 
@@ -202,4 +205,5 @@ We update this policy as the Bot's features change, reflected by the "Last updat
 
 Questions about this policy or your data:
 
-WhatsApp +49 160 95344704 · discord: directorace · email: teamtestdevteam@gmx.net
+WhatsApp +49 15679 830332 · email: Meros.Basement@gmx.net
+Postal address available on request; no publicly listed address for privacy reasons.

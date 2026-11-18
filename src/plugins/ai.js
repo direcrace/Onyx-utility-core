@@ -15,9 +15,34 @@ import {
   addUser,
   removeUser,
   listAllowedUsers,
+  rememberAiMessage,
+  isAiMessage,
 } from "../utils/aiHistory.js";
 import { isPrivileged } from "../utils/access.js";
 import { isBotBanned } from "../utils/globalBan.js";
+import { systemLog } from "../utils/logGroup.js";
+
+function quotedMessageId(message) {
+  const ctx = message?.message?.contextInfo || {};
+  return ctx.stanzaId || message?.quoted?.id || message?.quoted?.key?.id || null;
+}
+
+async function isReplyToAi(message, conn) {
+  const id = quotedMessageId(message);
+  if (id && (await isAiMessage(id))) return true;
+  const ctx = message?.message?.contextInfo || {};
+  if (!ctx.quotedMessage) return false;
+  const quotedText = String(
+    ctx.quotedMessage?.conversation ||
+      ctx.quotedMessage?.extendedTextMessage?.text ||
+      message?.quoted?.text ||
+      ""
+  ).trim();
+  if (!quotedText || /^[📊🎫🏅📜🔒👤⚡✅❌]/u.test(quotedText)) return false;
+  const botIds = [conn?.user?.id, conn?.user?.lid].filter(Boolean);
+  const participant = ctx.participant || ctx.participantAlt || "";
+  return ctx.fromMe === true || botIds.some((id) => id && participant.startsWith(String(id).split(":")[0]));
+}
 
 const LM_URL = "http://localhost:1234/v1/chat/completions";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -76,7 +101,8 @@ command(
         await addMessage(message.sender, { role: "user", content: text });
         await addMessage(message.sender, { role: "assistant", content: reply_text });
         const note = backend === "Groq" ? `\n\n_via ${backend}_` : "";
-        await reply(conn, message, reply_text + note);
+        const sent = await reply(conn, message, reply_text + note);
+        await rememberAiMessage(sent?.key?.id || sent?.id);
       } catch (err) {
         await replyFail(conn, message, await tr(`AI error: ${err?.message || "LM Studio not running?"}`, `KI-Fehler: ${err?.message || "LM Studio läuft nicht?"}`));
       }
@@ -138,16 +164,24 @@ command(
 
 export async function handleChatbotReply({ message, conn }) {
   try {
-    const chatbotOn = await isChatbotEnabled();
-    if (!chatbotOn) return;
     if (message?.key?.fromMe) return;
-    const sender = message.sender || "";
-    if (await isBotBanned(sender)) return;
-    const allowed = await isUserAllowed(sender);
-    const privileged = await isPrivileged(message, conn);
-    if (!allowed && !privileged) return;
     const text = message.body || "";
     if (!text || text.startsWith(getPrefix())) return;
+
+    const sender = message.sender || "";
+    if (await isBotBanned(sender)) return;
+
+    // Replying directly to one of the bot's AI messages always continues that
+    // conversation — even when chatbot mode is off or the user is not on the
+    // allowlist. Plain chatbot auto-reply still uses those gates.
+    const threadReply = await isReplyToAi(message, conn);
+    if (!threadReply) {
+      if (!(await isChatbotEnabled())) return;
+      const allowed = await isUserAllowed(sender);
+      const privileged = await isPrivileged(message, conn);
+      if (!allowed && !privileged) return;
+    }
+
     const history = await getHistory(sender);
     const sys = await getSystemPrompt();
     const msgs = [];
@@ -156,6 +190,16 @@ export async function handleChatbotReply({ message, conn }) {
     const { content: reply_text } = await callAI(msgs);
     await addMessage(sender, { role: "user", content: text });
     await addMessage(sender, { role: "assistant", content: reply_text });
-    await conn.sendMessage(message.from, { text: reply_text }, { quoted: { key: message.key, message: message.message } });
-  } catch {  }
+    const sent = await conn.sendMessage(
+      message.from,
+      { text: reply_text },
+      { quoted: { key: message.key, message: message.message } }
+    );
+    await rememberAiMessage(sent?.key?.id || sent?.id);
+  } catch (err) {
+    await systemLog("error", `AI reply failed: ${err?.message || "unknown error"}`);
+    try {
+      await replyFail(conn, message, await tr("AI error while continuing the conversation.", "KI-Fehler beim Fortsetzen der Unterhaltung."));
+    } catch {  }
+  }
 }

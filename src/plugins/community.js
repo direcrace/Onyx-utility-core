@@ -16,6 +16,9 @@ import {
   getUserStats,
   deleteUserStats,
   recordUserActivity,
+  levelFromXp,
+  memberTier,
+  XP_PER_LEVEL,
 } from "../utils/communityStats.js";
 import {
   DELIVERY_MODES,
@@ -552,10 +555,10 @@ command(
       return;
     }
 
-    const lines = rows.map(
-      (r, i) =>
-        `${i + 1}. *${r.name}* · ${r.points} pts · ${r.commands} cmds · ${r.messages} msgs · ${r.rank}`
-    );
+    const lines = rows.map((r, i) => {
+      const xpLevel = levelFromXp(r.points);
+      return `${i + 1}. *${r.name}* · Lv ${xpLevel} ${memberTier(xpLevel)} · ${r.points} XP · ${r.commands} cmds · ${r.messages} msgs · ${r.rank}`;
+    });
     await reply(conn, message, `📊 *Community Leaderboard*\n${lines.join("\n")}`);
   }
 );
@@ -575,12 +578,15 @@ command(
       await reply(conn, message, await tr("📊 No stats yet.", "📊 Noch keine Statistiken."));
       return;
     }
+    const xp = stats.points || 0;
+    const xpLevel = levelFromXp(xp);
+    const intoLevel = xp % XP_PER_LEVEL;
     await reply(
       conn,
       message,
       await tr(
-        `📊 *Your stats* · ${rank}\n• Points: ${stats.points || 0}\n• Commands: ${stats.commands || 0}\n• Messages: ${stats.messages || 0}\n• Reports: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Last activity: ${fmtDate(stats.lastAt)}`,
-        `📊 *Deine Statistiken* · ${rank}\n• Punkte: ${stats.points || 0}\n• Befehle: ${stats.commands || 0}\n• Nachrichten: ${stats.messages || 0}\n• Meldungen: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Letzte Aktivität: ${fmtDate(stats.lastAt)}`
+        `📊 *Your stats* · ${rank}\n• Member level: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} to next level\n• Commands: ${stats.commands || 0}\n• Messages: ${stats.messages || 0}\n• Reports: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Last activity: ${fmtDate(stats.lastAt)}`,
+        `📊 *Deine Statistiken* · ${rank}\n• Member-Stufe: ${xpLevel} (${memberTier(xpLevel)})\n• XP: ${xp} · ${intoLevel}/${XP_PER_LEVEL} bis zur nächsten Stufe\n• Befehle: ${stats.commands || 0}\n• Nachrichten: ${stats.messages || 0}\n• Meldungen: ${stats.reports || 0}\n• Tickets: ${stats.tickets || 0}\n• Letzte Aktivität: ${fmtDate(stats.lastAt)}`
       )
     );
   }
@@ -608,5 +614,90 @@ command(
         ? await tr(`🗑 Stats deleted for \`${target}\`.`, `🗑 Statistiken für \`${target}\` gelöscht.`)
         : await tr("🗑 No stats to delete.", "🗑 Keine Statistiken zum Löschen.")
     );
+  }
+);
+
+command(
+  {
+    pattern: "level",
+    fromMe: false,
+    desc: "Show your member level, title and XP progress",
+    type: "info",
+  },
+  async (message, conn) => {
+    const number = normalizeNumber(message.sender || message.from);
+    const stats = await getUserStats(number);
+    const xp = stats?.points || 0;
+    const level = levelFromXp(xp);
+    const next = (level * XP_PER_LEVEL) - xp;
+    const lines = [
+      `🏆 *Member level ${level}* — ${memberTier(level)}`,
+      `• XP: ${xp}`,
+      `• Next level in: ${next} XP`,
+      "",
+      await tr("Earn XP with messages, commands, reports and tickets.", "XP gibt es für Nachrichten, Befehle, Meldungen und Tickets."),
+      await tr("Member titles are cosmetic — staff ranks use `#setrank`.", "Member-Titel sind kosmetisch — Staff-Ränge laufen über `#setrank`."),
+    ];
+    await reply(conn, message, lines.join("\n"));
+  }
+);
+
+command(
+  {
+    pattern: "whois",
+    fromMe: false,
+    desc: "Show your own profile, or another member's (mod+)",
+    type: "info",
+  },
+  async (message, conn) => {
+    const selfNumber = normalizeNumber(message.sender || message.from);
+    const rawArg = (getCommandArgs(message.body, "whois") || "").trim();
+    const targetRef = resolveTargetUser(message) || rawArg.split(/\s+/)[0] || selfNumber;
+    const targetNumber = normalizeNumber(targetRef) || selfNumber;
+    const isSelf = targetNumber === selfNumber;
+
+    if (!isSelf) {
+      const allowed =
+        (await isPrivileged(message, conn)) ||
+        (await isRankedAtLeast(message, conn, "mod"));
+      if (!allowed) {
+        await replyFail(
+          conn,
+          message,
+          await tr(
+            "🔒 You can only view your own profile. Mod+ can view others.",
+            "🔒 Du kannst nur dein eigenes Profil ansehen. Mod+ dürfen andere ansehen."
+          )
+        );
+        return;
+      }
+    }
+
+    const reg = await getRegistration(targetNumber);
+    const rank = await getRank(targetNumber);
+    const stats = await getUserStats(targetNumber);
+    const xp = stats?.points || 0;
+    const level = levelFromXp(xp);
+    const openTickets = (await listTickets({ number: targetNumber, status: "open", limit: 100 })).length;
+    const name = reg?.name || message.pushName || (isSelf ? targetNumber : await tr("Unknown member", "Unbekanntes Mitglied"));
+
+    const lines = [
+      `🪪 *${await tr("Profile", "Profil")}*`,
+      `• ${await tr("Name", "Name")}: *${name}*`,
+      `• ${await tr("Rank", "Rang")}: ${label(rank)}`,
+      `• ${await tr("Member level", "Member-Stufe")}: ${level} (${memberTier(level)})`,
+      `• XP: ${xp}`,
+      `• ${await tr("Activity", "Aktivität")}: ${stats?.messages || 0} msgs · ${stats?.commands || 0} cmds · ${stats?.reports || 0} reports · ${stats?.tickets || 0} tickets`,
+      `• ${await tr("Open tickets", "Offene Tickets")}: ${openTickets}`,
+      `• ${await tr("Registered", "Registriert")}: ${reg ? fmtDate(reg.ts) : await tr("no", "nein")}`,
+      `• ${await tr("Last seen", "Zuletzt aktiv")}: ${stats?.lastAt ? fmtDate(stats.lastAt) : "-"}`,
+    ];
+    if (isSelf) lines.push("", `• ${await tr("Number", "Nummer")}: \`${targetNumber}\``);
+    lines.push("", await tr("Use `#rank` for staff levels.", "Staff-Stufen zeigt `#rank`."));
+
+    if (!isSelf) {
+      await auditMessage(message, { action: "community.whois", target: targetNumber });
+    }
+    await reply(conn, message, lines.join("\n"));
   }
 );

@@ -60,7 +60,9 @@ command(
           fileName: decodeURIComponent(url.split("/").pop()?.split("?")[0] || "download"),
         }, { quoted: { key: message.key, message: message.message } });
       } catch (err) {
-        await replyFail(conn, message, await tr(`Fetch failed: ${err?.message || "network error"}`, `Abruf fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`));
+        const cause = err?.cause?.code || err?.cause?.message || err?.code || "";
+        const detail = [err?.message, cause].filter(Boolean).filter((x, i, arr) => arr.indexOf(x) === i).join(" · ");
+        await replyFail(conn, message, await tr(`Fetch failed: ${detail || "network error"}`, `Abruf fehlgeschlagen: ${detail || "Netzwerkfehler"}`));
       }
     });
   }

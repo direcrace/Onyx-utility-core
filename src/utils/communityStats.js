@@ -4,6 +4,33 @@ import { normalizeNumber } from "./access.js";
 const KEY = "community:stats";
 const MAX_USERS = 5000;
 
+// XP is the existing `points` accumulator (1/message, 2/command, 4/ticket,
+// 6/report, 8/helpful). 100 XP = one member level. These are display titles
+// only — they never grant staff permissions.
+export const XP_PER_LEVEL = 100;
+
+export const MEMBER_TIERS = [
+  { name: "Newcomer", minLevel: 1 },
+  { name: "Member", minLevel: 3 },
+  { name: "Regular", minLevel: 6 },
+  { name: "Veteran", minLevel: 11 },
+  { name: "Legend", minLevel: 21 },
+];
+
+export function levelFromXp(xp) {
+  const value = Math.max(0, Number(xp) || 0);
+  return Math.floor(value / XP_PER_LEVEL) + 1;
+}
+
+export function memberTier(levelOrXp) {
+  const level = Math.max(1, Number(levelOrXp) || 1);
+  let name = MEMBER_TIERS[0].name;
+  for (const tier of MEMBER_TIERS) {
+    if (level >= tier.minLevel) name = tier.name;
+  }
+  return name;
+}
+
 const FIELDS = {
   message: "messages",
   command: "commands",
@@ -80,6 +107,15 @@ export async function getUserStats(number) {
   if (!n) return null;
   const map = await readMap();
   return map[n] || null;
+}
+
+export async function getUserLevel(number) {
+  const stats = await getUserStats(number);
+  return levelFromXp(stats?.points || 0);
+}
+
+export async function getUserTier(number) {
+  return memberTier(await getUserLevel(number));
 }
 
 export async function getLeaderboard({ limit = 10, sortBy = "points" } = {}) {

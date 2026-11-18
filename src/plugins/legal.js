@@ -94,11 +94,11 @@ const SHORT_TEXT = {
   privacy: { en: PRIVACY_SHORT_EN, de: PRIVACY_SHORT_DE },
 };
 
-const CONTACT_EN = "\n\n_Contact: +49 160 95344704 · directorace · teamtestdevteam@gmx.net_";
-const CONTACT_DE = "\n\n_Kontakt: +49 160 95344704 · directorace · teamtestdevteam@gmx.net_";
+const CONTACT_EN = "\n\n_Impressum / contact: +49 15679 830332 · Meros.Basement@gmx.net_\n_Postal address available on request; no publicly listed address for privacy reasons._";
+const CONTACT_DE = "\n\n_Impressum / Kontakt: +49 15679 830332 · Meros.Basement@gmx.net_\n_Postadresse auf Anfrage; aus Datenschutzgründen wird keine ladungsfähige Anschrift veröffentlicht._";
 
-async function serveLegal(conn, message, name) {
-  const args = (getCommandArgs(message.body, name) || "").trim().toLowerCase();
+async function serveLegal(conn, message, name, token = name) {
+  const args = (getCommandArgs(message.body, token) || "").trim().toLowerCase();
 
   if (args !== "full") {
     const short = SHORT_TEXT[name];
@@ -137,6 +137,32 @@ command(
   },
   async (message, conn) => {
     await serveLegal(conn, message, "terms");
+  }
+);
+
+command(
+  {
+    pattern: "tos",
+    fromMe: false,
+    desc: "Alias for #terms",
+    type: "info",
+    dontAddCommandList: true,
+  },
+  async (message, conn) => {
+    await serveLegal(conn, message, "terms", "tos");
+  }
+);
+
+command(
+  {
+    pattern: "dsgvo",
+    fromMe: false,
+    desc: "Alias for #privacy",
+    type: "info",
+    dontAddCommandList: true,
+  },
+  async (message, conn) => {
+    await serveLegal(conn, message, "privacy", "dsgvo");
   }
 );
 

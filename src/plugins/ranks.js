@@ -13,6 +13,8 @@ import {
   listRanked,
 } from "../utils/ranks.js";
 import { BOT_INFO } from "../config/constants.js";
+import { getRegistration } from "../utils/registration.js";
+import { getUserStats, levelFromXp, memberTier } from "../utils/communityStats.js";
 
 function label(rank) {
   return RANK_LABELS[rank] || rank;
@@ -27,21 +29,28 @@ command(
   },
   async (message, conn) => {
     const target = resolveTargetUser(message) || message.sender;
+    const number = normalizeNumber(target);
     const rank = await getRank(target);
     const level = await getRankLevel(target);
     const shown = Number.isFinite(level) ? level : RANKS.length + 1;
+    const reg = await getRegistration(number);
+    const name = reg?.name || displayId(target);
+    const stats = await getUserStats(number);
+    const xpLevel = levelFromXp(stats?.points || 0);
     await reply(
       conn,
       message,
       await tr(
         `*${BOT_INFO.NAME} · Rank*\n\n` +
-          `• User: @${displayId(target)}\n` +
+          `• User: *${name}*\n` +
           `• Rank: *${label(rank)}*\n` +
-          `• Level: ${shown}/${RANKS.length}`,
+          `• Staff level: ${shown}/${RANKS.length}\n` +
+          `• Member level: ${xpLevel} (${memberTier(xpLevel)})`,
         `*${BOT_INFO.NAME} · Rang*\n\n` +
-          `• Nutzer: @${displayId(target)}\n` +
+          `• Nutzer: *${name}*\n` +
           `• Rang: *${label(rank)}*\n` +
-          `• Stufe: ${shown}/${RANKS.length}`
+          `• Staff-Stufe: ${shown}/${RANKS.length}\n` +
+          `• Member-Stufe: ${xpLevel} (${memberTier(xpLevel)})`
       ),
       { mentions: [target] }
     );
@@ -141,17 +150,21 @@ command(
       return;
     }
 
-    const { setRank } = await import("../utils/ranks.js");
     await setRank(number, rankArg);
 
+    const reg = await getRegistration(number);
+    const shownName = reg?.name || displayId(target || number);
+    const mention = String(target || "").includes("@")
+      ? String(target)
+      : `${number}@s.whatsapp.net`;
     await replyOk(
       conn,
       message,
       await tr(
-        `@${number} is now *${label(rankArg)}*.`,
-        `@${number} ist jetzt *${label(rankArg)}*.`
+        `*${shownName}* is now *${label(rankArg)}*.`,
+        `*${shownName}* ist jetzt *${label(rankArg)}*.`
       ),
-      { mentions: [number + "@s.whatsapp.net"] }
+      { mentions: [mention] }
     );
   }
 );
