@@ -13,7 +13,7 @@ These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot,
 The Bot provides automated WhatsApp functionality, including:
 
 * **Community access** — registration (`#register`, `#unregister`), ranks and role-based permissions, community activity statistics (`#mystats`, `#leaderboard`) and deletion of your own counters (`#resetstats`).
-* **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Users can check `#mytickets` and close with `#closeticket`.
+* **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Support staff reply with `#answer <text>` in the support group; the answer goes to the reporter and is reposted there with the ticket content and the responder's registered name. Users can check `#mytickets` and close with `#closeticket`.
 * **Group moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group management tools.
 * **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) via a connected AI backend.
 * **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) and search/utilities (`#anime`, `#github`, `#movie`, `#lyrics`, `#translate`, `#img`).

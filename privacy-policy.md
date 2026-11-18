@@ -31,7 +31,7 @@ Whoever runs a main instance controls what it stores, logs, and retains, includi
 ## 2. What the Bot Does
 
 * **Community** — registration (`#register`, `#unregister`), ranks/roles, activity statistics (`#mystats`, `#leaderboard`) and `#resetstats`.
-* **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`).
+* **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`). Replies use `#answer <text>` in the support group.
 * **Moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group tools.
 * **AI chat** (`#chat`, `#aiprompt`) via a connected backend, plus media processing and search/utilities.
 * **Personal utilities** — notes, to-dos, reminders, polls.
@@ -108,8 +108,8 @@ If you run a main instance yourself, you are responsible for these files, their 
 When you use `#report`, `#ticket` / `#support`, or manage them via `#mytickets` / `#closeticket` we store:
 
 * your number, the subject and message text/description you provide, any mentioned/replied-to target, the chat/group context, and a timestamp,
-* the ticket status (open/closed) and who closed it,
-* the delivery destination and mode configured by the operator (`#setsupportgroup`, `#setticketdelivery`). With `dm`, full ticket content goes only to you; the support group receives just a short notice with the ticket ID and sender.
+* the ticket status (open/answered/closed), any answer text, the registered name of the support member who answered, and who closed it,
+* the delivery destination and mode configured by the operator (`#setsupportgroup`, `#setticketdelivery`). With `dm`, full ticket content goes only to you; the support group receives just a short notice with the ticket ID and sender. An `#answer` reply is sent to you and reposted in the support group with the original ticket content and the responder's registered name (no mention/number).
 
 This data is used only to handle your request and to keep an audit trail. False or abusive reports may be rejected (Terms, Sections 4 and 5).
 

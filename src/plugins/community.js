@@ -26,6 +26,9 @@ import {
   setTicketDelivery,
   createTicket,
   getTicket,
+  getTicketBySupportMessageId,
+  setTicketDeliveryMessage,
+  answerTicket,
   listTickets,
   closeTicket,
 } from "../utils/supportTickets.js";
@@ -73,9 +76,12 @@ function formatTicket(ticket, { full = true } = {}) {
 }
 
 async function deliverTicket(conn, ticket, mode, supportJid) {
+  let supportMessageId = null;
+
   if (mode === "group" || mode === "both") {
-    if (!supportJid) return false;
-    await sendMessage(conn, supportJid, formatTicket(ticket));
+    if (!supportJid) return null;
+    const sent = await sendMessage(conn, supportJid, formatTicket(ticket));
+    supportMessageId = sent?.key?.id || sent?.id || null;
   }
   if (mode === "dm" || mode === "both") {
     if (!conn?.__isSub) {
@@ -83,9 +89,11 @@ async function deliverTicket(conn, ticket, mode, supportJid) {
     }
   }
   if (mode === "dm" && supportJid) {
-    await sendMessage(conn, supportJid, formatTicket(ticket, { full: false }));
+    const sent = await sendMessage(conn, supportJid, formatTicket(ticket, { full: false }));
+    supportMessageId = sent?.key?.id || sent?.id || supportMessageId;
   }
-  return true;
+
+  return supportMessageId ? { supportMessageId, supportChat: supportJid } : null;
 }
 
 async function openTicket(message, conn, { source, subject, body, target }) {
@@ -139,7 +147,10 @@ async function openTicket(message, conn, { source, subject, body, target }) {
     ticket.subject
   );
 
-  await deliverTicket(conn, ticket, mode, supportJid);
+  const delivery = await deliverTicket(conn, ticket, mode, supportJid);
+  if (delivery) {
+    await setTicketDeliveryMessage(ticket.id, delivery);
+  }
 
   const where = mode === "dm" ? "privately to you" : mode === "both" ? "the support group and your DM" : "the support group";
   await replyOk(
@@ -150,6 +161,40 @@ async function openTicket(message, conn, { source, subject, body, target }) {
       `🎫 ${source === "report" ? "Meldung" : "Ticket"} erstellt: \`${ticket.id}\`\nZugestellt an ${where}. Verfolgen mit \`${BOT_INFO.PREFIX}mytickets\`.`
     )
   );
+}
+
+function quotedText(message) {
+  const quoted = message?.message?.contextInfo?.quotedMessage;
+  return String(
+    message?.quoted?.text ||
+      quoted?.conversation ||
+      quoted?.extendedTextMessage?.text ||
+      ""
+  );
+}
+
+function quotedMessageId(message) {
+  const ctx = message?.message?.contextInfo || {};
+  return ctx.stanzaId || message?.quoted?.id || message?.quoted?.key?.id || null;
+}
+
+async function findTicketForAnswer(message) {
+  const byId = await getTicketBySupportMessageId(quotedMessageId(message));
+  if (byId) return byId;
+  const match = quotedText(message).match(/TKT-[A-Z0-9-]+/i);
+  return match ? getTicket(match[0].toUpperCase()) : null;
+}
+
+function formatAnswer({ ticket, name, answer }) {
+  return [
+    `🎫 *Ticket ${ticket.id}*`,
+    `*Answered by:* ${name}`,
+    "",
+    `*Original:* ${ticket.subject}`,
+    ticket.body,
+    "",
+    `*Answer:* ${answer}`,
+  ].join("\n");
 }
 
 command(
@@ -318,8 +363,9 @@ command(
       await reply(conn, message, await tr("🎫 You have no tickets.", "🎫 Du hast keine Tickets."));
       return;
     }
+    const icon = (status) => (status === "open" ? "🟢" : status === "answered" ? "✉️" : "🔒");
     const lines = tickets.map(
-      (t) => `\`${t.id}\` · ${t.status === "open" ? "🟢" : "🔒"} ${t.subject} · ${fmtDate(t.ts)}`
+      (t) => `\`${t.id}\` · ${icon(t.status)} ${t.subject} · ${fmtDate(t.ts)}`
     );
     await reply(conn, message, `🎫 *Your tickets*\n${lines.join("\n")}`);
   }
@@ -366,6 +412,95 @@ command(
     const closed = await closeTicket(ticket.id, number);
     await auditMessage(message, { action: "community.ticket.close", target: closed.id });
     await replyOk(conn, message, await tr(`🎫 Ticket \`${closed.id}\` closed.`, `🎫 Ticket \`${closed.id}\` geschlossen.`));
+  }
+);
+
+command(
+  {
+    pattern: "answer",
+    fromMe: false,
+    desc: "Answer a ticket (reply to the ticket message in the support group)",
+    type: "info",
+  },
+  async (message, conn) => {
+    const supportJid = await getSupportGroup();
+    if (!supportJid || message.from !== supportJid) {
+      await replyFail(
+        conn,
+        message,
+        await tr(
+          "🎫 Use `#answer` inside the configured support group.",
+          "🎫 Nutze `#answer` in der konfigurierten Support-Gruppe."
+        )
+      );
+      return;
+    }
+
+    const answer = (getCommandArgs(message.body, "answer") || "").trim();
+    if (!answer) {
+      await reply(
+        conn,
+        message,
+        await tr(
+          `🎫 *Answer a ticket*\nReply to the ticket message with \`${BOT_INFO.PREFIX}answer <text>\`.`,
+          `🎫 *Ticket beantworten*\nAntworte auf die Ticket-Nachricht mit \`${BOT_INFO.PREFIX}answer <Text>\`.`
+        )
+      );
+      return;
+    }
+
+    const ticket = await findTicketForAnswer(message);
+    if (!ticket) {
+      await replyFail(
+        conn,
+        message,
+        await tr(
+          "❌ Ticket not found. Reply directly to the bot's ticket message.",
+          "❌ Ticket nicht gefunden. Antworte direkt auf die Ticket-Nachricht des Bots."
+        )
+      );
+      return;
+    }
+
+    const number = normalizeNumber(message.sender || message.from);
+    const registration = await getRegistration(number);
+    const name = registration?.name || ((await isPrivileged(message, conn)) ? "Owner" : null);
+    if (!name) {
+      await replyFail(
+        conn,
+        message,
+        await tr(
+          `🎫 Register first so your name can be shown: \`${BOT_INFO.PREFIX}register <Name> accept\`.`,
+          `🎫 Registriere dich zuerst, damit dein Name angezeigt werden kann: \`${BOT_INFO.PREFIX}register <Name> accept\`.`
+        )
+      );
+      return;
+    }
+
+    const answered = await answerTicket(ticket.id, {
+      answer,
+      answeredBy: name,
+      supportMessageId: quotedMessageId(message) || ticket.supportMessageId,
+      supportChat: supportJid,
+    });
+
+    const full = formatAnswer({ ticket: answered, name, answer });
+    const reporterJid = ticket.chat || `${ticket.number}@s.whatsapp.net`;
+    if (reporterJid !== supportJid) {
+      await sendMessage(conn, reporterJid, full);
+    }
+
+    const quoted = answered.supportMessageId
+      ? { key: { id: answered.supportMessageId, remoteJid: supportJid }, message: {} }
+      : null;
+    await sendMessage(conn, supportJid, full, quoted ? { quoted } : {});
+
+    await auditMessage(message, {
+      action: "community.ticket.answer",
+      target: answered.id,
+      reason: answer,
+      meta: { answeredBy: name },
+    });
   }
 );
 

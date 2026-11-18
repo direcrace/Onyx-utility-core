@@ -21,6 +21,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 - `#register <Name> accept` can now renew outdated consent without unregistering or hitting the 30-day cooldown; the command gate blocks stale consents until renewed.
 - New community plugin: `#ticket` / `#support`, `#report`, `#mytickets`, `#closeticket`, `#leaderboard`, `#mystats`, `#resetstats`.
 - Owner configuration: `#setsupportgroup` and `#setticketdelivery group|dm|both|off`.
+- Ticket replies: `#answer <text>` in the support group, used as a reply to the ticket message, sends the answer to the reporter and reposts it in the support group with the original ticket content and the responder's registered name.
 - Per-number activity counters in BotKV (`community:stats`) and persisted tickets (`community:tickets`); no message text is stored for stats.
 
 ---

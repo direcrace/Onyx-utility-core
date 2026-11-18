@@ -71,6 +71,11 @@ export async function createTicket({
     target: target ? String(target).slice(0, 256) : null,
     ts: Date.now(),
     status: "open",
+    answer: null,
+    answeredAt: null,
+    answeredBy: null,
+    supportMessageId: null,
+    supportChat: null,
     closedAt: null,
     closedBy: null,
   };
@@ -89,6 +94,43 @@ export async function getTicket(id) {
   if (!key) return null;
   const map = await readTickets();
   return map[key] || null;
+}
+
+export async function getTicketBySupportMessageId(messageId) {
+  const id = trim(messageId, 128);
+  if (!id) return null;
+  const map = await readTickets();
+  return Object.values(map).find((ticket) => ticket && ticket.supportMessageId === id) || null;
+}
+
+export async function setTicketDeliveryMessage(id, { supportMessageId = null, supportChat = null } = {}) {
+  const key = trim(id, 64).toUpperCase();
+  const map = await readTickets();
+  if (!key || !map[key]) return null;
+  map[key] = {
+    ...map[key],
+    supportMessageId: supportMessageId ? String(supportMessageId).slice(0, 128) : map[key].supportMessageId || null,
+    supportChat: supportChat ? String(supportChat).slice(0, 256) : map[key].supportChat || null,
+  };
+  await kvSet(TICKETS_KEY, map);
+  return map[key];
+}
+
+export async function answerTicket(id, { answer = "", answeredBy = "Support", supportMessageId = null, supportChat = null } = {}) {
+  const key = trim(id, 64).toUpperCase();
+  const map = await readTickets();
+  if (!key || !map[key]) return null;
+  map[key] = {
+    ...map[key],
+    status: "answered",
+    answer: trim(answer, 2000),
+    answeredAt: Date.now(),
+    answeredBy: trim(answeredBy, 64) || "Support",
+    supportMessageId: supportMessageId ? String(supportMessageId).slice(0, 128) : map[key].supportMessageId || null,
+    supportChat: supportChat ? String(supportChat).slice(0, 256) : map[key].supportChat || null,
+  };
+  await kvSet(TICKETS_KEY, map);
+  return map[key];
 }
 
 export async function listTickets({ number = null, status = null, limit = 20 } = {}) {
