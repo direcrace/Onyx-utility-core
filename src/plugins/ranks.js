@@ -11,6 +11,7 @@ import {
   getRank,
   getRankLevel,
   listRanked,
+  setRank,
 } from "../utils/ranks.js";
 import { BOT_INFO } from "../config/constants.js";
 import { getRegistration } from "../utils/registration.js";

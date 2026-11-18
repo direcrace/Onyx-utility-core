@@ -17,6 +17,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 
 ## Unreleased — community bot release
 
+- Fixed `#setrank` crash (`ReferenceError: setRank is not defined`): the dynamic import removed during the rank-output rewrite was never added back to the static imports. Rank changes persist again.
 - Version bumped to `5.0.5` across package, runtime banner, dashboard and docs — also serves as a visible `#version` marker to verify `#update` pulls successfully on panel installs.
 - Full ToS/Privacy rewrite for community use: mandatory registration, version-hashed re-acceptance, plaintext audit/message/raw log levels, no media download for logs, reports/tickets and leaderboard disclosures.
 - `#register <Name> accept` can now renew outdated consent without unregistering or hitting the 30-day cooldown; the command gate blocks stale consents until renewed.
