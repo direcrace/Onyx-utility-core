@@ -22,6 +22,7 @@ import {
   startTicketSlaScheduler,
   stopTicketSlaScheduler,
 } from "../utils/ticketSla.js";
+import { attachMessageFooter } from "../utils/messageFooter.js";
 import { processGroupGuards, processGroupMessageGate } from "../messages/groupGuards.js";
 import { getPrefix } from "../config/constants.js";
 
@@ -131,6 +132,9 @@ async function connect() {
       const { armOutgoingCapture } = await import("../enterprise/logCapture.js");
       armOutgoingCapture(conn, { session: "main" });
     } catch {  }
+
+    // Install last so outgoing capture and panic guards see the final text too.
+    attachMessageFooter(conn);
 
     pairingRequested = false;
 

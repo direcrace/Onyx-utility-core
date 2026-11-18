@@ -236,6 +236,10 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 - Backed by `src/utils/aiHistory.js` (20-message history per user, BotKV persisted).
 - `.env`: `LM_STUDIO_MODEL=local-model`, `GROQ_API_KEY`, `GROQ_MODEL`.
 
+### Branding (`src/utils/messageFooter.js`)
+
+- All outgoing bot text messages and media captions get the footer `YumBot | Built on Onyx`. It is applied at the socket level, so direct `conn.sendMessage(...)` calls are covered too. Reactions, polls and other non-text payloads are unchanged; the wrapper is idempotent on reconnect and for Onyx Mini sessions.
+
 ### Legal (`src/plugins/legal.js`)
 
 - `#terms` / `#tos` and `#privacy` / `#dsgvo` (append `full` for the complete document) — bilingual summaries or the complete documents (`terms-of-service.md`, `privacy-policy.md` at repo root), chunked + paced to avoid send-burst panics. ToS include an Impressum section with the operator's contact data.

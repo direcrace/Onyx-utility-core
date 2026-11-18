@@ -29,6 +29,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 - `#img` now falls back Pinterest → Openverse → Wikimedia Commons when Pinterest serves captchas on VPS IPs; captions credit source and license. `#anime` falls back to AniList; reactions moved from dead waifu.pics to nekos.best; `#fetch` reports the real network cause.
 - AI replies to the bot's own AI messages continue the conversation even with chatbot mode off, with visible errors instead of silent catches.
 - Aliases `#tos` / `#dsgvo`; ToS/Privacy updated with the Impressum (WhatsApp +49 15679 830332, Meros.Basement@gmx.net, postal address on request).
+- Global outgoing message footer: every bot text message and media caption ends with `YumBot | Built on Onyx`; reactions, polls and other non-text payloads are untouched, and the wrapper is idempotent across reconnects/sub-sessions.
 - Ticket categories and routing: `#setticketroute <category> here|<jid>|clear` plus `[category] subject | body` syntax; `#answer` also works in routed category groups.
 - Ticket SLA: `#setsla <minutes|off>` (default 360 min via `TICKET_SLA_MINUTES`, 5-minute checks via `TICKET_SLA_INTERVAL_MS`) sends one-shot reminders to the responsible support/category group and persists `slaNotifiedAt` for restart-safe deduplication.
 - Karma/badges: `#thanks @user` (24 h cooldown, 8 helpful XP), `#tophelpers`, `#badges`; earned badges appear in `#level`, `#mystats` and `#whois`.

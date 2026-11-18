@@ -15,6 +15,7 @@ import { groupCache, msgCache } from "../utils/cache.js";
 import { processGroupGuards, processGroupMessageGate } from "../messages/groupGuards.js";
 import { evaluateMiniMessage, purgeOldFlags, resetMiniState } from "./miniMonitor.js";
 import { getPrefix } from "../config/constants.js";
+import { attachMessageFooter } from "../utils/messageFooter.js";
 
 const logger = pino({ level: process.env.BAILEYS_LOG_LEVEL || "silent" });
 
@@ -394,7 +395,7 @@ async function openSubAuth(number) {
 
 async function createConnFromAuth(auth) {
   const version = await getVersion();
-  return makeWASocket({
+  const conn = makeWASocket({
     logger,
     auth: {
       creds: auth.state.creds,
@@ -411,6 +412,7 @@ async function createConnFromAuth(auth) {
     getMessage: async (key) => (key?.id ? msgCache.get(key.id) : undefined),
     cachedGroupMetadata: async (jid) => groupCache.get(jid),
   });
+  return attachMessageFooter(conn);
 }
 
 async function createSocket(number) {

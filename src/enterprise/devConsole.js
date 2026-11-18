@@ -263,7 +263,8 @@ export async function runDevAction(action, params = {}) {
         const text = String(p.text || "").trim();
         if (!to) return { ok: false, error: "chat required — pick from the list or type a number" };
         if (!text) return { ok: false, error: "message required" };
-        if (text.length > 4096) return { ok: false, error: "message too long (max 4096)" };
+        // Leave room for the global message footer appended at socket level.
+        if (text.length > 4072) return { ok: false, error: "message too long (max 4072)" };
         const target = to.includes("@") ? to : jidOf(to);
         const { kindOf } = await import("./chatIndex.js");
         const kind = kindOf(target);
