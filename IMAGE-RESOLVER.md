@@ -121,7 +121,16 @@ IMAGE_MAX_REDIRECTS=3          # redirects followed, each one re-validated
 IMAGE_MAX_CANDIDATES=5         # max image URLs tried per command
 IMAGE_ALLOWED_MIMES=image/jpeg,image/png,image/webp,image/gif
 PINTEREST_ENABLED=on           # set to off to skip Pinterest entirely
+PROVIDER_BLOCK_COOLDOWN_MS=600000  # pause a 403/429/captcha source for 10 min
 ```
+
+If a provider answers `401`, `403`, `429` or shows a CAPTCHA, it gets a
+**cooldown** (default 10 minutes, `0` disables it). Subsequent commands skip
+that source instead of hammering it, so the free fallbacks answer immediately.
+Explicit image links are exempt — they always report their block reason
+directly. On a datacenter/hosting IP, Pinterest and Openverse commonly answer
+`403`; setting `PINTEREST_ENABLED=off` plus the cooldown means `#img` goes
+straight to Wikimedia Commons without wasting requests.
 
 No restart-specific setup is needed beyond the normal panel restart after an
 `.env` change.

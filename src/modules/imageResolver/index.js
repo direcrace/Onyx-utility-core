@@ -26,6 +26,23 @@ const PINTEREST_URL_PROVIDER = {
 const DIRECT_URL_PROVIDER = { name: "direct-url", handle: directUrlProvider };
 const urlProviders = [PINTEREST_URL_PROVIDER, DIRECT_URL_PROVIDER];
 
+// A source that just returned 403/429/CAPTCHA gets a short break. Otherwise
+// every single #img would hammer the same blocked host before falling back.
+const blockCooldowns = new Map();
+
+export function resetProviderCooldowns() {
+  blockCooldowns.clear();
+}
+
+function isCooling(name) {
+  return Date.now() < (blockCooldowns.get(name) || 0);
+}
+
+function markCooling(name) {
+  const ms = positiveInt(process.env.PROVIDER_BLOCK_COOLDOWN_MS, 10 * 60 * 1000);
+  if (ms > 0) blockCooldowns.set(name, Date.now() + ms);
+}
+
 /** Add a provider at runtime: { name, handle(value, ctx) -> candidate[] }. */
 export function registerProvider(provider, { kind = "search" } = {}) {
   if (!provider?.handle || typeof provider.handle !== "function") {
@@ -74,12 +91,16 @@ function looksLikeUrl(text) {
   return /^https?:\/\/\S+$/i.test(text);
 }
 
-async function resolveFromProviders(providers, value, ctx) {
+async function resolveFromProviders(providers, value, ctx, { cooldown = true } = {}) {
   const candidates = [];
   const hardErrors = [];
 
   for (const provider of providers) {
     if (candidates.length >= ctx.maxCandidates) break;
+    if (cooldown && isCooling(provider.name)) {
+      ctx.log("warn", `[imageResolver] ${provider.name}: skipped (block cooldown)`);
+      continue;
+    }
     try {
       const found = await provider.handle(value, ctx);
       const list = Array.isArray(found) ? found : found ? [found] : [];
@@ -89,7 +110,10 @@ async function resolveFromProviders(providers, value, ctx) {
         if (candidates.length >= ctx.maxCandidates) break;
       }
     } catch (err) {
-      if (err instanceof ImageError && HARD_ERRORS.has(err.code)) hardErrors.push(err);
+      if (err instanceof ImageError && HARD_ERRORS.has(err.code)) {
+        if (cooldown) markCooling(provider.name);
+        hardErrors.push(err);
+      }
       // Internal only. Details never include cookies/tokens or chat content.
       const detail = err?.detail || err?.message || "unknown error";
       ctx.log("warn", `[imageResolver] ${provider.name}: ${detail}`);
@@ -157,7 +181,9 @@ export async function resolveImageUrl(url, options = {}) {
   const providers = isPinterestUrl(value)
     ? urlProviders.filter((p) => p.name !== DIRECT_URL_PROVIDER.name)
     : urlProviders;
-  return resolveFromProviders(providers, value, ctx);
+  // Explicit links are rare: always report their block error instead of
+  // silently skipping the provider during a cooldown.
+  return resolveFromProviders(providers, value, ctx, { cooldown: false });
 }
 
 export { ImageError, IMAGE_ERRORS, imageUserText };

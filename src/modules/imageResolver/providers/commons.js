@@ -1,6 +1,7 @@
 import { guardedFetch } from "../utils/download.js";
 import { BOT_UA, jsonHeaders } from "../constants.js";
 import { cleanText } from "../utils/normalizer.js";
+import { ImageError, IMAGE_ERRORS } from "../errors.js";
 
 /** Wikimedia Commons search — last free fallback in the chain. */
 export async function commonsProvider(query, ctx) {
@@ -22,7 +23,13 @@ export async function commonsProvider(query, ctx) {
     headers: jsonHeaders(BOT_UA),
     maxBytes: 4 * 1024 * 1024,
   });
-  if (!res.ok) throw new Error(`Commons HTTP ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401) throw new ImageError(IMAGE_ERRORS.AUTH_REQUIRED, "commons 401");
+    if (res.status === 403 || res.status === 429) {
+      throw new ImageError(IMAGE_ERRORS.SOURCE_BLOCKED, `commons ${res.status}`);
+    }
+    throw new Error(`Commons HTTP ${res.status}`);
+  }
 
   let json;
   try {

@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 const PNG = Buffer.from(
@@ -70,7 +70,10 @@ const {
   resolveImageUrl,
   ImageError,
   IMAGE_ERRORS,
+  resetProviderCooldowns,
 } = await import("../src/modules/imageResolver/index.js");
+
+beforeEach(() => resetProviderCooldowns());
 
 test("direct image URL downloads and normalizes metadata", async () => {
   const hit = await resolveImageUrl("https://images.example.com/photo.png", {
@@ -242,6 +245,63 @@ test("no provider result maps to IMAGE_NOT_FOUND", async () => {
     resolveImage("something obscure", { fetchImpl, dnsLookup: PUBLIC_DNS }),
     (err) => err instanceof ImageError && err.code === IMAGE_ERRORS.IMAGE_NOT_FOUND
   );
+});
+
+test("blocked Openverse surfaces SOURCE_BLOCKED instead of a generic miss", async () => {
+  const fetchImpl = async (url) => {
+    if (url === "https://www.pinterest.com/") {
+      return fakeResponse({ headers: { "set-cookie": "csrftoken=x" }, body: HTML });
+    }
+    if (url.includes("BaseSearchResource")) return pinSearch([]);
+    if (url.includes("api.openverse.org")) {
+      return fakeResponse({ status: 403, body: Buffer.from("forbidden") });
+    }
+    if (url.includes("commons.wikimedia.org")) return commonsEmpty();
+    return pngFetch();
+  };
+  await assert.rejects(
+    resolveImage("anything", { fetchImpl, dnsLookup: PUBLIC_DNS }),
+    (err) => err instanceof ImageError && err.code === IMAGE_ERRORS.SOURCE_BLOCKED
+  );
+});
+
+test("a blocked search provider is skipped on the next command", async () => {
+  let pinterestRequests = 0;
+  const fetchImpl = async (url) => {
+    if (url === "https://www.pinterest.com/") {
+      pinterestRequests += 1;
+      return fakeResponse({ headers: { "set-cookie": "csrftoken=x" }, body: HTML });
+    }
+    if (url.includes("BaseSearchResource")) {
+      return fakeResponse({ status: 403, body: Buffer.from("forbidden") });
+    }
+    if (url.includes("api.openverse.org")) return openverseEmpty();
+    if (url.includes("commons.wikimedia.org")) {
+      return fakeResponse({
+        headers: { "content-type": "application/json" },
+        body: Buffer.from(JSON.stringify({
+          query: {
+            pages: {
+              1: {
+                index: 1,
+                imageinfo: [{ thumburl: "https://images.example.com/c.jpg", extmetadata: {} }],
+              },
+            },
+          },
+        })),
+      });
+    }
+    return pngFetch();
+  };
+  const opts = { fetchImpl, dnsLookup: PUBLIC_DNS };
+  const first = await resolveImage("one", opts);
+  assert.equal(first.provider, "Wikimedia Commons");
+  const afterFirst = pinterestRequests;
+  assert.ok(afterFirst >= 1);
+
+  const second = await resolveImage("two", opts);
+  assert.equal(second.provider, "Wikimedia Commons");
+  assert.equal(pinterestRequests, afterFirst, "Pinterest was requested again during cooldown");
 });
 
 test("#img command still sends the image through the WhatsApp pipeline", async () => {

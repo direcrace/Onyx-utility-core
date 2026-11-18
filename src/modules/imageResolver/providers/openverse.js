@@ -1,5 +1,6 @@
 import { guardedFetch } from "../utils/download.js";
 import { BOT_UA, jsonHeaders } from "../constants.js";
+import { ImageError, IMAGE_ERRORS } from "../errors.js";
 
 /** Free, license-filtered image search through Openverse (no API key). */
 export async function openverseProvider(query, ctx) {
@@ -17,7 +18,13 @@ export async function openverseProvider(query, ctx) {
     headers: jsonHeaders(BOT_UA),
     maxBytes: 2 * 1024 * 1024,
   });
-  if (!res.ok) throw new Error(`Openverse HTTP ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401) throw new ImageError(IMAGE_ERRORS.AUTH_REQUIRED, "openverse 401");
+    if (res.status === 403 || res.status === 429) {
+      throw new ImageError(IMAGE_ERRORS.SOURCE_BLOCKED, `openverse ${res.status}`);
+    }
+    throw new Error(`Openverse HTTP ${res.status}`);
+  }
 
   let json;
   try {
