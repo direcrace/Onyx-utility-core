@@ -43,7 +43,7 @@ If your repro needs a number, invent a fake one (`4915000000000`). Nobody here n
 
 These are deliberate trade-offs, so a report that suggests weakening them needs a hard justification:
 
-- Admin HTTP binds to `127.0.0.1` by default and refuses to run with a token on any port — nothing listens publicly unauthenticated.
+- Admin HTTP binds to `127.0.0.1` by default, switches to `0.0.0.0` when the panel injects `SERVER_PORT`, and refuses to run without `ADMIN_HTTP_TOKEN` — nothing listens publicly unauthenticated.
 - Two token tiers (creator/operator) and a watchdog that locks an operator out after sustained dangerous actions.
 - Generic error messages in chats; stacks, traces and diagnostics stay in the system log group.
 - Global ban, private mode, and per-group controls all gate who can reach the bot.

@@ -156,26 +156,44 @@ function handleSSE(req, res, token) {
   req.on("error", cleanup);
 }
 
+export function getAdminHttpConfig() {
+  // Hosting panels (Pterodactyl/bot-hosting.net) inject SERVER_PORT and forward
+  // their proxy to it. Listening on ADMIN_HTTP_PORT/127.0.0.1 instead makes the
+  // proxy report "got nothing back on its port".
+  const panelPort = Number(process.env.SERVER_PORT || 0);
+  const fromPanel = Number.isFinite(panelPort) && panelPort > 0;
+  const port = fromPanel ? panelPort : Number(process.env.ADMIN_HTTP_PORT || 0);
+  const configuredHost = process.env.ADMIN_HTTP_HOST || "";
+  const host = configuredHost || (fromPanel ? "0.0.0.0" : "127.0.0.1");
+  return {
+    enabled: Number.isFinite(port) && port > 0,
+    port,
+    host,
+    panel: fromPanel,
+    token: process.env.ADMIN_HTTP_TOKEN || "",
+  };
+}
+
 export function startAdminHttp() {
-  const port = Number(process.env.ADMIN_HTTP_PORT || 0);
-  if (!port) {
+  const config = getAdminHttpConfig();
+  if (!config.enabled) {
     logger.info?.("Admin HTTP disabled (set ADMIN_HTTP_PORT to enable)");
     return null;
   }
 
-  const host = process.env.ADMIN_HTTP_HOST || "127.0.0.1";
-  const token = process.env.ADMIN_HTTP_TOKEN || "";
+  const { port, host, panel } = config;
+  const token = config.token;
 
   if (!token) {
     console.warn(
-      "[admin-http] ADMIN_HTTP_PORT set but ADMIN_HTTP_TOKEN missing — refusing to start"
+      "[admin-http] HTTP port set but ADMIN_HTTP_TOKEN missing — refusing to start"
     );
     return null;
   }
 
   server = http.createServer(async (req, res) => {
     try {
-      const url = new URL(req.url || "/", `http://${host}`);
+      const url = new URL(req.url || "/", `http://${host === "0.0.0.0" ? "localhost" : host}`);
       const path = url.pathname;
 
       if (path === "/health") {
@@ -601,8 +619,9 @@ export function startAdminHttp() {
   });
 
   server.listen(port, host, () => {
-    console.log(`🛡 Admin HTTP on http://${host}:${port} (token required)`);
-    console.log(`   Dev console: http://${host}:${port}/ui`);
+    const shown = host === "0.0.0.0" ? "localhost" : host;
+    console.log(`🛡 Admin HTTP on http://${shown}:${port} (token required${panel ? ", panel port" : ""})`);
+    console.log(`   Dev console: http://${shown}:${port}/ui?token=<ADMIN_HTTP_TOKEN>`);
     startStatsSampler();
   });
 

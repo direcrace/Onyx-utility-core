@@ -196,6 +196,7 @@ Replaces the old single-page HTML console with a real static dashboard (7 "secti
 ### 1.6 Admin HTTP auth tiering (`src/enterprise/adminHttp.js`, 22 → 661 lines)
 
 - Two tiers: **creator** (`ADMIN_HTTP_TOKEN`) and **operator** (`ADMIN_OPERATOR_TOKEN`, restricted: no reboot/shutdown/terminal/panic — enforced by `CREATOR_ONLY_ACTIONS`).
+- Panel hosting: `SERVER_PORT` takes precedence over `ADMIN_HTTP_PORT` and binds `0.0.0.0` by default so the panel proxy can reach `/health`. Full setup (panel proxy + cloudflared tunnel + troubleshooting): [`DASHBOARD-TUNNEL.md`](DASHBOARD-TUNNEL.md).
 - **Remote-control watchdog** (`src/enterprise/rcMonitor.js`): every operator action carries a weight; high rolling score warns then **locks** the operator out (like a mini suspend), with audit + creator DM notification. Danger actions require an armed server-side confirm (90 s TTL). Env: `RC_MONITOR`, `RC_FLAG_WARN` (30), `RC_FLAG_LOCK` (80), `RC_FLAG_WINDOW_MS`, `RC_FLAG_LOCKOUT_MS`, `RC_FLAG_RETENTION_DAYS`.
 - `group-wide sends` (group/broadcast) can never fire without explicit arming.
 

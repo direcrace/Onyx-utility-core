@@ -140,11 +140,18 @@ Deshalb:
 Optional das Web-Dashboard:
 
 ```env
-ADMIN_HTTP_PORT=3000
 ADMIN_HTTP_TOKEN=<langes zufälliges Token>
+ADMIN_HTTP_HOST=0.0.0.0
 ```
 
-Dashboard unter `/ui`. Port nach außen nur über TLS/Reverse-Proxy freigeben.
+`SERVER_PORT` wird vom Panel automatisch gesetzt und hat Vorrang vor
+`ADMIN_HTTP_PORT`; der Bot bindet dann auf `0.0.0.0:$SERVER_PORT`. Das ist
+notwendig, damit der Panel-Proxy den Port erreicht (sonst: *„got nothing back
+on its port"*). Dashboard: `https://<PANEL-DOMAIN>/ui?token=<TOKEN>`.
+
+Ohne Panel (lokal / cloudflared) stattdessen `ADMIN_HTTP_PORT=9000` und
+`ADMIN_HTTP_HOST=127.0.0.1` setzen. Komplette Anleitung inkl. Tunnel und
+Fehlerbehebung: [`DASHBOARD-TUNNEL.md`](DASHBOARD-TUNNEL.md).
 
 ## systemd (eigener Server)
 

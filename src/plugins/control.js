@@ -11,6 +11,7 @@ import { BOT_INFO } from "../config/constants.js";
 import { clearAuthState } from "../database/authState.js";
 import { writeAudit } from "../enterprise/audit.js";
 import { systemLog } from "../utils/logGroup.js";
+import { getAdminHttpConfig } from "../enterprise/adminHttp.js";
 import {
   describe,
   ffmpegVersion,
@@ -236,6 +237,7 @@ command(
 
     const d = describe();
     const ff = await ffmpegVersion().catch(() => null);
+    const http = getAdminHttpConfig();
 
     const lines = [
       `🖥️ *Runtime*`,
@@ -248,7 +250,7 @@ command(
       `⌨️ *Console*`,
       `• TTY: ${d.tty ? "yes" : "no"}`,
       `• Maintenance CLI: \`node clear.js --help\``,
-      `• Web dashboard: ${process.env.ADMIN_HTTP_PORT ? `port ${process.env.ADMIN_HTTP_PORT}` : "off (ADMIN_HTTP_PORT unset)"}`,
+      `• Web dashboard: ${http.enabled ? `port ${http.port} @ ${http.host}${http.panel ? " (panel)" : ""}` : "off (ADMIN_HTTP_PORT unset)"}`,
       ``,
       `🔧 *Tools*`,
       `• FFmpeg: ${ff ? ff.slice(0, 70) : "❌ missing"}`,
