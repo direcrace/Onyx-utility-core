@@ -1,6 +1,6 @@
 {
   "name": "onyx-utility-core",
-  "version": "5.0.4",
+  "version": "5.0.5",
   "description": "YumBot - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI",
   "main": "index.js",
   "engines": {

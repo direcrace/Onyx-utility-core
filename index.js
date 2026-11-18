@@ -27,7 +27,7 @@ const readAndRequireFiles = async (directory) => {
 
 const initialize = async () => {
   console.log("\n╔══════════════════════════════╗");
-  console.log("║        YUMBOT v5.0.4         ║");
+  console.log("║        YUMBOT v5.0.5         ║");
   console.log("║   Baileys 7.0.0-rc13         ║");
   console.log("╚══════════════════════════════╝\n");
 

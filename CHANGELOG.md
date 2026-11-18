@@ -7,7 +7,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 |                      | X-Asena                                   | Onyx Core                                                                                         |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | package name         | `x-asena`                                 | `onyx-utility-core`                                                                               |
-| version              | `4.0.0`                                   | `5.0.4`                                                                                           |
+| version              | `4.0.0`                                   | `5.0.5`                                                                                           |
 | description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "YumBot - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
 | bot name             | `X-Asena`                                 | `YumBot` (runtime-changeable)                                                          |
 | default sticker pack | `X-Asena`                                 | `Onyx`                                                                                            |
@@ -17,6 +17,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 
 ## Unreleased — community bot release
 
+- Version bumped to `5.0.5` across package, runtime banner, dashboard and docs — also serves as a visible `#version` marker to verify `#update` pulls successfully on panel installs.
 - Full ToS/Privacy rewrite for community use: mandatory registration, version-hashed re-acceptance, plaintext audit/message/raw log levels, no media download for logs, reports/tickets and leaderboard disclosures.
 - `#register <Name> accept` can now renew outdated consent without unregistering or hitting the 30-day cooldown; the command gate blocks stale consents until renewed.
 - New community plugin: `#ticket` / `#support`, `#report`, `#mytickets`, `#closeticket`, `#leaderboard`, `#mystats`, `#resetstats`.
