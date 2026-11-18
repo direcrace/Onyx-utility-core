@@ -242,7 +242,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 - `#ticket` / `#support` (`<subject> | <message>`) and `#report <reason>` create tracked tickets; `#mytickets` lists yours, `#closeticket <id>` closes one (reporter or mod+).
 - In the support group, reply to the bot's ticket message with `#answer <text>`. The answer is sent back to the reporter and posted in the support group with the original ticket content and the responder's **registered name** (never a mention/number).
-- Owner setup: `#setsupportgroup` (run inside the destination group, `status` to check) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
+- Owner/sudo setup: `#setsupportgroup` inside the destination group (or `#setsupportgroup <group-jid>` / `status`) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
 - Stats: `#mystats`, `#leaderboard`, `#resetstats`. Counters (messages/commands/reports/tickets) are stored per number in BotKV; no message text is kept for stats.
 
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)

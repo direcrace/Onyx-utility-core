@@ -2,7 +2,6 @@ import { command } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, sendMessage, tr } from "../utils/message.js";
 import {
   normalizeNumber,
-  isOwnerMessage,
   isPrivileged,
   isRankedAtLeast,
 } from "../utils/access.js";
@@ -46,9 +45,18 @@ function label(rank) {
 }
 
 async function ownerOnly(conn, message) {
-  if (isOwnerMessage(message, conn) || message.key?.fromMe) return true;
-  await replyFail(conn, message, await tr("Owner only.", "Nur Besitzer."));
+  if (await isPrivileged(message, conn)) return true;
+  await replyFail(conn, message, await tr("Owner/sudo only.", "Nur Besitzer/Sudo."));
   return false;
+}
+
+function toGroupJid(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (raw.toLowerCase() === "here") return null;
+  if (/@g\.us$/i.test(raw)) return raw;
+  const digits = raw.replace(/\D/g, "");
+  return digits ? `${digits}@g.us` : null;
 }
 
 function parseTicketText(text) {
@@ -201,14 +209,14 @@ command(
   {
     pattern: "setsupportgroup",
     fromMe: true,
-    desc: "Set this group as the support ticket destination (owner only)",
+    desc: "Set support ticket destination: in-group, <jid>, or status (owner/sudo)",
     type: "owner",
-    groupOnly: true,
   },
   async (message, conn) => {
     if (!(await ownerOnly(conn, message))) return;
 
-    const args = (getCommandArgs(message.body, "setsupportgroup") || "").trim().toLowerCase();
+    const raw = (getCommandArgs(message.body, "setsupportgroup") || "").trim();
+    const args = raw.toLowerCase();
     if (args === "status" || args === "?") {
       const jid = await getSupportGroup();
       await reply(
@@ -222,15 +230,28 @@ command(
       return;
     }
 
-    const jid = await setSupportGroup(message.from);
+    const jid = raw && args !== "here" ? toGroupJid(raw) : message.from;
+    if (!jid) {
+      await replyFail(
+        conn,
+        message,
+        await tr(
+          `🎫 Usage: run \`${BOT_INFO.PREFIX}setsupportgroup\` inside the group, or \`${BOT_INFO.PREFIX}setsupportgroup <group-jid>\`.`,
+          `🎫 Benutzung: \`${BOT_INFO.PREFIX}setsupportgroup\` in der Gruppe ausführen oder \`${BOT_INFO.PREFIX}setsupportgroup <Gruppen-JID>\`.`
+        )
+      );
+      return;
+    }
+
+    await setSupportGroup(jid);
     await auditMessage(message, { action: "supportgroup.set", target: jid });
     await systemLog("success", `Support group set to ${jid}`);
     await replyOk(
       conn,
       message,
       await tr(
-        `🎫 This group is now the support ticket destination: \`${jid}\`.\nDelivery mode: \`${await getTicketDelivery()}\`.`,
-        `🎫 Diese Gruppe ist jetzt das Ziel für Support-Tickets: \`${jid}\`.\nZustellmodus: \`${await getTicketDelivery()}\`.`
+        `🎫 Support ticket destination: \`${jid}\`.\nDelivery mode: \`${await getTicketDelivery()}\`.`,
+        `🎫 Ziel für Support-Tickets: \`${jid}\`.\nZustellmodus: \`${await getTicketDelivery()}\`.`
       )
     );
   }
@@ -240,7 +261,7 @@ command(
   {
     pattern: "setticketdelivery",
     fromMe: true,
-    desc: "Set ticket delivery: group|dm|both|off (owner only)",
+    desc: "Set ticket delivery: group|dm|both|off (owner/sudo)",
     type: "owner",
   },
   async (message, conn) => {
