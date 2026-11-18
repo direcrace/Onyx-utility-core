@@ -27,21 +27,13 @@ function quotedMessageId(message) {
   return ctx.stanzaId || message?.quoted?.id || message?.quoted?.key?.id || null;
 }
 
-async function isReplyToAi(message, conn) {
+async function isReplyToAi(message) {
+  // Only a reply to a message we actually produced as an AI answer may bypass
+  // the chatbot on/off and allowlist gates. The previous heuristic treated any
+  // reply to any bot message as an AI thread, which made `#chatbot off` answer
+  // to everything.
   const id = quotedMessageId(message);
-  if (id && (await isAiMessage(id))) return true;
-  const ctx = message?.message?.contextInfo || {};
-  if (!ctx.quotedMessage) return false;
-  const quotedText = String(
-    ctx.quotedMessage?.conversation ||
-      ctx.quotedMessage?.extendedTextMessage?.text ||
-      message?.quoted?.text ||
-      ""
-  ).trim();
-  if (!quotedText || /^[📊🎫🏅📜🔒👤⚡✅❌]/u.test(quotedText)) return false;
-  const botIds = [conn?.user?.id, conn?.user?.lid].filter(Boolean);
-  const participant = ctx.participant || ctx.participantAlt || "";
-  return ctx.fromMe === true || botIds.some((id) => id && participant.startsWith(String(id).split(":")[0]));
+  return !!(id && (await isAiMessage(id)));
 }
 
 const LM_URL = "http://localhost:1234/v1/chat/completions";
@@ -117,6 +109,9 @@ command(
     if (args === "on" || args === "off") {
       await toggleChatbot(args === "on");
       await replyOk(conn, message, `Chatbot: *${args === "on" ? "ON" : "OFF"}*`);
+    } else if (args === "status" || args === "state") {
+      const cur = await isChatbotEnabled();
+      await replyOk(conn, message, `Chatbot: *${cur ? "ON" : "OFF"}*`);
     } else {
       const cur = await isChatbotEnabled();
       await toggleChatbot(!cur);
@@ -171,10 +166,10 @@ export async function handleChatbotReply({ message, conn }) {
     const sender = message.sender || "";
     if (await isBotBanned(sender)) return;
 
-    // Replying directly to one of the bot's AI messages always continues that
-    // conversation — even when chatbot mode is off or the user is not on the
-    // allowlist. Plain chatbot auto-reply still uses those gates.
-    const threadReply = await isReplyToAi(message, conn);
+    // Replying to a remembered AI answer always continues that conversation —
+    // even when chatbot mode is off or the user is not on the allowlist.
+    // Everything else still needs chatbot mode plus the allowlist/rank gate.
+    const threadReply = await isReplyToAi(message);
     if (!threadReply) {
       if (!(await isChatbotEnabled())) return;
       const allowed = await isUserAllowed(sender);

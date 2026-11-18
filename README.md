@@ -232,7 +232,8 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### AI / chatbot (`src/plugins/ai.js`) — LM Studio primary, Groq fallback
 
-- `#chat` (chat with per-user history + system prompt), `#chatbot` (owner, auto-reply toggle), `#aiprompt` (owner, set system prompt), `#aiclear` (clear your history), `#aiuser` (owner, chatbot allowlist).
+- `#chat` (chat with per-user history + system prompt), `#chatbot on|off|status` (owner, auto-reply toggle; plain `#chatbot` still toggles), `#aiprompt` (owner, set system prompt), `#aiclear` (clear your history), `#aiuser` (owner, chatbot allowlist).
+- Auto-reply with `#chatbot on` only triggers for plain messages from allowed users/staff. Replying to an AI answer always continues that conversation, even when off. Replies to ordinary bot messages are **not** treated as AI threads.
 - Backed by `src/utils/aiHistory.js` (20-message history per user, BotKV persisted).
 - `.env`: `LM_STUDIO_MODEL=local-model`, `GROQ_API_KEY`, `GROQ_MODEL`.
 
