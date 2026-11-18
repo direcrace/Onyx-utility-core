@@ -17,6 +17,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 
 ## Unreleased — community bot release
 
+- Modular free image resolver: moved Pinterest/Openverse/Commons retrieval out of `src/plugins/search.js` into `src/modules/imageResolver/` with pluggable providers, streamed size caps, magic-byte MIME validation, SSRF/redirect host checks and hard timeouts. `#img` now also accepts direct and Pinterest image URLs. Pinterest CAPTCHA/login walls fail gracefully (`SOURCE_BLOCKED`/`AUTH_REQUIRED`) with no bypass, no retries against the blocked source and no new dependencies or costs. Full docs in `IMAGE-RESOLVER.md`; mocked test suite covers all error codes and the WhatsApp send path.
 - Fixed `#setrank` crash (`ReferenceError: setRank is not defined`): the dynamic import removed during the rank-output rewrite was never added back to the static imports. Rank changes persist again.
 - Version bumped to `5.0.5` across package, runtime banner, dashboard and docs — also serves as a visible `#version` marker to verify `#update` pulls successfully on panel installs.
 - Full ToS/Privacy rewrite for community use: mandatory registration, version-hashed re-acceptance, plaintext audit/message/raw log levels, no media download for logs, reports/tickets and leaderboard disclosures.

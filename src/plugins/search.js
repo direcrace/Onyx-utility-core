@@ -3,6 +3,12 @@
 import { command } from "../plugins.js";
 import { reply, replyFail, getCommandArgs, withTyping, tr } from "../utils/message.js";
 import { BOT_INFO } from "../config/constants.js";
+import {
+  resolveImage,
+  ImageError,
+  IMAGE_ERRORS,
+  imageUserText,
+} from "../modules/imageResolver/index.js";
 
 command(
   { pattern: "movie", fromMe: false, desc: "Movie/series info from IMDB", type: "search" },
@@ -180,26 +186,33 @@ command(
   async (message, conn) => {
     await withTyping(conn, message.from, async () => {
       const text = getCommandArgs(message.body, "img")?.trim();
-      if (!text) { await replyFail(conn, message, await tr(`Usage: \`${BOT_INFO.PREFIX}img <query>\``, `Benutzung: \`${BOT_INFO.PREFIX}img <suche>\``)); return; }
-
-      const hit = await searchImage(text);
-      if (!hit) {
-        await replyFail(conn, message, await tr(
-          "No image found right now. Try a different search term.",
-          "Gerade kein Bild gefunden. Versuch einen anderen Suchbegriff."
-        ));
+      if (!text) {
+        await replyFail(
+          conn,
+          message,
+          await tr(
+            `Usage: \`${BOT_INFO.PREFIX}img <query|image-url>\``,
+            `Benutzung: \`${BOT_INFO.PREFIX}img <suche|bild-url>\``
+          )
+        );
         return;
       }
 
-      const credit = [
-        `📷 ${hit.provider}`,
-        hit.credit ? String(hit.credit).replace(/\s+/g, " ").slice(0, 110) : null,
-        hit.license ? `(${hit.license})` : null,
-      ].filter(Boolean).join(" · ");
-      const caption = `*${text}*\n_${credit}_${hit.page ? `\n${String(hit.page).slice(0, 180)}` : ""}`;
+      try {
+        const hit = await resolveImage(text);
+        const credit = [
+          `📷 ${hit.provider}`,
+          hit.credit || null,
+          hit.license ? `(${hit.license})` : null,
+        ].filter(Boolean).join(" · ");
+        const caption = `*${text.slice(0, 80)}*\n_${credit}_${hit.page ? `\n${String(hit.page).slice(0, 180)}` : ""}`;
 
-      await conn.sendMessage(message.from, { image: hit.buffer, caption },
-        { quoted: { key: message.key, message: message.message } });
+        await conn.sendMessage(message.from, { image: hit.buffer, caption },
+          { quoted: { key: message.key, message: message.message } });
+      } catch (err) {
+        const code = err instanceof ImageError ? err.code : IMAGE_ERRORS.IMAGE_NOT_FOUND;
+        await replyFail(conn, message, await imageUserText(code));
+      }
     });
   }
 );
@@ -406,178 +419,17 @@ command(
   }
 );
 
-const PIN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-const BOT_UA = "YumBot/1.0 (WhatsApp community bot; contact via #terms) Node/24";
-const PIN_LANDING = "https://www.pinterest.com/";
-const PIN_SEARCH = "https://www.pinterest.com/resource/BaseSearchResource/get/";
-
-const pick = (list) => list[Math.floor(Math.random() * list.length)];
-
-async function pinterestCookies() {
-  const res = await fetch(PIN_LANDING, {
-    headers: {
-      "User-Agent": PIN_UA,
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-    },
-    signal: AbortSignal.timeout(8000),
-  });
-  let setCookies;
-  if (typeof res.headers.getSetCookie === "function") {
-    setCookies = res.headers.getSetCookie();
-  } else {
-    const single = res.headers.get("set-cookie");
-    setCookies = single ? [single] : [];
-  }
-  return setCookies.join("; ");
-}
-
+// Image retrieval moved to src/modules/imageResolver/. These thin wrappers
+// keep the old named exports working for any external callers.
 export async function fetchPinterestPinImages(query) {
-  const cookies = await pinterestCookies();
-  const csrf = (cookies.match(/csrftoken=([^;]+)/) || [])[1] || "";
-  const data = JSON.stringify({
-    options: { query, types: ["pins"], page_size: 25 },
-    context: {},
-  });
-  const body = new URLSearchParams({
-    source_url: `/search/pins/?q=${encodeURIComponent(query)}`,
-    data,
-  });
-  const res = await fetch(PIN_SEARCH, {
-    method: "POST",
-    headers: {
-      "User-Agent": PIN_UA,
-      Accept: "application/json, text/plain, */*",
-      "Accept-Language": "en-US,en;q=0.9",
-      Referer: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`,
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "X-Requested-With": "XMLHttpRequest",
-      "X-CSRFToken": csrf,
-      Cookie: cookies,
-    },
-    body: body.toString(),
-    signal: AbortSignal.timeout(8000),
-  });
-  const contentType = res.headers.get("content-type") || "";
-  const text = await res.text();
-  if (/i am not a robot|px-captcha|captcha|unusual traffic/i.test(text)) {
-    throw new Error("Pinterest captcha/block");
-  }
-  if (!res.ok || !contentType.includes("json")) throw new Error(`Pinterest API ${res.status}`);
-  const json = JSON.parse(text);
-  const results = json?.resource_response?.data?.results || [];
-  const urls = [];
-  for (const item of results) {
-    const pins = item?.objects?.length ? item.objects : [item];
-    for (const p of pins) {
-      if (p?.is_video) continue;
-      const variants = p?.images || {};
-      let img = variants?.orig || variants?.originals;
-      if (!img?.url) {
-        for (const k of Object.keys(variants)) { if (variants[k]?.url) { img = variants[k]; break; } }
-      }
-      if (img?.url) urls.push(img.url);
-    }
-  }
-  return urls;
-}
-
-async function pinterestProvider(query) {
-  const urls = await fetchPinterestPinImages(query);
-  if (!urls.length) return null;
-  return { url: pick(urls), provider: "Pinterest", ua: PIN_UA };
-}
-
-async function openverseProvider(query) {
-  const u = new URL("https://api.openverse.org/v1/images/");
-  u.search = new URLSearchParams({
-    q: query,
-    page_size: "12",
-    license_type: "commercial",
-    license: "cc0,pdm,by",
-    mature: "false",
-  }).toString();
-  const res = await fetch(u, {
-    headers: { "User-Agent": BOT_UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error(`Openverse ${res.status}`);
-  const json = await res.json();
-  const results = (json.results || []).filter((r) => /^https?:\/\//i.test(r?.url || ""));
-  if (!results.length) return null;
-  const hit = pick(results);
-  return {
-    url: hit.thumbnail || hit.url,
-    provider: "Openverse",
-    credit: hit.attribution || hit.creator || null,
-    license: hit.license || null,
-    page: hit.foreign_landing_url || null,
-    ua: BOT_UA,
-  };
-}
-
-async function commonsProvider(query) {
-  const u = new URL("https://commons.wikimedia.org/w/api.php");
-  u.search = new URLSearchParams({
-    action: "query",
-    generator: "search",
-    gsrsearch: `filetype:bitmap ${query}`,
-    gsrnamespace: "6",
-    gsrlimit: "12",
-    prop: "imageinfo",
-    iiprop: "url|extmetadata",
-    iiurlwidth: "1200",
-    format: "json",
-  }).toString();
-  const res = await fetch(u, {
-    headers: { "User-Agent": BOT_UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error(`Commons ${res.status}`);
-  const json = await res.json();
-  const pages = Object.values(json?.query?.pages || {})
-    .filter((p) => p?.imageinfo?.[0]?.thumburl)
-    .sort((a, b) => (a.index ?? 99) - (b.index ?? 99));
-  if (!pages.length) return null;
-  const info = pick(pages).imageinfo[0];
-  const em = info.extmetadata || {};
-  const strip = (s) => String(s?.value ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  return {
-    url: info.thumburl,
-    provider: "Wikimedia Commons",
-    credit: strip(em.Artist) || "Wikimedia Commons",
-    license: strip(em.LicenseShortName) || null,
-    page: info.descriptionurl || null,
-    ua: BOT_UA,
-  };
-}
-
-const IMAGE_PROVIDERS = [pinterestProvider, openverseProvider, commonsProvider];
-
-async function downloadImage(hit) {
-  const res = await fetch(hit.url, {
-    redirect: "follow",
-    headers: { "User-Agent": hit.ua || BOT_UA, Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8" },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) throw new Error(`download ${res.status}`);
-  const buffer = Buffer.from(await res.arrayBuffer());
-  if (!buffer.length) throw new Error("empty image");
-  return buffer;
+  const { pinterestImageUrls } = await import("../modules/imageResolver/providers/pinterest.js");
+  return pinterestImageUrls(query);
 }
 
 export async function searchImage(query) {
-  const q = String(query || "").trim().slice(0, 80);
-  if (!q) return null;
-  for (const provider of IMAGE_PROVIDERS) {
-    try {
-      const hit = await provider(q);
-      if (!hit?.url) continue;
-      const buffer = await downloadImage(hit);
-      return { ...hit, buffer };
-    } catch (err) {
-      console.warn(`[img] ${provider.name} failed: ${err?.message || "unknown"}`);
-    }
+  try {
+    return await resolveImage(query);
+  } catch {
+    return null;
   }
-  return null;
 }

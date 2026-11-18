@@ -74,6 +74,9 @@ export const MEDIA = {
 
   MAX_AUDIO_BYTES: 15 * 1024 * 1024,
   MAX_VIDEO_BYTES: 60 * 1024 * 1024,
+  MAX_IMAGE_BYTES: Number(process.env.IMAGE_MAX_BYTES) > 0
+    ? Math.floor(Number(process.env.IMAGE_MAX_BYTES))
+    : 10 * 1024 * 1024,
   MAX_STICKER_BYTES: 1 * 1024 * 1024,
 
   MAX_AUDIO_DURATION: 15 * 60,

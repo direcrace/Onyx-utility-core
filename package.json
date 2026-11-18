@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "clear": "node clear.js"
+    "clear": "node clear.js",
+    "test": "node --test test/*.test.mjs"
   },
   "repository": "https://github.com/direcrace/Onyx-utility-core.git",
   "author": "Nero Venero <Puma.yt11@gmail.com>",

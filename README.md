@@ -277,7 +277,8 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Search (`src/plugins/search.js`)
 
-- `#movie` (OMDB), `#anime` (Jikan → AniList fallback), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest → Openverse → Wikimedia Commons fallback chain with source/license caption), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
+- `#movie` (OMDB), `#anime` (Jikan → AniList fallback), `#lyrics`, `#github`, `#translate` (translate-google-api), `#qr` (qrcode), `#img` (Pinterest → Openverse → Wikimedia Commons fallback chain with source/license caption; also accepts a direct/pinterest image URL), `#weather` (Open-Meteo), `#wiki`, `#reddit`, `#npm`, `#define`, `#news` (NEWS_API_KEY), `#search` (DuckDuckGo).
+- `#img` uses the modular, free [`src/modules/imageResolver/`](src/modules/imageResolver/index.js): SSRF/redirect validation, streamed size caps, magic-byte MIME checks, graceful Pinterest CAPTCHA/auth failures and pluggable providers. Details, error codes and config: [`IMAGE-RESOLVER.md`](IMAGE-RESOLVER.md).
 
 ### Fun & novelty (`src/plugins/fun.js`, `src/plugins/bloat.js`, `src/plugins/voice.js`)
 
