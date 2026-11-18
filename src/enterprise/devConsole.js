@@ -1,6 +1,5 @@
 
 
-import { exec } from "child_process";
 import { BOT_INFO } from "../config/constants.js";
 import {
   detectSupervisor,
@@ -9,6 +8,7 @@ import {
   stopViaPm2,
   describe as describePlatform,
 } from "../system/platform.js";
+import { gitPull, npmInstall } from "../utils/gitUpdate.js";
 
 
 
@@ -511,16 +511,11 @@ export async function runDevAction(action, params = {}) {
       }
 
       case "git.update": {
-        const run = (cmd) => new Promise((resolve) => {
-          exec(cmd, { cwd: global.__basedir || process.cwd(), windowsHide: true }, (err, stdout, stderr) => {
-            resolve({ code: err ? 1 : 0, out: String(stdout || "").trim(), err: String(stderr || "").trim() });
-          });
-        });
-        const pulling = await run("git pull --ff-only");
-        if (pulling.code !== 0) {
-          return { ok: false, error: `git pull failed:\n${pulling.err || pulling.out || "?"}` };
+        const pulling = await gitPull();
+        if (!pulling.ok) {
+          return { ok: false, error: `git pull failed:\n${pulling.error}` };
         }
-        await run("npm install --silent");
+        await npmInstall();
         setTimeout(() => process.exit(0), 900);
         return { ok: true, data: { updated: true, restarting: true } };
       }

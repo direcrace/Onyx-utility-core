@@ -175,10 +175,20 @@ ps aux | grep -E 'node|cloudflared' | grep -v grep
 ## 5. Relevante Bot-Befehle (Owner)
 
 ```text
+#update               → git pull + npm install + Neustart (Creator)
 #control              → Runtime, Supervisor, Dashboard-Port/-Host anzeigen
 #status               → Bot-/Verbindungsstatus
 #minilog              → Letzte Konsolen-Einträge (falls verfügbar)
 #reboot               → Prozess sauber neu starten (Auto-Restart muss an sein)
+```
+
+`#update` benutzt jetzt `git pull --ff-only origin <branch>` und funktioniert
+damit auch auf Panel-Clones ohne Upstream-Tracking. Falls du manuell pullst:
+
+```bash
+cd /home/container
+git pull origin main
+npm install --no-fund --no-audit
 ```
 
 Nach jeder Änderung an `.env` gilt: **Panel-Restart**, nicht nur Bot-Reboot.

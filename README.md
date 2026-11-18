@@ -266,7 +266,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)
 
-- `#uptime`, `#version`, `#update` (creator: git pull + npm install + restart), `#restart`, `#logs`, `#health`, `#config` (runtime prefix/botname/mode/policies), `#permissions`, `#whoami`, `#session`, `#sessions`, `#ratelimit`, `#diagnostics`, `#debug`, `#setcreator`, `#creatormenu`, `#setowner`.
+- `#uptime`, `#version`, `#update` (creator: fast-forward pull with explicit `origin <branch>` + npm install + restart; works on clones without upstream tracking), `#restart`, `#logs`, `#health`, `#config` (runtime prefix/botname/mode/policies), `#permissions`, `#whoami`, `#session`, `#sessions`, `#ratelimit`, `#diagnostics`, `#debug`, `#setcreator`, `#creatormenu`, `#setowner`.
 - `#reboot`, `#shutdown`, `#sys` (host snapshot + thresholds), `#dev`, `#minilog`, `#syswatch`, `#corepanic` (force a panic / `pm2 stop`).
 - `#anticall` (global, auto-reject calls with a DM reply) and `#alwaysonline` (global presence).
 

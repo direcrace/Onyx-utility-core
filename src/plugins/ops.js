@@ -1,6 +1,5 @@
 
 
-import { exec } from "child_process";
 import { command, rebuildCommandPatterns } from "../plugins.js";
 import { reply, replyOk, replyFail, getCommandArgs, tr } from "../utils/message.js";
 import { BOT_INFO, getPrefix, getBotName, saveRuntimePrefix, saveRuntimeBotName } from "../config/constants.js";
@@ -13,6 +12,7 @@ import { getFlags } from "../enterprise/flags.js";
 import { getMode, listSudo } from "../utils/access.js";
 import { resolveEffectiveRank, RANK_LABELS } from "../utils/ranks.js";
 import { getUserStats, levelFromXp, memberTier } from "../utils/communityStats.js";
+import { gitPull, npmInstall } from "../utils/gitUpdate.js";
 
 async function requireControl(conn, message) {
   if (isSubConnection(conn)) {
@@ -82,17 +82,12 @@ command(
     }
     if (!(await requireCreator(conn, message, "update (git pull)"))) return;
     await replyOk(conn, message, await tr("🔄 Checking & updating... (git pull, install, restart)", "🔄 Prüfe & aktualisiere... (git pull, install, Neustart)"));
-    const run = (cmd) => new Promise((resolve) => {
-      exec(cmd, { cwd: global.__basedir || process.cwd(), windowsHide: true }, (err, stdout, stderr) => {
-        resolve({ code: err ? 1 : 0, out: String(stdout || "").trim(), err: String(stderr || "").trim() });
-      });
-    });
-    const pulling = await run("git pull --ff-only");
-    if (pulling.code !== 0) {
-      await replyFail(conn, message, await tr(`Git pull failed:\n${pulling.err || pulling.out || "?"}`, `Git pull fehlgeschlagen:\n${pulling.err || pulling.out || "?"}`));
+    const pulling = await gitPull();
+    if (!pulling.ok) {
+      await replyFail(conn, message, await tr(`Git pull failed:\n${pulling.error}`, `Git pull fehlgeschlagen:\n${pulling.error}`));
       return;
     }
-    await run("npm install --silent");
+    await npmInstall();
     await replyOk(conn, message, await tr("✅ Updated. Restarting...", "✅ Aktualisiert. Neustart..."));
     setTimeout(() => process.exit(0), 900);
   }
