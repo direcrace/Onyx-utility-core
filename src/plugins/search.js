@@ -9,6 +9,7 @@ import {
   IMAGE_ERRORS,
   imageUserText,
 } from "../modules/imageResolver/index.js";
+import { BOT_UA } from "../modules/imageResolver/constants.js";
 
 command(
   { pattern: "movie", fromMe: false, desc: "Movie/series info from IMDB", type: "search" },
