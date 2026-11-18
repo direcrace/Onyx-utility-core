@@ -23,6 +23,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 - Owner/sudo configuration: `#setsupportgroup` (in-group or with `<group-jid>`, plus `status`) and `#setticketdelivery group|dm|both|off`.
 - Ticket replies: `#answer <text>` in the support group, used as a reply to the ticket message, sends the answer to the reporter and reposts it in the support group with the original ticket content and the responder's registered name.
 - Per-number activity counters in BotKV (`community:stats`) and persisted tickets (`community:tickets`); no message text is stored for stats.
+- New TEAM menu/category: `#team`, `#teamlist`, `#teamstatus`, `#teamset` with rank hierarchy display, registered-name team list and rank-ceiling protection for co-owners.
 
 ---
 

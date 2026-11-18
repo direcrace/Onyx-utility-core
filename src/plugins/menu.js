@@ -16,19 +16,19 @@ const __dirname = dirname(__filename);
 const MENU_IMAGE = join(__dirname, "..", "assets", "menu.png");
 
 const SECTION_ORDER = [
-  "ai", "moderation", "fun", "search", "voice",
+  "ai", "moderation", "team", "fun", "search", "voice",
   "media", "sticker", "group", "admin", "info",
   "productivity", "owner", "misc",
 ];
 
 const SECTION_EMOJI = {
-  ai: "🧠", moderation: "🛡️", fun: "🎮", search: "🔍", voice: "🎵",
+  ai: "🧠", moderation: "🛡️", team: "🏅", fun: "🎮", search: "🔍", voice: "🎵",
   media: "📥", sticker: "🎨", group: "👥", admin: "⚙️", info: "ℹ️",
   productivity: "📋", owner: "👑", misc: "📦",
 };
 
 const SECTION_LABEL = {
-  ai: "AI", moderation: "Moderation", fun: "Fun", search: "Search",
+  ai: "AI", moderation: "Moderation", team: "Team", fun: "Fun", search: "Search",
   voice: "Voice", media: "Media", sticker: "Stickers", group: "Group",
   admin: "Admin", info: "Info", productivity: "Productivity",
   owner: "Owner", misc: "Misc",

@@ -245,6 +245,13 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 - Owner/sudo setup: `#setsupportgroup` inside the destination group (or `#setsupportgroup <group-jid>` / `status`) and `#setticketdelivery group|dm|both|off` (`dm` sends full content only to the reporter; the group gets an ID-only notice).
 - Stats: `#mystats`, `#leaderboard`, `#resetstats`. Counters (messages/commands/reports/tickets) are stored per number in BotKV; no message text is kept for stats.
 
+### Team (`src/plugins/team.js`, `src/plugins/ranks.js`)
+
+- `#team` shows the rank hierarchy (`owner > co-owner > team > mod > admin > user`), your current rank/level, and only the team commands your rank can use. `#team all` is owner/root only.
+- `#teamlist` lists ranked members grouped by tier using registered names; `#teamstatus` shows mode, log level, autoflag, support/ticket config, open tickets and team size.
+- `#teamset <@user|number> <rank>` (co-owner+) assigns ranks with hierarchy protection: you cannot grant a rank equal to or higher than your own, and owner/root cannot be changed.
+- Ranks live in `community:ranks` BotKV. The `team` category also appears in `#menu team`; `#rank` / `#ranks` / `#setrank` are grouped there too.
+
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)
 
 - `#uptime`, `#version`, `#update` (creator: git pull + npm install + restart), `#restart`, `#logs`, `#health`, `#config` (runtime prefix/botname/mode/policies), `#permissions`, `#whoami`, `#session`, `#sessions`, `#ratelimit`, `#diagnostics`, `#debug`, `#setcreator`, `#creatormenu`, `#setowner`.

@@ -23,7 +23,7 @@ command(
     pattern: "rank",
     fromMe: false,
     desc: "Show a user's community rank",
-    type: "info",
+    type: "team",
   },
   async (message, conn) => {
     const target = resolveTargetUser(message) || message.sender;
@@ -53,7 +53,7 @@ command(
     pattern: "ranks",
     fromMe: false,
     desc: "Show the rank hierarchy and assignments",
-    type: "info",
+    type: "team",
   },
   async (message, conn) => {
     const ranked = await listRanked();
@@ -83,7 +83,7 @@ command(
     pattern: "setrank",
     fromMe: true,
     desc: "Assign a community rank to a user (owner)",
-    type: "owner",
+    type: "team",
   },
   async (message, conn) => {
     if (!isOwnerMessage(message, conn)) {
