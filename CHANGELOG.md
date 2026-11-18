@@ -13,6 +13,7 @@ ranks, tickets, DSGVO flows or bot-specific branding were imported.
 - **Search hardening:** `#anime` falls back from Jikan to AniList; `#img` reports source/license attribution.
 - **Chatbot continuity:** `#chatbot off` now suppresses ordinary auto-replies while replies to remembered AI answers still continue their thread. `#chatbot status` shows the current state without toggling. AI message IDs are remembered in `aiHistory.js` (bounded, 500 IDs).
 - **Tests:** `npm test` runs the mocked `node:test` suite in `test/imageResolver.test.mjs` (17 cases: direct URLs, Pinterest search, CAPTCHA/login blocks, pin links, SSRF/invalid URLs, unsafe redirects, unsupported formats, oversized bodies, timeouts, empty results, provider cooldown and the WhatsApp send path). No live network, no CAPTCHA bypass.
+- **Dependency security:** `npm audit` now reports **0 vulnerabilities** (was 9 affected packages / 90 GitHub advisory alerts, mostly from the old axios nested in `translate-google-api`). Applied non-breaking fixes (`axios 1.21.1`, `sharp 0.35.5`, `follow-redirects 1.16.3`, `brace-expansion 1.1.22`, `moment 2.31.0`, `music-metadata 11.16.1`, `content-type 2.1.0`) plus two `overrides`: global `axios: $axios` (removes the stale nested copy) and `uuid: ^11.1.1` for Sequelize. `baileys` and `better-sqlite3` were intentionally left untouched; `#translate`, UUID generation and Sharp were smoke-tested with mocked endpoints.
 
 **Project identity changes**
 
