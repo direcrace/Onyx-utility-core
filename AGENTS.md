@@ -49,10 +49,12 @@ main … origin/main   (sauber, nichts ausstehend)
 ```
 
 ### Version
-`5.0.5` konsistent in: `package.json`, `package-lock.json`, `yarn.lock`,
+`5.0.5-A1` konsistent in: `package.json`, `package-lock.json`,
 `index.js` (Banner), `src/enterprise/devConsole.js` (Snapshot),
-`README.md`, `CHANGELOG.md`, `docker-compose.yml` (`onyx-utility-core:5.0.5`),
-`src/config/constants.js` (`BOT_INFO.VERSION`).
+`README.md`, `CHANGELOG.md`, `docker-compose.yml` (`onyx-utility-core:5.0.5-A1`),
+`src/config/constants.js` (`BOT_INFO.VERSION`),
+`src/modules/imageResolver/constants.js` (`BOT_UA`).
+`yarn.lock` (v1) enthält keine Root-Version.
 
 ### Verifikation
 - `npm test` → 17/17 (`test/imageResolver.test.mjs`, gemockt, kein Live-Network)

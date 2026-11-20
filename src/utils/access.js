@@ -44,6 +44,11 @@ export const OWNER_ONLY_COMMANDS = new Set([
   "backup",
 ]);
 
+// Commands whose access is decided by RBAC capabilities inside the handler.
+// They must bypass the global mode gate so RBAC mods/admins can use them even
+// in private/group mode.
+export const RBAC_GATED_COMMANDS = new Set(["devtodo"]);
+
 export function normalizeNumber(input) {
   if (!input) return "";
   let s = String(input).trim();
@@ -278,6 +283,10 @@ export async function checkCommandAccess(message, command, conn) {
     if (!privileged) {
       return { allowed: false, silent: false, reason: "OWNER_ONLY" };
     }
+    return { allowed: true };
+  }
+
+  if (RBAC_GATED_COMMANDS.has(name)) {
     return { allowed: true };
   }
 

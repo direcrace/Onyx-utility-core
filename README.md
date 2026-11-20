@@ -4,7 +4,7 @@
 
 **Changelog: X-Asena → Onyx Core** — source-available WhatsApp bot on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13** · [N-SAL v1.0](LICENSE) (derived from MIT-licensed X-Asena)
 
-[![Version](https://img.shields.io/badge/version-5.0.5-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
+[![Version](https://img.shields.io/badge/version-5.0.5--A1-8a2be2?style=for-the-badge&labelColor=0f0f0f)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2020-339933?style=for-the-badge&logo=nodedotjs&logoColor=white&labelColor=0f0f0f)](https://nodejs.org/)
 [![Baileys](https://img.shields.io/badge/Baileys-7.0.0--rc13-25D366?style=for-the-badge&logo=whatsapp&logoColor=white&labelColor=0f0f0f)](https://github.com/WhiskeySockets/Baileys)
 [![License](https://img.shields.io/badge/License-N--SAL--v1.0-1e3a8a?style=for-the-badge&logo=open-source-initiative&logoColor=white&labelColor=0f0f0f)](LICENSE)
@@ -53,7 +53,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
   </thead>
   <tbody>
     <tr><td><b>package name</b></td><td><code>x-asena</code></td><td><code>onyx-utility-core</code></td></tr>
-    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.5</code></td></tr>
+    <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.5-A1</code></td></tr>
     <tr><td><b>description</b></td><td>Open Source WhatsApp Bot (Baileys ^7.x.x)</td><td>"Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API"</td></tr>
     <tr><td><b>bot name</b></td><td><code>X-Asena</code></td><td><code>ONYX UTILITY CORE</code> (runtime-changeable)</td></tr>
     <tr><td><b>default sticker pack</b></td><td><code>X-Asena</code></td><td><code>Onyx</code></td></tr>
@@ -175,6 +175,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 ### Misc
 
 - `#todo` (productivity.js) — per-user to-do lists (`src/utils/todos.js`).
+- `#devtodo` (devtodo.js) — **shared** staff to-do list (RBAC admin/mod/owner, `src/utils/devTodos.js`).
 - `#bot on|off|status` (menu.js) — **per-group kill-switch** (admin-gated) via `processGroupMessageGate()` in `groupGuards.js`.
 - `#1` … `#22` (meropic.js) — send bundled MeroPic images (`src/assets/meropic/`).
 - `#bot` menu type, image-based menu header (`src/assets/menu.png` with box-drawn header, uptime/command-count/owner/mode footer).

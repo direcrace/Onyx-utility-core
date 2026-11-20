@@ -42,6 +42,7 @@ The Bot provides commands across several categories, including but not limited t
 * **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) — download, conversion, or extraction of media you or others in a group send.
 * **Group management tools** (`#tagall`, `#promote`, `#demote`, `#groupinfo`).
 * **Personal utilities** (`#note`, `#todo`, `#remind`, `#poll`).
+* **Staff utilities** (`#devtodo`) — a shared to-do list restricted to users with the `admin`, `mod` or `owner` role.
 * **Account linking** (`#pair`) — lets a user connect their own WhatsApp number as a bot-controlled session ("Onyx Mini" sub-session).
 * **Owner/administrative tools** — used solely by the Bot operator to run, moderate, and secure the service (e.g. `#broadcast`, `#ban`, `#audit`, `#backup`, `#sudo`).
 
@@ -57,6 +58,7 @@ Depending on which features you use, we may process:
 * Media you send to media-processing commands (images, video, audio, stickers), for the time needed to process and return the result.
 * Group metadata for groups the Bot is added to: group name, ID, member list, admin list, and group settings the Bot manages (e.g., anti-link, anti-spam, welcome/goodbye configuration).
 * Data you deliberately ask the Bot to store on your behalf: notes (`#note`), to-do items (`#todo`), reminders (`#remind`), poll data.
+* Shared staff to-dos (`#devtodo`): item text, your number and a timestamp. These are visible to every staff member with the `admin`, `mod` or `owner` role until an item is deleted or the list is cleared.
 * AI chat history, where retained, until you clear it with `#aiclear` or it is otherwise purged.
 * Basic operational logs (timestamps, command names, error states) used for debugging and abuse prevention.
 
