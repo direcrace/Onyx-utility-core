@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: onyx-utility-core:5.0.5
+    image: onyx-utility-core:5.0.5-A1
     container_name: onyx-utility-core
     restart: unless-stopped
     init: true

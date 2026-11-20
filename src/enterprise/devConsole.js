@@ -111,7 +111,7 @@ export async function getDevSnapshot() {
   return {
     generated_at: Date.now(),
     name: BOT_INFO.NAME,
-    version: "5.0.5",
+    version: "5.0.5-A1",
     main,
     minis,
     rc,

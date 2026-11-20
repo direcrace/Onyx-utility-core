@@ -1,4 +1,4 @@
-export const BOT_UA = "OnyxUtilityCore/5.0.5 (WhatsApp bot) Node/20+";
+export const BOT_UA = "OnyxUtilityCore/5.0.5-A1 (WhatsApp bot) Node/20+";
 
 export function imageHeaders(ua = BOT_UA) {
   return {

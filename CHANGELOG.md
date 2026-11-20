@@ -2,6 +2,10 @@
 
 This changelog documents **everything that is different in `onyx-core`** compared to its upstream base **X-Asena v4.0.0**. Onyx Core is a heavily extended fork of X-Asena: it renames the project, adds multi-account ("Onyx Mini") support, a web dashboard / dev console, self-protection ("core panic") systems, AI chat, games/economy, expanded moderation, and replaces the language set with English + German.
 
+## Pre-release 5.0.5-A1 — shared staff to-dos
+
+- **`#devtodo`:** shared to-do list for RBAC staff (`admin`, `mod`, `owner`). New `src/plugins/devtodo.js` + `src/utils/devTodos.js` use a single KV key (`devtodo:list`), record the author of each item, and provide `add/list/del/clear`. The `devtodo` capability was added to the admin/mod roles, access is enforced in the handler (so it also works in private/group mode for non-sudo staff), and changes are included in the audit log. `#todo` remains personal and unchanged.
+
 ## 0. Release 5.0.5 — generic core backports (no community features)
 
 Onyx stays the lean core: these are infrastructure/search/AI fixes only. No
@@ -21,7 +25,7 @@ ranks, tickets, DSGVO flows or bot-specific branding were imported.
 |                      | X-Asena                                   | Onyx Core                                                                                         |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | package name         | `x-asena`                                 | `onyx-utility-core`                                                                               |
-| version              | `4.0.0`                                   | `5.0.5`                                                                                           |
+| version              | `4.0.0`                                   | `5.0.5-A1`                                                                                        |
 | description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "Onyx Utility Core - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
 | bot name             | `X-Asena`                                 | `ONYX UTILITY CORE` (runtime-changeable)                                                          |
 | default sticker pack | `X-Asena`                                 | `Onyx`                                                                                            |

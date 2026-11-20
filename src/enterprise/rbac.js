@@ -21,8 +21,9 @@ export const CAPABILITIES = {
     "role.manage",
     "moderation",
     "plugin.disable",
+    "devtodo",
   ],
-  mod: ["moderation", "plugin.disable", "audit.read"],
+  mod: ["moderation", "plugin.disable", "audit.read", "devtodo"],
   user: [],
 };
 
