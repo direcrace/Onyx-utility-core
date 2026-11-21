@@ -30,6 +30,8 @@ Commands:
 Options:
   --yes, -y         Skip the confirmation prompt (for --auth / --prune / --reset-settings / --wipedb).
   --dry-run         Show what --prune / --reset-settings would remove, touch nothing.
+  --local           Limit --prune / --reset-settings to local SQLite settings.
+  --external        Limit --prune / --reset-settings to external Postgres settings.
   --app <name>      pm2 app name for --restart / --shutdown.
 
 Examples:
@@ -37,6 +39,8 @@ Examples:
   node clear.js --prune --dry-run
   node clear.js --prune --yes
   node clear.js --reset-settings --yes
+  node clear.js --reset-settings --local --yes
+  node clear.js --reset-settings --external --yes
   node clear.js --auth
   node clear.js --wipedb --yes
   node clear.js --restart --app onyx
@@ -190,11 +194,23 @@ async function authAction(opts) {
 
 async function kvMaintenanceAction(opts, mode) {
   const dryRun = has(opts, "--dry-run");
+  const local = has(opts, "--local");
+  const external = has(opts, "--external");
   const { pruneBotKv } = await import("./src/database/kvMaintenance.js");
   const label = mode === "reset" ? "every saved setting" : "growing history/cache keys";
+  const scope = local && !external
+    ? "local SQLite only"
+    : external && !local
+      ? "external Postgres only"
+      : "both backends";
+
+  if (external && !local && !config.USE_POSTGRES) {
+    console.log("ℹ️  No external Postgres backend configured — nothing to do.");
+    return;
+  }
 
   if (!dryRun && !has(opts, "--yes", "-y")) {
-    console.log(`⚠️  This clears ${label}. The WhatsApp session is kept.`);
+    console.log(`⚠️  This clears ${label} (${scope}). The WhatsApp session is kept.`);
     if (!(await confirm(mode === "reset" ? "Reset all settings?" : "Prune cache keys?"))) {
       console.log("Cancelled.");
       process.exitCode = 1;
@@ -202,16 +218,16 @@ async function kvMaintenanceAction(opts, mode) {
     }
   }
 
-  const result = await pruneBotKv({ resetAll: mode === "reset", dryRun });
+  const result = await pruneBotKv({ resetAll: mode === "reset", dryRun, local, external });
   if (dryRun) {
-    console.log(`🔍 Dry run — ${result.targets.length} key(s) would be removed, ${result.kept.length} kept.`);
+    console.log(`🔍 Dry run (${scope}) — ${result.targets.length} key(s) would be removed, ${result.kept.length} kept.`);
     for (const key of result.targets) console.log(`   - ${key}`);
     console.log("ℹ️  Nothing was written.");
     return;
   }
 
   console.log(
-    `✅ Removed ${result.targets.length} setting key(s) (remote: ${result.removedRemote}, local: ${result.removedLocal}).`
+    `✅ Removed ${result.targets.length} setting key(s) (${scope}; remote: ${result.removedRemote}, local: ${result.removedLocal}).`
   );
   console.log("ℹ️  WhatsApp session untouched. Restart the bot to apply defaults.");
 }

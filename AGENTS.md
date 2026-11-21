@@ -106,7 +106,7 @@ Root `index.js`: console ring install → platform description → `useMultiDbAu
 ### 4.5 Database and sessions
 
 - `authState.js` selects Postgres/Sequelize or better-sqlite3 and attaches the BotKV backend; `botKv.js` is the settings store used by roles, mode, flags, audit, AI history, group settings, etc. With a Postgres `DATABASE_URL` the default hybrid mode keeps the WhatsApp session in local SQLite and writes settings to Postgres first with a local cache fallback (`ONYX_HYBRID=off` restores all-Postgres).
-- `src/database/kvMaintenance.js` backs `clear.js --prune` (cache keys only) and `--reset-settings` (all BotKV); both preserve the auth session. Never add a flag that deletes `AuthState` for those operations.
+- `src/database/kvMaintenance.js` backs `clear.js --prune` (cache keys only) and `--reset-settings` (all BotKV); both preserve the auth session. `--local`/`--external` restrict either operation to the local SQLite settings or the external Postgres settings, defaulting to both. Never add a flag that deletes `AuthState` for those operations.
 - Main state lives in the auth DB; **Onyx Mini** sub-sessions use isolated `sessions/<number>.db` databases via `useStandaloneAuthState()` and must not attach BotKV.
 - Mini lifecycle: `instances.json` index, auto-respawn on boot, exponential backoff, terminal handling of `401/403/failed`, no log-group creation, `conn.__isSub` gating and `SUB_BLOCKED_COMMANDS` in the handler.
 - `src/terminal/handler.js` installs SIGINT/SIGTERM/SIGHUP handlers. Interactive console behaviour was removed; do not assume a TTY exists.
