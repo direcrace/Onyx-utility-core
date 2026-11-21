@@ -40,6 +40,8 @@ node clear.js --status               # Plattform, DB, größte Settings-Keys
 node clear.js --prune --dry-run      # Vorschau: Cache-/Verlaufs-Keys
 node clear.js --prune --yes          # Cache leeren, Session + Settings bleiben
 node clear.js --reset-settings --yes # alle Settings löschen, Session bleibt
+node clear.js --reset-settings --local --yes    # nur lokale SQLite-Settings
+node clear.js --reset-settings --external --yes # nur Postgres-Settings
 node clear.js --auth                 # WhatsApp-Session löschen (Einstellungen bleiben)
 node clear.js --wipedb --yes         # Datenbank + alle Einstellungen löschen
 node clear.js --platform             # erkannte Umgebung / Supervisor / Runtime
@@ -59,7 +61,10 @@ nachwachsende Cache-/Verlaufs-Keys (`aihist:*`, `ai:message_ids`, `audit_log`,
 Notizen, Erinnerungen und Gruppeneinstellungen bleiben erhalten.
 `--reset-settings` löscht alle BotKV-Keys und lässt den Auth-State unangetastet;
 die Defaults werden beim nächsten Start neu geseedet. Beide Befehle arbeiten
-mit SQLite und Postgres. `--restart`/`--shutdown` funktionieren nur bei PM2;
+mit SQLite und Postgres. `--local` bzw. `--external` begrenzen die Aktion auf
+die lokalen SQLite-Settings bzw. die Postgres-Settings; ohne Angabe werden
+beide Seiten bearbeitet. Ohne Postgres-Konfiguration hat `--external` nichts
+zu tun. `--restart`/`--shutdown` funktionieren nur bei PM2;
 bei Docker/Panel/systemd den jeweiligen Neustart-Button bzw. `systemctl`
 verwenden oder aus dem laufenden Bot die Chatbefehle nutzen.
 

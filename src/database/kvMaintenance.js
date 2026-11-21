@@ -111,24 +111,50 @@ export async function inspectBotKv(cfg = config) {
   return { backend: "sqlite", rows: await sqliteRows(cfg.SQLITE_PATH), localRows: [] };
 }
 
-export async function pruneBotKv({ cfg = config, resetAll = false, dryRun = false } = {}) {
+export function resolveKvScope({ local = false, external = false, usePostgres = false } = {}) {
+  const both = (!local && !external) || (local && external);
+  const useLocal = both || local || (!usePostgres && !external);
+  const useExternal = (both || external) && usePostgres;
+  const label = useLocal && useExternal
+    ? "both backends"
+    : useLocal
+      ? "local SQLite only"
+      : useExternal
+        ? "external Postgres only"
+        : "no matching backend";
+  return { useLocal, useExternal, label };
+}
+
+export async function pruneBotKv({
+  cfg = config,
+  resetAll = false,
+  dryRun = false,
+  local = false,
+  external = false,
+} = {}) {
+  const scope = resolveKvScope({ local, external, usePostgres: !!cfg.USE_POSTGRES });
   const snapshot = await inspectBotKv(cfg);
-  const allKeys = [...new Set([...snapshot.rows, ...snapshot.localRows].map((row) => row.key))];
-  const targets = resetAll ? allKeys : allKeys.filter(isPrunableKey);
+  const remoteRows = scope.useExternal ? snapshot.rows : [];
+  const localRows = scope.useLocal
+    ? cfg.USE_POSTGRES ? snapshot.localRows : snapshot.rows
+    : [];
+  const sourceKeys = [...new Set([...remoteRows, ...localRows].map((row) => row.key))];
+  const targets = resetAll ? sourceKeys : sourceKeys.filter(isPrunableKey);
 
   if (dryRun) {
     return {
       dryRun: true,
       backend: snapshot.backend,
+      scope: scope.label,
       targets,
-      kept: allKeys.filter((key) => !targets.includes(key)),
+      kept: sourceKeys.filter((key) => !targets.includes(key)),
     };
   }
 
   let removedRemote = 0;
   let removedLocal = 0;
 
-  if (cfg.USE_POSTGRES) {
+  if (scope.useExternal) {
     const { sequelize, model } = await postgresHandle(cfg);
     try {
       if (targets.length) {
@@ -137,14 +163,15 @@ export async function pruneBotKv({ cfg = config, resetAll = false, dryRun = fals
     } finally {
       await sequelize.close();
     }
-    removedLocal = await sqliteDelete(localPath(cfg), targets);
-  } else {
-    removedLocal = await sqliteDelete(cfg.SQLITE_PATH, targets);
+  }
+  if (scope.useLocal) {
+    removedLocal = await sqliteDelete(localPath(cfg) || cfg.SQLITE_PATH, targets);
   }
 
   return {
     dryRun: false,
     backend: snapshot.backend,
+    scope: scope.label,
     targets,
     removedRemote,
     removedLocal,
