@@ -45,9 +45,72 @@ export async function createPostgresSequelize(databaseUrl) {
     protocol: "postgres",
     logging: false,
     dialectOptions: {
-      ssl: { require: true, rejectUnauthorized: false },
+      ssl: { require: true, rejectUnauthorized: true },
     },
   });
+}
+
+function defineBotKvModel(sequelize) {
+  return sequelize.define(
+    "BotKV",
+    {
+      key: {
+        type: DataTypes.STRING,
+        primaryKey: true,
+        allowNull: false,
+      },
+      value: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+    },
+    {
+      timestamps: true,
+      indexes: [{ fields: ["key"], unique: true }],
+    }
+  );
+}
+
+function createBotKv(model) {
+  return {
+    async get(key) {
+      try {
+        const record = await model.findOne({
+          where: { key: String(key) },
+          attributes: ["value"],
+          raw: true,
+        });
+        if (!record?.value) return null;
+        return JSON.parse(record.value);
+      } catch (error) {
+        console.error(`[botkv-pg] get failed (${key}):`, error?.message || error);
+        return null;
+      }
+    },
+    async set(key, value) {
+      return writeMutex.runExclusive(async () => {
+        if (value === null || value === undefined) {
+          await model.destroy({ where: { key: String(key) } });
+          return;
+        }
+        await model.upsert({
+          key: String(key),
+          value: JSON.stringify(value),
+        });
+      });
+    },
+    async del(key) {
+      return writeMutex.runExclusive(async () => {
+        await model.destroy({ where: { key: String(key) } });
+      });
+    },
+  };
+}
+
+export async function usePostgresBotKv(sequelize) {
+  const model = defineBotKvModel(sequelize);
+  await model.sync();
+  return createBotKv(model);
 }
 
 export async function usePostgresAuthState(sequelize) {
@@ -72,24 +135,7 @@ export async function usePostgresAuthState(sequelize) {
 
   await AuthStateDB.sync();
 
-  const BotKVDB = sequelize.define(
-    "BotKV",
-    {
-      key: {
-        type: DataTypes.STRING,
-        primaryKey: true,
-        allowNull: false,
-      },
-      value: {
-        type: DataTypes.TEXT("long"),
-        allowNull: true,
-      },
-    },
-    {
-      timestamps: true,
-      indexes: [{ fields: ["key"], unique: true }],
-    }
-  );
+  const BotKVDB = defineBotKvModel(sequelize);
 
   await BotKVDB.sync();
 
@@ -235,38 +281,6 @@ export async function usePostgresAuthState(sequelize) {
 
     AuthStateDB,
 
-    botKv: {
-      async get(key) {
-        try {
-          const record = await BotKVDB.findOne({
-            where: { key: String(key) },
-            attributes: ["value"],
-            raw: true,
-          });
-          if (!record?.value) return null;
-          return JSON.parse(record.value);
-        } catch (error) {
-          console.error(`[botkv-pg] get failed (${key}):`, error?.message || error);
-          return null;
-        }
-      },
-      async set(key, value) {
-        return writeMutex.runExclusive(async () => {
-          if (value === null || value === undefined) {
-            await BotKVDB.destroy({ where: { key: String(key) } });
-            return;
-          }
-          await BotKVDB.upsert({
-            key: String(key),
-            value: JSON.stringify(value),
-          });
-        });
-      },
-      async del(key) {
-        return writeMutex.runExclusive(async () => {
-          await BotKVDB.destroy({ where: { key: String(key) } });
-        });
-      },
-    },
+    botKv: createBotKv(BotKVDB),
   };
 }

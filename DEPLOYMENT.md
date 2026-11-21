@@ -36,18 +36,31 @@ Eine interaktive Terminal-Konsole gibt es nicht mehr. Auf Servern ohne TTY laufe
 alle Wartungsaufgaben über `clear.js` oder die Owner-Chatbefehle.
 
 ```bash
-node clear.js --auth              # WhatsApp-Session löschen (Einstellungen bleiben)
-node clear.js --wipedb --yes      # Datenbank + alle Einstellungen löschen
-node clear.js --status            # Plattform, DB-Pfad, gespeicherte Einstellungen
-node clear.js --platform          # erkannte Umgebung / Supervisor / Runtime
-node clear.js --restart --app X   # pm2 restart (nur mit PM2)
-node clear.js --shutdown --app X  # pm2 stop    (nur mit PM2)
-node clear.js --help              # Übersicht
+node clear.js --status               # Plattform, DB, größte Settings-Keys
+node clear.js --prune --dry-run      # Vorschau: Cache-/Verlaufs-Keys
+node clear.js --prune --yes          # Cache leeren, Session + Settings bleiben
+node clear.js --reset-settings --yes # alle Settings löschen, Session bleibt
+node clear.js --auth                 # WhatsApp-Session löschen (Einstellungen bleiben)
+node clear.js --wipedb --yes         # Datenbank + alle Einstellungen löschen
+node clear.js --platform             # erkannte Umgebung / Supervisor / Runtime
+node clear.js --restart --app X      # pm2 restart (nur mit PM2)
+node clear.js --shutdown --app X     # pm2 stop    (nur mit PM2)
+node clear.js --help                 # Übersicht
 ```
 
-`--auth` und `--wipedb` fragen interaktiv nach Bestätigung; mit `--yes` entfällt die
-Abfrage (nötig in Skripten ohne TTY). `--restart`/`--shutdown` funktionieren nur bei
-PM2; bei Docker/Panel/systemd den jeweiligen Neustart-Button bzw. `systemctl`
+`--auth`, `--prune`, `--reset-settings` und `--wipedb` fragen interaktiv nach
+Bestätigung; mit `--yes` entfällt die Abfrage (nötig in Skripten ohne TTY).
+`--dry-run` zeigt bei `--prune`/`--reset-settings` nur, welche Keys betroffen
+wären, und schreibt nichts. `--prune` löscht ausschließlich automatisch
+nachwachsende Cache-/Verlaufs-Keys (`aihist:*`, `ai:message_ids`, `audit_log`,
+`chat_index`, `chatbot_users`, `community:stats`, `community:registerCooldown`,
+`corepanic:at`, `log_capture_level`, `mini_flags`, `rc_flags`, `stats_hourly`,
+`stats_series`). Auth-State, Prefix, Sprache, Rollen, Ränge, Bans, Wallets,
+Notizen, Erinnerungen und Gruppeneinstellungen bleiben erhalten.
+`--reset-settings` löscht alle BotKV-Keys und lässt den Auth-State unangetastet;
+die Defaults werden beim nächsten Start neu geseedet. Beide Befehle arbeiten
+mit SQLite und Postgres. `--restart`/`--shutdown` funktionieren nur bei PM2;
+bei Docker/Panel/systemd den jeweiligen Neustart-Button bzw. `systemctl`
 verwenden oder aus dem laufenden Bot die Chatbefehle nutzen.
 
 Die gleichen Aktionen gibt es als Owner-Chatbefehle:
@@ -131,6 +144,10 @@ Deshalb:
 3. **Start-Datei:** `node index.js` (oder `npm start`).
 4. **Auto-Restart aktivieren**, damit `.reboot`/`.shutdown` und Panel-Neustarts
    funktionieren. Ohne Auto-Restart bleibt der Bot nach einem Neustartbefehl aus.
+   Alternativ startet der Bot sich selbst über die Pterodactyl Client API neu:
+   `PTERODACTYL_API_URL`, `PTERODACTYL_API_KEY` (Client-Key mit `power: restart`)
+   und `PTERODACTYL_SERVER_ID` setzen. `restartService()` ruft dann vor dem Exit
+   `POST /api/client/servers/<id>/power` mit `{"signal":"restart"}` auf.
 5. **Kein TTY**, also funktioniert der Terminal-Shortcut nicht — die Chatbefehle
    sind der Ersatz.
 6. **Datenbank:** `DATABASE_URL` auf einen Pfad im persistenten Serververzeichnis
@@ -182,7 +199,25 @@ WantedBy=multi-user.target
 ## .env
 
 `config.js` liest `DATABASE_URL` (Standard `./database.db`, alternativ eine
-Postgres-URL). `src/config/constants.js` setzt den Prefix aus `BOT_PREFIX` —
+Postgres-URL). Bei einer Postgres-URL ist der Hybridmodus standardmäßig aktiv:
+Die WhatsApp-Session liegt immer in der lokalen SQLite-Datei (`ONYX_LOCAL_DB_PATH`,
+Standard `./database.db`), Einstellungen gehen zuerst an Postgres und werden
+lokal als Fallback gespiegelt. Ist die lokale Datei leer, werden vorhandene
+Postgres-Auth-Daten beim ersten Start dorthin kopiert. `ONYX_HYBRID=off` stellt
+das alte Verhalten wieder her (alles in Postgres). Die aktive Instanz nutzt eine
+Neon-Postgres-URL mit `sslmode=verify-full` im Query-String; `pg`/Sequelize
+kommen ohne zusätzliche Pakete zum Einsatz. Für Onyx bitte eine eigene
+Datenbank verwenden — beide Bots nutzen dieselben Tabellennamen und würden sich
+sonst gegenseitig die Session überschreiben.
+
+**Wichtig beim Umstellen auf dem VPS:** Die vorhandene `database.db` mit der
+WhatsApp-Session liegen lassen und nicht löschen. In der Panel-Umgebung genügt
+`DATABASE_URL` (pooled Neon-URL mit `verify-full`); die lokale `.env` wird nicht
+mitdeployt. Weicht der Pfad der Session-Datei ab, `ONYX_LOCAL_DB_PATH` setzen.
+`node clear.js --status` zeigt `Mode: hybrid`, die Settings-Keys in Postgres und
+den lokalen Session-Pfad; `node clear.js --prune --dry-run` zeigt mögliche
+Bereinigungen.
+`src/config/constants.js` setzt den Prefix aus `BOT_PREFIX` —
 **Standard ist `#`**, auf dem Server steht `BOT_PREFIX=.`. Der Prefix wird beim
 Bauen der Kommandoregex escaped und verankert, sodass `.` keine Falschtreffer mehr
 auslöst: `#platform` oder `Hello platform` lösen nichts mehr aus.

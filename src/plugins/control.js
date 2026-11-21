@@ -16,6 +16,7 @@ import {
   describe,
   ffmpegVersion,
   supervisorLabel,
+  restartService,
 } from "../system/platform.js";
 
 const CONFIRM_TTL_MS = 120_000;
@@ -139,7 +140,9 @@ command(
       )
     );
 
-    setTimeout(() => process.exit(0), 1200);
+    setTimeout(() => {
+      restartService({ delayMs: 0 });
+    }, 1200);
   }
 );
 
@@ -220,7 +223,9 @@ command(
       )
     );
 
-    setTimeout(() => process.exit(0), 1500);
+    setTimeout(() => {
+      restartService({ delayMs: 0 });
+    }, 1500);
   }
 );
 

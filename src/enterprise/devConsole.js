@@ -6,6 +6,7 @@ import {
   supervisorLabel,
   pm2AppName,
   stopViaPm2,
+  restartService,
   describe as describePlatform,
 } from "../system/platform.js";
 import { gitPull, npmInstall } from "../utils/gitUpdate.js";
@@ -214,7 +215,9 @@ export async function runDevAction(action, params = {}) {
       }
 
       case "reboot":
-        setTimeout(() => process.exit(0), 800);
+        setTimeout(() => {
+          restartService({ delayMs: 0 });
+        }, 800);
         return { ok: true, data: { rebooting: true, supervisor: detectSupervisor() } };
 
       case "shutdown":
@@ -516,7 +519,9 @@ export async function runDevAction(action, params = {}) {
           return { ok: false, error: `git pull failed:\n${pulling.error}` };
         }
         await npmInstall();
-        setTimeout(() => process.exit(0), 900);
+        setTimeout(() => {
+          restartService({ delayMs: 0 });
+        }, 900);
         return { ok: true, data: { updated: true, restarting: true } };
       }
 

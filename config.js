@@ -24,10 +24,16 @@ export function getSqlitePath(url = DATABASE_URL) {
   return url;
 }
 
+const LOCAL_DB_PATH = (process.env.ONYX_LOCAL_DB_PATH || "./database.db").trim() || "./database.db";
+const HYBRID_ENABLED =
+  USE_POSTGRES && String(process.env.ONYX_HYBRID || "on").trim().toLowerCase() !== "off";
+
 const config = {
   DATABASE_URL,
   USE_POSTGRES,
-  SQLITE_PATH: USE_POSTGRES ? null : getSqlitePath(DATABASE_URL),
+  SQLITE_PATH: USE_POSTGRES ? LOCAL_DB_PATH : getSqlitePath(DATABASE_URL),
+  LOCAL_DB_PATH,
+  HYBRID_ENABLED,
   LOG_LEVEL: process.env.LOG_LEVEL || "warn",
 };
 

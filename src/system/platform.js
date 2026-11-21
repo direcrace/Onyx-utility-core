@@ -191,6 +191,32 @@ export async function restartViaPm2(appName) {
   return res.ok;
 }
 
+export async function restartViaPanelApi({ fetchImpl = fetch, env = process.env } = {}) {
+  const baseUrl = String(env.PTERODACTYL_API_URL || "").trim().replace(/\/+$/, "");
+  const apiKey = String(env.PTERODACTYL_API_KEY || "").trim();
+  const serverId = String(env.PTERODACTYL_SERVER_ID || "").trim();
+  if (!baseUrl || !apiKey || !serverId) return false;
+
+  try {
+    const response = await fetchImpl(
+      `${baseUrl}/api/client/servers/${encodeURIComponent(serverId)}/power`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ signal: "restart" }),
+        signal: AbortSignal.timeout(10_000),
+      }
+    );
+    return !!response?.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function stopService({ exitCode = 0, delayMs = 0 } = {}) {
   const app = pm2AppName();
   if (app && detectSupervisor() === "pm2") {
@@ -203,14 +229,24 @@ export async function stopService({ exitCode = 0, delayMs = 0 } = {}) {
   return { via: "exit", ok: true };
 }
 
-export async function restartService({ delayMs = 500 } = {}) {
-  const app = pm2AppName();
-  if (app && detectSupervisor() === "pm2") {
-    const ok = await restartViaPm2(app);
+export async function restartService({
+  delayMs = 500,
+  exit = () => process.exit(0),
+  fetchImpl = fetch,
+  env = process.env,
+  supervisor = detectSupervisor(),
+  appName = pm2AppName(),
+} = {}) {
+  const panelRestarted = await restartViaPanelApi({ fetchImpl, env });
+  if (panelRestarted) return { via: "panel-api", ok: true };
+
+  if (appName && supervisor === "pm2") {
+    const ok = await restartViaPm2(appName);
     if (ok) return { via: "pm2", ok: true };
   }
+
   if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
-  process.exit(0);
+  exit(0);
   return { via: "exit", ok: true };
 }
 
@@ -285,6 +321,11 @@ export function describe() {
     canAutoRestart: canAutoRestart(),
     docker: isDocker(),
     pterodactyl: isPterodactyl(),
+    panelRestartConfigured: !!(
+      process.env.PTERODACTYL_API_URL &&
+      process.env.PTERODACTYL_API_KEY &&
+      process.env.PTERODACTYL_SERVER_ID
+    ),
     systemd: isSystemd(),
     tty: hasTty(),
     pid: process.pid,

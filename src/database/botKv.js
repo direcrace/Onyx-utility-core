@@ -31,6 +31,50 @@ export async function kvDel(key) {
   return b.set(key, null);
 }
 
+export function attachHybridBotKv(remote, local) {
+  kvBackend = {
+    async get(key) {
+      if (remote) {
+        try {
+          const value = await remote.get(key);
+          if (value !== null && value !== undefined) return value;
+        } catch (error) {
+          console.warn(`[botkv-hybrid] remote get failed (${key}):`, error?.message || error);
+        }
+      }
+      if (local) return local.get(key);
+      return null;
+    },
+    async set(key, value) {
+      let remoteOk = false;
+      if (remote) {
+        try {
+          await remote.set(key, value);
+          remoteOk = true;
+        } catch (error) {
+          console.warn(`[botkv-hybrid] remote set failed (${key}):`, error?.message || error);
+        }
+      }
+      if (local) await local.set(key, value);
+      return remoteOk;
+    },
+    async del(key) {
+      let remoteOk = false;
+      if (remote) {
+        try {
+          await remote.del(key);
+          remoteOk = true;
+        } catch (error) {
+          console.warn(`[botkv-hybrid] remote del failed (${key}):`, error?.message || error);
+        }
+      }
+      if (local) await local.del(key);
+      return remoteOk;
+    },
+  };
+  seeded = false;
+}
+
 export async function seedBotKvFromEnv() {
   if (seeded) return;
   ensureBackend();

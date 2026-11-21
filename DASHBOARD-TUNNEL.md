@@ -179,7 +179,7 @@ ps aux | grep -E 'node|cloudflared' | grep -v grep
 #control              → Runtime, Supervisor, Dashboard-Port/-Host anzeigen
 #status               → Bot-/Verbindungsstatus
 #minilog              → Letzte Konsolen-Einträge (falls verfügbar)
-#reboot               → Prozess sauber neu starten (Auto-Restart muss an sein)
+#reboot               → Prozess sauber neu starten (Auto-Restart an oder Pterodactyl Client API gesetzt)
 ```
 
 `#update` benutzt jetzt `git pull --ff-only origin <branch>` und funktioniert

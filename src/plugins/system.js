@@ -16,6 +16,7 @@ import {
   canStayStopped,
   stopViaPm2,
   pm2AppName,
+  restartService,
 } from "../system/platform.js";
 
 function isSubOwner(conn, message) {
@@ -105,11 +106,7 @@ command(
         `♻️ Bot wird neu gestartet... (${supervisorLabel()} erkannt — Neustart via ${restartHint()})`
       )
     );
-    if (args === "now") {
-      process.exit(0);
-    } else {
-      setTimeout(() => process.exit(0), 800);
-    }
+    await restartService({ delayMs: args === "now" ? 0 : 800 });
   }
 );
 

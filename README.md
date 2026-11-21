@@ -178,7 +178,7 @@ Samples host/bot CPU, RAM, disk, RSS every 15 s. Warn (log-group 🟡, once, ded
 
 ### 1.4 Dev Console — terminal + chat + web (`src/enterprise/devConsole.js`, `devTerm.js`, `src/utils/consoleRing.js`)
 
-- **Terminal**: removed — no interactive TTY console. Maintenance runs through `clear.js` (`--auth`, `--wipedb`, `--status`, `--platform`, `--restart`, `--shutdown`) or the owner chat commands. The dev command bus (`status`, `minis`, `flags`, `logs`, `sendtest`, `panic`, `reboot`, `shutdown`) is available via chat (`#dev`) and the web console.
+- **Terminal**: removed — no interactive TTY console. Maintenance runs through `clear.js` (`--prune`, `--reset-settings`, `--auth`, `--wipedb`, `--status`, `--platform`, `--restart`, `--shutdown`; `--dry-run` previews pruning) or the owner chat commands. The dev command bus (`status`, `minis`, `flags`, `logs`, `sendtest`, `panic`, `reboot`, `shutdown`) is available via chat (`#dev`) and the web console.
 - **Chat**: `#dev` (overview), `#minilog <number> [lines]` (tail a Mini's console).
 - **Web**: `src/enterprise/dashboard/` SPA at `GET /ui`, JSON API (`GET /api/status`, `/api/dashboard`, `/api/stats`, `/api/bans`, `/api/help`) and SSE live log stream (`GET /api/events`), all driven by one `runDevAction(action, params)` action bus (40 actions).
 - `consoleRing.js` intercepts `console.*` into a bounded ring (default 2000 lines, env `DEV_CONSOLE_LOG_MAX`).

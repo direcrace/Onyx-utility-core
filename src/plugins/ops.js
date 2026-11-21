@@ -13,6 +13,7 @@ import { getMode, listSudo } from "../utils/access.js";
 import { resolveEffectiveRank, RANK_LABELS } from "../utils/ranks.js";
 import { getUserStats, levelFromXp, memberTier } from "../utils/communityStats.js";
 import { gitPull, npmInstall } from "../utils/gitUpdate.js";
+import { restartService } from "../system/platform.js";
 
 async function requireControl(conn, message) {
   if (isSubConnection(conn)) {
@@ -89,7 +90,7 @@ command(
     }
     await npmInstall();
     await replyOk(conn, message, await tr("✅ Updated. Restarting...", "✅ Aktualisiert. Neustart..."));
-    setTimeout(() => process.exit(0), 900);
+    await restartService({ delayMs: 900 });
   }
 );
 
@@ -116,7 +117,7 @@ command(
       return;
     }
     await replyOk(conn, message, await tr("♻️ Restarting bot...", "♻️ Bot wird neu gestartet..."));
-    setTimeout(() => process.exit(0), 800);
+    await restartService({ delayMs: 800 });
   }
 );
 
