@@ -36,18 +36,31 @@ Eine interaktive Terminal-Konsole gibt es nicht mehr. Auf Servern ohne TTY laufe
 alle Wartungsaufgaben über `clear.js` oder die Owner-Chatbefehle.
 
 ```bash
-node clear.js --auth              # WhatsApp-Session löschen (Einstellungen bleiben)
-node clear.js --wipedb --yes      # Datenbank + alle Einstellungen löschen
-node clear.js --status            # Plattform, DB-Pfad, gespeicherte Einstellungen
-node clear.js --platform          # erkannte Umgebung / Supervisor / Runtime
-node clear.js --restart --app X   # pm2 restart (nur mit PM2)
-node clear.js --shutdown --app X  # pm2 stop    (nur mit PM2)
-node clear.js --help              # Übersicht
+node clear.js --status               # Plattform, DB, größte Settings-Keys
+node clear.js --prune --dry-run      # Vorschau: Cache-/Verlaufs-Keys
+node clear.js --prune --yes          # Cache leeren, Session + Settings bleiben
+node clear.js --reset-settings --yes # alle Settings löschen, Session bleibt
+node clear.js --auth                 # WhatsApp-Session löschen (Einstellungen bleiben)
+node clear.js --wipedb --yes         # Datenbank + alle Einstellungen löschen
+node clear.js --platform             # erkannte Umgebung / Supervisor / Runtime
+node clear.js --restart --app X      # pm2 restart (nur mit PM2)
+node clear.js --shutdown --app X     # pm2 stop    (nur mit PM2)
+node clear.js --help                 # Übersicht
 ```
 
-`--auth` und `--wipedb` fragen interaktiv nach Bestätigung; mit `--yes` entfällt die
-Abfrage (nötig in Skripten ohne TTY). `--restart`/`--shutdown` funktionieren nur bei
-PM2; bei Docker/Panel/systemd den jeweiligen Neustart-Button bzw. `systemctl`
+`--auth`, `--prune`, `--reset-settings` und `--wipedb` fragen interaktiv nach
+Bestätigung; mit `--yes` entfällt die Abfrage (nötig in Skripten ohne TTY).
+`--dry-run` zeigt bei `--prune`/`--reset-settings` nur, welche Keys betroffen
+wären, und schreibt nichts. `--prune` löscht ausschließlich automatisch
+nachwachsende Cache-/Verlaufs-Keys (`aihist:*`, `ai:message_ids`, `audit_log`,
+`chat_index`, `chatbot_users`, `community:stats`, `community:registerCooldown`,
+`corepanic:at`, `log_capture_level`, `mini_flags`, `rc_flags`, `stats_hourly`,
+`stats_series`). Auth-State, Prefix, Sprache, Rollen, Ränge, Bans, Wallets,
+Notizen, Erinnerungen und Gruppeneinstellungen bleiben erhalten.
+`--reset-settings` löscht alle BotKV-Keys und lässt den Auth-State unangetastet;
+die Defaults werden beim nächsten Start neu geseedet. Beide Befehle arbeiten
+mit SQLite und Postgres. `--restart`/`--shutdown` funktionieren nur bei PM2;
+bei Docker/Panel/systemd den jeweiligen Neustart-Button bzw. `systemctl`
 verwenden oder aus dem laufenden Bot die Chatbefehle nutzen.
 
 Die gleichen Aktionen gibt es als Owner-Chatbefehle:
@@ -175,7 +188,24 @@ WantedBy=multi-user.target
 ## .env
 
 `config.js` liest `DATABASE_URL` (Standard `./database.db`, alternativ eine
-Postgres-URL). `src/config/constants.js` setzt den Prefix aus `BOT_PREFIX` —
+Postgres-URL). Bei einer Postgres-URL ist der Hybridmodus standardmäßig aktiv:
+Die WhatsApp-Session liegt immer in der lokalen SQLite-Datei (`ONYX_LOCAL_DB_PATH`,
+Standard `./database.db`), Einstellungen gehen zuerst an Postgres und werden
+lokal als Fallback gespiegelt. Ist die lokale Datei leer, werden vorhandene
+Postgres-Auth-Daten beim ersten Start dorthin kopiert. `ONYX_HYBRID=off` stellt
+das alte Verhalten wieder her (alles in Postgres). Für Onyx und YumBot bitte
+getrennte Datenbanken verwenden — beide nutzen dieselben Tabellennamen und
+würden sich sonst gegenseitig die Session überschreiben.
+
+**Postgres selbst einrichten (optional, 0 €):** Es ist kein anbieterspezifischer
+Code nötig — `pg`/Sequelize reichen. Bei Neon zum Beispiel: kostenloses Projekt
+anlegen, die **pooled** Connection String aus der Branch-Übersicht kopieren,
+`sslmode=verify-full` im Query-String belassen und als `DATABASE_URL` in `.env`
+bzw. in die Umgebung des Hosting-Panels eintragen. Danach Bot neu starten;
+`node clear.js --status` zeigt `Mode: hybrid` und die Settings-Keys in Postgres.
+Ohne `DATABASE_URL` bleibt alles lokal in SQLite.
+
+`src/config/constants.js` setzt den Prefix aus `BOT_PREFIX` —
 **Standard ist `#`**, auf dem Server steht `BOT_PREFIX=.`. Der Prefix wird beim
 Bauen der Kommandoregex escaped und verankert, sodass `.` keine Falschtreffer mehr
 auslöst: `#platform` oder `Hello platform` lösen nichts mehr aus.

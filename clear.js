@@ -18,6 +18,8 @@ Usage: node clear.js <command> [options]
 
 Commands:
   --auth, -a        Clear the WhatsApp auth state (keeps settings). Re-pair required.
+  --prune           Clear growing history/cache keys. Keeps session and settings.
+  --reset-settings  Clear every saved setting. Keeps the WhatsApp session.
   --wipedb          Delete the auth database AND every saved setting.
   --restart, -r     Restart the bot via the supervisor (pm2).
   --shutdown, -s    Stop the bot via the supervisor (pm2).
@@ -26,10 +28,15 @@ Commands:
   --help, -h        Show this help.
 
 Options:
-  --yes, -y         Skip the confirmation prompt (for --auth / --wipedb).
+  --yes, -y         Skip the confirmation prompt (for --auth / --prune / --reset-settings / --wipedb).
+  --dry-run         Show what --prune / --reset-settings would remove, touch nothing.
   --app <name>      pm2 app name for --restart / --shutdown.
 
 Examples:
+  node clear.js --status
+  node clear.js --prune --dry-run
+  node clear.js --prune --yes
+  node clear.js --reset-settings --yes
   node clear.js --auth
   node clear.js --wipedb --yes
   node clear.js --restart --app onyx
@@ -84,6 +91,25 @@ function printPlatform() {
   console.log(`• home: ${d.homedir || "n/a"}`);
 }
 
+function printKvRows(rows, label) {
+  const sorted = [...rows].sort(
+    (a, b) => Buffer.byteLength(b.value || "", "utf8") - Buffer.byteLength(a.value || "", "utf8")
+  );
+  if (!sorted.length) {
+    console.log(`• ${label}: (none stored)`);
+    return;
+  }
+  console.log(`• ${label} (${sorted.length} keys):`);
+  for (const row of sorted) {
+    const size = Buffer.byteLength(row.value || "", "utf8");
+    console.log(`   - ${row.key} · ${size} B`);
+  }
+}
+
+function maskUrl(url) {
+  return String(url).replace(/\/\/[^@/]*@/, "//***@");
+}
+
 async function sqliteStatus() {
   const dbPath = config.SQLITE_PATH;
   console.log(`• SQLite: ${dbPath}`);
@@ -110,19 +136,7 @@ async function sqliteStatus() {
     try {
       kv = db.prepare("SELECT key, value FROM BotKV ORDER BY key").all();
     } catch {}
-    if (kv.length) {
-      console.log("• Settings:");
-      for (const row of kv) {
-        let val = row.value;
-        try {
-          val = JSON.stringify(JSON.parse(row.value));
-        } catch {}
-        if (typeof val === "string" && val.length > 90) val = `${val.slice(0, 87)}...`;
-        console.log(`   - ${row.key} = ${val}`);
-      }
-    } else {
-      console.log("• Settings: (none stored)");
-    }
+    printKvRows(kv, "Settings");
   } catch (err) {
     console.log(`• Could not read database: ${err?.message || err}`);
   } finally {
@@ -132,12 +146,29 @@ async function sqliteStatus() {
   }
 }
 
+async function postgresStatus() {
+  console.log(`• Postgres: ${maskUrl(config.DATABASE_URL)}`);
+  console.log("• Credentials: start the bot for live credential status.");
+  try {
+    const { inspectBotKv } = await import("./src/database/kvMaintenance.js");
+    const snapshot = await inspectBotKv();
+    printKvRows(snapshot.rows, "Remote settings");
+    if (snapshot.localRows.length) printKvRows(snapshot.localRows, "Local cache");
+  } catch (err) {
+    console.log(`• Could not read Postgres settings: ${err?.message || err}`);
+  }
+}
+
 async function statusAction() {
   printPlatform();
   console.log("");
   console.log("🗄️  Database");
   if (config.USE_POSTGRES) {
-    console.log("• Postgres (USE_POSTGRES=true) — start the bot for live credential status.");
+    await postgresStatus();
+    if (config.HYBRID_ENABLED) {
+      console.log("• Mode: hybrid (session local, settings Postgres first)");
+      console.log(`• Local session DB: ${config.LOCAL_DB_PATH}`);
+    }
   } else {
     await sqliteStatus();
   }
@@ -157,10 +188,38 @@ async function authAction(opts) {
   console.log("✅ Auth state cleared. Restart the bot and pair again.");
 }
 
+async function kvMaintenanceAction(opts, mode) {
+  const dryRun = has(opts, "--dry-run");
+  const { pruneBotKv } = await import("./src/database/kvMaintenance.js");
+  const label = mode === "reset" ? "every saved setting" : "growing history/cache keys";
+
+  if (!dryRun && !has(opts, "--yes", "-y")) {
+    console.log(`⚠️  This clears ${label}. The WhatsApp session is kept.`);
+    if (!(await confirm(mode === "reset" ? "Reset all settings?" : "Prune cache keys?"))) {
+      console.log("Cancelled.");
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  const result = await pruneBotKv({ resetAll: mode === "reset", dryRun });
+  if (dryRun) {
+    console.log(`🔍 Dry run — ${result.targets.length} key(s) would be removed, ${result.kept.length} kept.`);
+    for (const key of result.targets) console.log(`   - ${key}`);
+    console.log("ℹ️  Nothing was written.");
+    return;
+  }
+
+  console.log(
+    `✅ Removed ${result.targets.length} setting key(s) (remote: ${result.removedRemote}, local: ${result.removedLocal}).`
+  );
+  console.log("ℹ️  WhatsApp session untouched. Restart the bot to apply defaults.");
+}
+
 async function wipeAction(opts) {
   if (config.USE_POSTGRES) {
     if (!has(opts, "--yes", "-y")) {
-      console.log("⚠️  This clears the Postgres auth state.");
+      console.log("⚠️  This clears the auth state.");
       if (!(await confirm("Wipe the auth state?"))) {
         console.log("Cancelled.");
         process.exitCode = 1;
@@ -169,7 +228,7 @@ async function wipeAction(opts) {
     }
     const { clearAuthState } = await import("./src/database/authState.js");
     await clearAuthState();
-    console.log("✅ Postgres auth state cleared (BotKV settings are left untouched).");
+    console.log("✅ Auth state cleared (BotKV settings are left untouched).");
     return;
   }
 
@@ -239,6 +298,8 @@ async function main() {
   }
 
   if (has(opts, "--auth", "-a")) return authAction(opts);
+  if (has(opts, "--prune")) return kvMaintenanceAction(opts, "prune");
+  if (has(opts, "--reset-settings")) return kvMaintenanceAction(opts, "reset");
   if (has(opts, "--wipedb")) return wipeAction(opts);
   if (has(opts, "--restart", "-r")) return supervisorAction(opts, "restart");
   if (has(opts, "--shutdown", "-s")) return supervisorAction(opts, "shutdown");
