@@ -25,6 +25,7 @@ These guidelines describe how to use the Bot's community and group tools fairly.
 * Do not submit fake, expired or revoked links, do not mass-request, and do not link groups you have no right to add the Bot to. Only one request per person may be open at a time; it expires after 24 hours.
 * A rejection is final for that request and the decision is sent to you by DM. Wait before asking again and fix the reason for the rejection first.
 * Team+ in the receiver group decides with `#rq approve` / `#rq reject` on the Bot's card. Do not ping or pressure them, and do not approve a request you have not checked.
+* The join link is posted in the receiver group with the request and again after approval so Team+ can enter. Do not reshare it outside the team, and never reuse a link from a rejected request.
 
 ## 4. Setup tokens
 

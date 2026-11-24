@@ -271,7 +271,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 - `#apr` / `#adm` are the sudo+ variants of `#promote` / `#demote`: mention or reply to another user for immediate promotion/demotion without group-admin approval. The bot must be a group admin.
 - `#setrequestreceive here|<group-jid>|clear` (sudo+) sets the group that receives bot-join requests; `status` shows it.
 - `#request <chat.whatsapp.com/...>` sends one request per person (24 h) to that receiver group. Team+ in the receiver group replies to the request card with `#rq approve` / `#rq reject`. Rejection sends a DM to the requester. Approval makes the bot join the group and issues a one-time setup token; a team member must join that group and run `#setupaccept <token>` to enable welcome, goodbye, antilink and antispam.
-- Pending actions, requests and setup tokens live in BotKV (`groupact:*`, `groupreq:*`, `groupsetup:*`) with a 24 h expiry; only the pending prefixes are cleared by `clear.js --prune`. The receiver setting `groupreq:receive` is kept. Invite links are stored only as the invite code, never in chat replies or audit logs.
+- Pending actions, requests and setup tokens live in BotKV (`groupact:*`, `groupreq:*`, `groupsetup:*`) with a 24 h expiry; only the pending prefixes are cleared by `clear.js --prune`. The receiver setting `groupreq:receive` is kept. Only the invite code is stored; the reconstructed `https://chat.whatsapp.com/<code>` link is posted in the receiver group with the request and again after approval so a team member can join. It is never written to audit logs or sent to the requester.
 
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)
 

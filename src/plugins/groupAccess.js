@@ -21,6 +21,7 @@ import { BOT_INFO } from "../config/constants.js";
 import {
   groupJidFrom,
   parseInviteCode,
+  inviteLink,
   messageIdFrom,
   requesterNumber,
   userJid,
@@ -383,9 +384,10 @@ command(
       ));
       return;
     }
+    const link = inviteLink(code);
     const card = await tr(
-      `📥 *Group request*\n• From: @${number}\n• Code: \`${code.slice(0, 6)}…\`\n\nReply to this message with \`${BOT_INFO.PREFIX}rq approve\` or \`${BOT_INFO.PREFIX}rq reject\` (team+).`,
-      `📥 *Gruppen-Anfrage*\n• Von: @${number}\n• Code: \`${code.slice(0, 6)}…\`\n\nAntworte auf diese Nachricht mit \`${BOT_INFO.PREFIX}rq approve\` oder \`${BOT_INFO.PREFIX}rq reject\` (Team+).`
+      `📥 *Group request*\n• From: @${number}\n• Join: ${link}\n\nReply to this message with \`${BOT_INFO.PREFIX}rq approve\` or \`${BOT_INFO.PREFIX}rq reject\` (team+).`,
+      `📥 *Gruppen-Anfrage*\n• Von: @${number}\n• Join: ${link}\n\nAntworte auf diese Nachricht mit \`${BOT_INFO.PREFIX}rq approve\` oder \`${BOT_INFO.PREFIX}rq reject\` (Team+).`
     );
     const sent = await sendMessage(conn, receiver, card, { mentions: [userJid(number)] });
     await attachRequestMessage({
@@ -480,8 +482,8 @@ command(
       meta: { id: record.id, groupJid, approver },
     }).catch(() => {});
     await replyOk(conn, message, await tr(
-      `Bot joined \`${groupJid}\`. Team+ must join there and run \`${BOT_INFO.PREFIX}setupaccept ${setup.token}\`.`,
-      `Bot ist \`${groupJid}\` beigetreten. Team+ muss dort joinen und \`${BOT_INFO.PREFIX}setupaccept ${setup.token}\` ausführen.`
+      `Bot joined \`${groupJid}\`. A team member joins via ${inviteLink(record.code)} then runs \`${BOT_INFO.PREFIX}setupaccept ${setup.token}\`.`,
+      `Bot ist \`${groupJid}\` beigetreten. Ein Teammitglied joint über ${inviteLink(record.code)} und führt dann \`${BOT_INFO.PREFIX}setupaccept ${setup.token}\` aus.`
     ));
     await sendMessage(conn, groupJid, await tr(
       `👋 Joined after an approved request. A team member must run \`${BOT_INFO.PREFIX}setupaccept ${setup.token}\` here to finish setup.`,

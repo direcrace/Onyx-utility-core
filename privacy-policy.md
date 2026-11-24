@@ -51,7 +51,7 @@ Depending on the features you use:
 * Command text and, where required to execute a command, the message content (e.g. text to translate, a caption to convert, a replied-to message).
 * Media you deliberately send to media-processing commands — processed only as long as needed to return the result, **never stored for logging**.
 * Group metadata for groups the Bot is in: group name, ID, member/admin lists, and moderation settings the Bot manages.
-* Pending group-access actions and requests: your normalized number, group ID, the selected action, a timestamp and a 24-hour expiry. An approved request also creates a one-time setup token with the same expiry. Only the invite code is kept from a `#request` link; the full link is never sent back in chat or written to audit logs.
+* Pending group-access actions and requests: your normalized number, group ID, the selected action, a timestamp and a 24-hour expiry. An approved request also creates a one-time setup token with the same expiry. Only the invite code is stored; the Bot reconstructs `https://chat.whatsapp.com/<code>` and posts it in the configured receiver group with the request and again after approval so a team member can join. The link is not sent to the requester and is never written to audit logs.
 * Data you deliberately store: notes, to-dos, reminders, polls, AI chat history (until you clear it with `#aiclear` or `#forgetai`).
 * Derived community data: XP/levels, titles, badges, thanks given/received and weekly helper rankings. These are operational counters, not message archives.
 * Basic operational metadata (timestamps, command names, error states) for debugging and abuse prevention.

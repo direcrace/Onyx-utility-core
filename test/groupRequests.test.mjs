@@ -135,6 +135,8 @@ test("parses invite links and group targets", () => {
     "ABCDEF123456xyz"
   );
   assert.equal(requests.parseInviteCode("nope"), null);
+  assert.equal(requests.inviteLink("ABCDEF123456"), "https://chat.whatsapp.com/ABCDEF123456");
+  assert.equal(requests.inviteLink(null), null);
   assert.equal(requests.groupJidFrom("here"), null);
   assert.equal(requests.groupJidFrom("120363400000000001"), RECEIVER);
   assert.equal(requests.groupJidFrom(RECEIVER), RECEIVER);
@@ -232,6 +234,7 @@ test("request reject DMs the requester and clears the request", async () => {
   ));
   const card = sent.find((item) => item.jid === GROUP && /Group request/.test(item.content.text || ""));
   assert.ok(card, "request card was not posted to the receiver group");
+  assert.match(card.content.text, /https:\/\/chat\.whatsapp\.com\/ABCDEF123456/);
   const cardId = card.id;
 
   await run("rq", message("#rq reject", { sender: TEAM, quotedId: cardId }));
@@ -251,6 +254,9 @@ test("request approve joins the group and setupaccept enables defaults", async (
   await run("rq", message("#rq approve", { sender: TEAM, quotedId: cardId }));
 
   assert.deepEqual(joins, ["ABCDEF123456"]);
+  assert.ok(sent.some((item) => item.jid === GROUP
+    && /https:\/\/chat\.whatsapp\.com\/ABCDEF123456/.test(item.content.text || "")
+    && /setupaccept/.test(item.content.text || "")), "approval did not include the join link and token");
   const setupKey = [...store.data.keys()].find((key) => key.startsWith("groupsetup:pending:"));
   assert.ok(setupKey, "setup token was not stored");
   const token = store.data.get(setupKey).token;

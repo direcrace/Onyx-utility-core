@@ -21,11 +21,13 @@ test("legal documents describe group access, retention and reporting", async () 
   const privacy = await fs.readFile(new URL("../privacy-policy.md", import.meta.url), "utf8");
   assert.match(privacy, /Group-access state[\s\S]*expires automatically after 24 hours/);
   assert.match(privacy, /not part of the `#mydata` export/);
+  assert.match(privacy, /posts it in the configured receiver group/);
 
   const guidelines = await fs.readFile(new URL("../community-guidelines.md", import.meta.url), "utf8");
   for (const command of ["#pr", "#dm", "#apr", "#adm", "#request", "#rq", "#setupaccept"]) {
     assert.ok(guidelines.includes(command), `guidelines missing ${command}`);
   }
+  assert.match(guidelines, /join link is posted in the receiver group/);
 
   const legal = await fs.readFile(new URL("../src/plugins/legal.js", import.meta.url), "utf8");
   assert.match(legal, /GUIDELINES_SHORT_EN/);

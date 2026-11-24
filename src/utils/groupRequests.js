@@ -58,6 +58,10 @@ export function parseInviteCode(value) {
   return match ? match[1].split(/[?#]/)[0] : null;
 }
 
+export function inviteLink(code) {
+  return code ? `https://chat.whatsapp.com/${code}` : null;
+}
+
 export function messageIdFrom(message) {
   const ctx = message?.message?.contextInfo || message?.rawMessage?.contextInfo || {};
   return ctx.stanzaId || message?.quoted?.id || message?.quoted?.key?.id || null;
