@@ -34,6 +34,7 @@ Whoever runs a main instance controls what it stores, logs, and retains, includi
 * **Community** — registration (`#register`, `#unregister`), staff ranks/roles, the TEAM menu, member levels/titles (`#level`), badges (`#badges`), thanks/karma (`#thanks`, `#tophelpers`), activity statistics (`#mystats`, `#leaderboard`), profile lookup (`#whois`), `#resetstats` and self-service data export/deletion (`#mydata`, `#forgetai`).
 * **Support & reports** — `#ticket` / `#support` and `#report`, with delivery configured by the operator via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`) and `#setticketroute` for per-category groups. Replies use `#answer <text>` in the support or routed category group. `#setsla` controls one-shot reminders for unanswered tickets.
 * **Moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group tools.
+* **Group access** — `#pr` / `#dm` (self-promotion/self-demotion with group-admin approval), `#apr` / `#adm` (sudo promotion/demotion), `#setrequestreceive` / `#request` / `#rq` (bot-join requests) and `#setupaccept` (team setup acceptance).
 * **AI chat** (`#chat`, `#aiprompt`) via a connected backend, plus media processing and search/utilities.
 * **Personal utilities** — notes, to-dos, reminders, polls.
 * **Onyx Mini** (`#pair`) — optional linking of your own WhatsApp number as a sub-session.
@@ -50,6 +51,7 @@ Depending on the features you use:
 * Command text and, where required to execute a command, the message content (e.g. text to translate, a caption to convert, a replied-to message).
 * Media you deliberately send to media-processing commands — processed only as long as needed to return the result, **never stored for logging**.
 * Group metadata for groups the Bot is in: group name, ID, member/admin lists, and moderation settings the Bot manages.
+* Pending group-access actions and requests: your normalized number, group ID, the selected action, a timestamp and a 24-hour expiry. An approved request also creates a one-time setup token with the same expiry. Only the invite code is kept from a `#request` link; the full link is never sent back in chat or written to audit logs.
 * Data you deliberately store: notes, to-dos, reminders, polls, AI chat history (until you clear it with `#aiclear` or `#forgetai`).
 * Derived community data: XP/levels, titles, badges, thanks given/received and weekly helper rankings. These are operational counters, not message archives.
 * Basic operational metadata (timestamps, command names, error states) for debugging and abuse prevention.

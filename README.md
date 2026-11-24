@@ -264,6 +264,14 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 - `#teamset <@user|number> <rank>` (co-owner+) assigns ranks with hierarchy protection: you cannot grant a rank equal to or higher than your own, and owner/root cannot be changed.
 - Ranks live in `community:ranks` BotKV. The `team` category also appears in `#menu team`; `#rank` / `#ranks` / `#setrank` are grouped there too.
 
+### Group access & onboarding (`src/plugins/groupAccess.js`, `src/utils/groupRequests.js`)
+
+- `#pr` / `#dm` let a Mod+ request self-promotion to group admin / self-demotion from group admin. The bot must be a group admin. A group admin approves or rejects by replying to the bot's request card with `#pr approve` / `#pr reject` or `#dm approve` / `#dm reject`; the requester can withdraw with `#pr cancel` / `#dm cancel`. A non-admin who tries to approve/reject gets a plain warning and the action stays pending.
+- `#apr` / `#adm` are the sudo+ variants of `#promote` / `#demote`: mention or reply to another user for immediate promotion/demotion without group-admin approval. The bot must be a group admin.
+- `#setrequestreceive here|<group-jid>|clear` (sudo+) sets the group that receives bot-join requests; `status` shows it.
+- `#request <chat.whatsapp.com/...>` sends one request per person (24 h) to that receiver group. Team+ in the receiver group replies to the request card with `#rq approve` / `#rq reject`. Rejection sends a DM to the requester. Approval makes the bot join the group and issues a one-time setup token; a team member must join that group and run `#setupaccept <token>` to enable welcome, goodbye, antilink and antispam.
+- Pending actions, requests and setup tokens live in BotKV (`groupact:*`, `groupreq:*`, `groupsetup:*`) with a 24 h expiry; only the pending prefixes are cleared by `clear.js --prune`. The receiver setting `groupreq:receive` is kept. Invite links are stored only as the invite code, never in chat replies or audit logs.
+
 ### Ops & system (`src/plugins/ops.js`, `src/plugins/system.js`, `src/plugins/settings.js`)
 
 - `#uptime`, `#version`, `#update` (creator: fast-forward pull with explicit `origin <branch>` + npm install + restart; works on clones without upstream tracking), `#restart`, `#logs`, `#health`, `#config` (runtime prefix/botname/mode/policies), `#permissions`, `#whoami`, `#session`, `#sessions`, `#ratelimit`, `#diagnostics`, `#debug`, `#setcreator`, `#creatormenu`, `#setowner`.

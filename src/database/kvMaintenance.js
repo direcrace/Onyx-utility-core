@@ -16,7 +16,15 @@ export const PRUNE_KEYS = new Set([
   "stats_series",
 ]);
 
-export const PRUNE_PREFIXES = ["aihist:"];
+export const PRUNE_PREFIXES = [
+  "aihist:",
+  "groupact:msg:",
+  "groupact:open:",
+  "groupreq:msg:",
+  "groupreq:open:",
+  "groupsetup:pending:",
+  "groupsetup:token:",
+];
 
 export function isPrunableKey(key) {
   const value = String(key);
