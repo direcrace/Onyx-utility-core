@@ -133,6 +133,33 @@ export function resolveKvScope({ local = false, external = false, usePostgres = 
   return { useLocal, useExternal, label };
 }
 
+export async function deleteBotKvKeys(keys, { cfg = config, local = false, external = false } = {}) {
+  const targets = [...new Set((keys || []).map(String))].filter(Boolean);
+  const scope = resolveKvScope({ local, external, usePostgres: !!cfg.USE_POSTGRES });
+
+  let removedRemote = 0;
+  let removedLocal = 0;
+
+  if (scope.useExternal && targets.length) {
+    const { sequelize, model } = await postgresHandle(cfg);
+    try {
+      removedRemote = await model.destroy({ where: { key: { [Op.in]: targets } } });
+    } finally {
+      await sequelize.close();
+    }
+  }
+  if (scope.useLocal && targets.length) {
+    removedLocal = await sqliteDelete(localPath(cfg) || cfg.SQLITE_PATH, targets);
+  }
+
+  return {
+    scope: scope.label,
+    removedRemote,
+    removedLocal,
+    removed: removedRemote + removedLocal,
+  };
+}
+
 export async function pruneBotKv({
   cfg = config,
   resetAll = false,
@@ -159,29 +186,14 @@ export async function pruneBotKv({
     };
   }
 
-  let removedRemote = 0;
-  let removedLocal = 0;
-
-  if (scope.useExternal) {
-    const { sequelize, model } = await postgresHandle(cfg);
-    try {
-      if (targets.length) {
-        removedRemote = await model.destroy({ where: { key: { [Op.in]: targets } } });
-      }
-    } finally {
-      await sequelize.close();
-    }
-  }
-  if (scope.useLocal) {
-    removedLocal = await sqliteDelete(localPath(cfg) || cfg.SQLITE_PATH, targets);
-  }
+  const removed = await deleteBotKvKeys(targets, { cfg, local, external });
 
   return {
     dryRun: false,
     backend: snapshot.backend,
     scope: scope.label,
     targets,
-    removedRemote,
-    removedLocal,
+    removedRemote: removed.removedRemote,
+    removedLocal: removed.removedLocal,
   };
 }

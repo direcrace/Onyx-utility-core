@@ -21,6 +21,9 @@ import {
 } from "../enterprise/rbac.js";
 import { createBackup } from "../enterprise/backup.js";
 import { getMetricsSnapshot } from "../enterprise/metrics.js";
+import { inspectBotKv } from "../database/kvMaintenance.js";
+import { getCommunityMetrics } from "../utils/communityMetrics.js";
+import config from "../../config.js";
 import { queueStats } from "../enterprise/queue.js";
 import { isLogGroupAsync } from "../utils/logGroup.js";
 import {
@@ -340,6 +343,60 @@ command(
           `• Durchschn. Job ms: ${m.avg_job_ms}\n` +
           `• Warteschlange: ${q.active} aktiv / ${q.pending} wartend\n` +
           `• Tenant: \`${process.env.TENANT_ID || "default"}\``
+      )
+    );
+  }
+);
+
+command(
+  {
+    pattern: "communitymetrics",
+    fromMe: true,
+    desc: "Aggregate community counts (owner/sudo, numbers only)",
+    type: "owner",
+  },
+  async (message, conn) => {
+    if (!(await isPrivileged(message, conn))) {
+      await replyFail(conn, message, await tr("Owner/sudo only.", "Nur Besitzer/Sudo."));
+      return;
+    }
+
+    let kvRows = null;
+    try {
+      const snapshot = await inspectBotKv(config);
+      kvRows = [...snapshot.rows, ...snapshot.localRows];
+    } catch {  }
+
+    const m = await getCommunityMetrics({ kvRows });
+    const r = m.rankCounts;
+    const kv = m.kvAvailable
+      ? `${m.kvKeys} (groupact ${m.kvByPrefix.selfRoles} · groupreq ${m.kvByPrefix.joinRequests} · groupsetup ${m.kvByPrefix.setupTokens})`
+      : "n/a";
+
+    await reply(
+      conn,
+      message,
+      await tr(
+        `*Community metrics* (counts only)\n` +
+          `• Registered: ${m.registered}\n` +
+          `• Need re-accept: ${m.staleRegistrations}\n` +
+          `• Pairing consents: ${m.consents} (stale: ${m.staleConsents})\n` +
+          `• Ranks: user ${r.user} · mod ${r.mod} · admin ${r.admin} · team ${r.team} · co-owner ${r["co-owner"]} · owner ${r.owner}\n` +
+          `• Open self-role actions: ${m.pending.selfRoles}\n` +
+          `• Open join requests: ${m.pending.joinRequests}\n` +
+          `• Setup tokens: ${m.pending.setupTokens}\n` +
+          `• Tickets: ${m.ticketsOpen} open · ${m.ticketsUnanswered} unanswered\n` +
+          `• BotKV keys: ${kv}`,
+        `*Community-Metriken* (nur Zahlen)\n` +
+          `• Registriert: ${m.registered}\n` +
+          `• Müssen neu akzeptieren: ${m.staleRegistrations}\n` +
+          `• Pairing-Zustimmungen: ${m.consents} (veraltet: ${m.staleConsents})\n` +
+          `• Ränge: user ${r.user} · mod ${r.mod} · admin ${r.admin} · team ${r.team} · co-owner ${r["co-owner"]} · owner ${r.owner}\n` +
+          `• Offene Self-Role-Aktionen: ${m.pending.selfRoles}\n` +
+          `• Offene Join-Requests: ${m.pending.joinRequests}\n` +
+          `• Setup-Tokens: ${m.pending.setupTokens}\n` +
+          `• Tickets: ${m.ticketsOpen} offen · ${m.ticketsUnanswered} unbeantwortet\n` +
+          `• BotKV-Keys: ${kv}`
       )
     );
   }

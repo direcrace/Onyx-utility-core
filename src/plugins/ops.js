@@ -184,9 +184,11 @@ command(
 
     let host = {};
     let panic = null;
+    let watch = {};
     try {
-      const { hostSnapshot } = await import("../system/systemWatch.js");
-      host = await hostSnapshot();
+      const systemWatch = await import("../system/systemWatch.js");
+      host = await systemWatch.hostSnapshot();
+      watch = systemWatch.getSystemWatchStatus?.() || {};
       const { getCorePanicStatus } = await import("../system/corePanic.js");
       panic = getCorePanicStatus();
     } catch {  }
@@ -196,6 +198,9 @@ command(
     const rss = host.rssMb != null ? `${host.rssMb} MB` : "n/a";
     const q = (await import("../enterprise/queue.js")).queueStats?.() || { length: 0 };
     const panicTxt = !panic?.enabled ? "⚪ off" : panic.panicked ? "🔴 TRIGGERED" : panic.panicGrace ? "⏳ grace" : "🟢 armed";
+    const disk = host.disk
+      ? `${host.disk.freeMb} MB free (${host.disk.freePct}%) · warn <${watch.diskWarnMb || 1024} MB`
+      : "n/a";
     const uptime = process.uptime();
 
     await reply(conn, message, await tr(
@@ -204,6 +209,7 @@ command(
         `• Status: 🟢 online · uptime ${formatUptime(uptime)}`,
         `• CPU: ${cpu} · RAM used: ${memUsedPct}%`,
         `• RSS: ${rss} · queue: ${q.length}`,
+        `• Disk: ${disk}`,
         `• Core panic: ${panicTxt}`,
       ].join("\n"),
       [
@@ -211,6 +217,7 @@ command(
         `• Status: 🟢 online · Laufzeit ${formatUptime(uptime)}`,
         `• CPU: ${cpu} · RAM genutzt: ${memUsedPct}%`,
         `• RSS: ${rss} · Warteschlange: ${q.length}`,
+        `• Platte: ${disk}`,
         `• Core panic: ${panicTxt}`,
       ].join("\n")
     ));

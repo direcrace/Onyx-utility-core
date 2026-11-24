@@ -47,6 +47,14 @@ const initialize = async () => {
     await useMultiDbAuthState();
 
     try {
+      const { sweepExpiredGroupState } = await import("./src/utils/groupRequests.js");
+      const swept = await sweepExpiredGroupState();
+      if (swept.expired) console.log(`🧹 Swept ${swept.expired} expired group-state key(s)`);
+    } catch (err) {
+      console.warn("Group-state sweep failed:", err?.message || err);
+    }
+
+    try {
       if (!(await hasFfmpeg())) {
         console.warn(
           "⚠️  FFmpeg not found on PATH — #ytmp3 / #tomp3 / voice effects / video stickers will fail."

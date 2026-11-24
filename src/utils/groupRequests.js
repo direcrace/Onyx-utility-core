@@ -1,5 +1,7 @@
 import crypto from "crypto";
+import config from "../../config.js";
 import { kvGet, kvSet, kvDel } from "../database/botKv.js";
+import { inspectBotKv, deleteBotKvKeys } from "../database/kvMaintenance.js";
 import { normalizeNumber, senderCandidates } from "./access.js";
 
 export const REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
@@ -267,4 +269,57 @@ export async function deleteSetup(setup, store) {
   const target = storeOf(store);
   await target.del(setupGroupKey(setup.groupJid));
   await target.del(setupTokenKey(setup.token));
+}
+
+const SWEEP_PREFIXES = ["groupact:", "groupreq:", "groupsetup:"];
+
+function parseRecord(value) {
+  if (!value || typeof value !== "object") return null;
+  return value;
+}
+
+export function expiredGroupKeys(rows, now = Date.now()) {
+  const keys = new Set();
+  for (const row of rows || []) {
+    const key = String(row?.key || "");
+    if (!key || /:(?:msg|token):/.test(key)) continue;
+    if (!SWEEP_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
+    let value = row?.value;
+    if (typeof value === "string") {
+      try { value = JSON.parse(value); } catch { continue; }
+    }
+    const record = parseRecord(value);
+    if (!record?.expiresAt || Number(record.expiresAt) > now) continue;
+    keys.add(key);
+    if (key.startsWith("groupact:") && record.messageId) {
+      keys.add(`groupact:msg:${record.messageId}`);
+    }
+    if (key.startsWith("groupreq:") && record.messageId) {
+      keys.add(`groupreq:msg:${record.messageId}`);
+    }
+    if (key.startsWith("groupsetup:") && record.token) {
+      keys.add(`groupsetup:token:${record.token}`);
+    }
+  }
+  return [...keys];
+}
+
+export async function sweepExpiredGroupState({ rows = null, onDelete = null, cfg = config, now = Date.now() } = {}) {
+  const sourceRows = rows || [];
+  let allRows = sourceRows;
+  if (!rows) {
+    const snapshot = await inspectBotKv(cfg);
+    allRows = [...snapshot.rows, ...snapshot.localRows];
+  }
+  const keys = expiredGroupKeys(allRows, now);
+  if (!keys.length) return { scanned: allRows.length, expired: 0, removed: 0 };
+
+  const result = onDelete
+    ? await onDelete(keys)
+    : await deleteBotKvKeys(keys, { cfg });
+  const removed = typeof result === "number"
+    ? result
+    : result?.removed ?? ((result?.removedRemote || 0) + (result?.removedLocal || 0));
+
+  return { scanned: allRows.length, expired: keys.length, removed };
 }
