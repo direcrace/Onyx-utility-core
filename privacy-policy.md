@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 18.11.2026
+**Last updated:** 24.11.2026
 
 > **Using `#pair` (Onyx Mini)?** Read Section 3.3 before linking your number — it explains the monitoring, logging, and termination that come with a linked session.
 > **Using a self-hosted "main" instance?** Read Section 1.1 — the operator of the instance you use is the controller responsible for it.
@@ -157,6 +157,7 @@ Once data reaches a third party, that party's own privacy policy applies. We do 
 ## 6. Data Retention
 
 * **Transient data** (e.g. a one-off sticker conversion) is not retained beyond delivering the result.
+* **Group-access state** (pending `#pr` / `#dm` actions, `#request` entries and `#setupaccept` tokens) expires automatically after 24 hours and is deleted as soon as a decision is made or the token is used. It contains only the normalized number, group ID, selected action or invite code, and timestamps.
 * **Your stored data** (notes, to-dos, reminders, AI chat history, group settings, community stats, tickets, thanks) stays until you delete it via the relevant command or `#mydata delete` / `#forgetme`, or the operator removes it (e.g. after a ban).
 * **Registration** stays until `#unregister`; a 30-day cooldown record remains after deletion.
 * **Consent records** are kept as proof of acceptance; we may prune them when no longer needed for legal/audit purposes.
@@ -187,6 +188,7 @@ Under the GDPR or similar law you may have the right to:
 * **Access** the data we hold about you (registration, consent version, notes, reminders, report/ticket entries, statistics, AI history, thanks). Use `#mydata` in a private chat for a JSON export; log entries tied to your number are available on request.
 * **Correction** of inaccurate data.
 * **Deletion** of your data — use `#unregister` for registration, `#forgetai` / `#aiclear` for AI history and `#mydata delete` / `#forgetme` for stored community data (tickets, stats, thanks, notes, to-dos, reminders). Append-only audit logs are not rewritten; contact us for those and for registration/consent proof.
+* **Pending group-access state** is short-lived (24 h) and removed on decision; it is not part of the `#mydata` export. You can ask us to inspect or delete it early using the contact in Section 1 — we verify via your registered number.
 * **Object/restrict** certain processing — e.g. stop using `#pair` to end that session's monitoring; `#autoflag off` (operator) disables the ToS monitor entirely.
 * **Portability** of your data where technically feasible.
 * **Complaint** to your local data protection authority.

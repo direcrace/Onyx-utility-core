@@ -8,6 +8,7 @@ import { reply, getCommandArgs, tr } from "../utils/message.js";
 const DOCS = {
   terms: "terms-of-service.md",
   privacy: "privacy-policy.md",
+  guidelines: "community-guidelines.md",
 };
 
 const CHUNK_MAX = 3800;
@@ -40,6 +41,7 @@ const TERMS_SHORT_EN = [
   "• Service is \"as is\", best-effort; third-party downloads may break anytime.",
   "• No illegal content (CSAM absolutely prohibited), harassment, spam, phishing, malware, ban evasion or false reports/tickets.",
   "• Group admins are responsible for the moderation tools they enable; ranks are privileges, not rights.",
+  "• Group access: `#pr` / `#dm` need a group-admin approval reply, `#apr` / `#adm` are sudo-only, and `#request` needs Team+ approval in the receiver group; one request per person, 24 h expiry, no invite spam or pressuring approvers.",
   "• Community extras (`#thanks`, `#badges`, `#level`) are cosmetic and never grant staff permissions; data rights are available via `#mydata` / `#forgetai`.",
   "• `#pair` adds: own session, always-on automated monitoring (operator can disable it with `#autoflag off`), possible logging/review, termination without notice — running `#pair` is consent.",
   "• Audit logs can prove actions (actor/target/chat/reason/body/message ID); no media is downloaded for logging.",
@@ -54,6 +56,7 @@ const TERMS_SHORT_DE = [
   "• Der Dienst wird \"wie er ist\", auf Best-Effort-Basis bereitgestellt; Drittanbieter-Downloads können jederzeit ausfallen.",
   "• Keine illegalen Inhalte (CSAM ausnahmslos verboten), keine Belästigung, kein Spam, Phishing, Schadsoftware, Ban-Evasion oder falsche Meldungen/Tickets.",
   "• Gruppen-Admins sind für aktivierte Moderationstools verantwortlich; Ränge sind kein Recht, sondern ein Privileg.",
+  "• Gruppen-Zugang: `#pr` / `#dm` brauchen eine Zustimmung per Antwort durch einen Gruppen-Admin, `#apr` / `#adm` sind nur für Sudo, `#request` braucht Team+ in der Empfängergruppe; eine Anfrage pro Person, 24 h Ablauf, kein Invite-Spam und kein Drängen auf Zustimmung.",
   "• Community-Extras (`#thanks`, `#badges`, `#level`) sind rein kosmetisch und verleihen keine Staff-Rechte; Datenrechte gibt es über `#mydata` / `#forgetai`.",
   "• `#pair` brings mit: eigene Sitzung, dauerhaft aktive Überwachung (vom Betreiber mit `#autoflag off` abschaltbar), mögliche Protokollierung/Prüfung, Kündigung ohne Ankündigung — `#pair` zu nutzen ist Zustimmung.",
   "• Audit-Logs können Aktionen belegen (Akteur/Ziel/Chat/Grund/Text/Nachrichten-ID); für Logs werden keine Medien heruntergeladen.",
@@ -95,9 +98,30 @@ const PRIVACY_SHORT_DE = [
   "Volltext: `#privacy full`.",
 ].join("\n");
 
+const GUIDELINES_SHORT_EN = [
+  "🤝 *Community Guidelines* (short)",
+  "• Be decent: no harassment, spam, phishing, illegal content, impersonation or ban evasion.",
+  "• Group admins decide roles: `#pr` / `#dm` are requests until an admin replies `approve`; do not pressure approvers. `#apr` / `#adm` are sudo-only.",
+  "• `#request` is only for groups you can legitimately invite the Bot to: real invite link, one open request per person, 24 h expiry, no mass requests.",
+  "• Team+ decides with `#rq approve` / `#rq reject`; a one-time `#setupaccept` token must be used in the target group within 24 h and must not be shared.",
+  "• Report abuse with `#report`, ask for help with `#ticket` / `#support`. False reports are a Terms violation.",
+  "Full text: `#guidelines full` · the Terms of Service govern in case of conflict.",
+].join("\n");
+
+const GUIDELINES_SHORT_DE = [
+  "🤝 *Community-Richtlinien* (Kurzfassung)",
+  "• Sei anständig: keine Belästigung, kein Spam, Phishing, illegale Inhalte, Identitätsvortäuschung oder Ban-Evasion.",
+  "• Gruppen-Admins entscheiden über Ränge: `#pr` / `#dm` sind erst nach `approve` durch einen Admin wirksam; dränge niemanden zur Zustimmung. `#apr` / `#adm` sind nur für Sudo.",
+  "• `#request` nur für Gruppen, in denen du den Bot berechtigt einladen kannst: echter Invite-Link, eine offene Anfrage pro Person, 24 h Ablauf, keine Massenanfragen.",
+  "• Team+ entscheidet mit `#rq approve` / `#rq reject`; das einmalige `#setupaccept`-Token muss innerhalb von 24 h in der Zielgruppe genutzt und darf nicht geteilt werden.",
+  "• Missbrauch mit `#report` melden, Hilfe über `#ticket` / `#support` holen. Falsche Meldungen verstoßen gegen die Nutzungsbedingungen.",
+  "Volltext: `#guidelines full` · bei Widerspruch gelten die Nutzungsbedingungen.",
+].join("\n");
+
 const SHORT_TEXT = {
   terms: { en: TERMS_SHORT_EN, de: TERMS_SHORT_DE },
   privacy: { en: PRIVACY_SHORT_EN, de: PRIVACY_SHORT_DE },
+  guidelines: { en: GUIDELINES_SHORT_EN, de: GUIDELINES_SHORT_DE },
 };
 
 const CONTACT_EN = "\n\n_Impressum / contact: +49 15679 830332 · Meros.Basement@gmx.net_\n_Postal address available on request; no publicly listed address for privacy reasons._";
@@ -181,5 +205,17 @@ command(
   },
   async (message, conn) => {
     await serveLegal(conn, message, "privacy");
+  }
+);
+
+command(
+  {
+    pattern: "guidelines",
+    fromMe: false,
+    desc: "Community Guidelines · `#guidelines full` for the complete document",
+    type: "info",
+  },
+  async (message, conn) => {
+    await serveLegal(conn, message, "guidelines");
   }
 );

@@ -245,6 +245,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 ### Legal (`src/plugins/legal.js`)
 
 - `#terms` / `#tos` and `#privacy` / `#dsgvo` (append `full` for the complete document) — bilingual summaries or the complete documents (`terms-of-service.md`, `privacy-policy.md` at repo root), chunked + paced to avoid send-burst panics. ToS include an Impressum section with the operator's contact data.
+- `#guidelines` (append `full` for the complete document) serves `community-guidelines.md`: practical rules for self-role approvals, bot-join requests and setup tokens. It is a companion to the Terms, not a separate contract; editing the Terms or Privacy document changes the consent hashes and asks registered users to re-accept.
 
 ### Community (`src/plugins/community.js`, `src/utils/communityStats.js`, `src/utils/supportTickets.js`)
 
@@ -430,7 +431,7 @@ New default settings: `antilinkAction`, `antispamAction` (now `delete|warn|stric
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>terms-of-service.md</code>, <code>privacy-policy.md</code></td><td>docs</td><td>GDPR/legal documents served by <code>#terms</code> / <code>#privacy</code></td></tr>
+    <tr><td><code>terms-of-service.md</code>, <code>privacy-policy.md</code>, <code>community-guidelines.md</code></td><td>docs</td><td>GDPR/legal documents served by <code>#terms</code> / <code>#privacy</code> / <code>#guidelines</code></td></tr>
     <tr><td><code>.env</code></td><td>config</td><td>live environment (repo has <code>.env.example</code>)</td></tr>
     <tr><td><code>database.db*</code></td><td>runtime</td><td>SQLite auth DB</td></tr>
     <tr><td><code>media/</code></td><td>runtime</td><td>temporal media cache (wipe on boot)</td></tr>

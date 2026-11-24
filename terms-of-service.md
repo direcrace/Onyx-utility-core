@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last updated:** 18.11.2026
+**Last updated:** 24.11.2026
 
 These Terms of Service ("Terms") govern your use of this WhatsApp bot ("the Bot," "we," "us"), including its community features, group tools, personal utilities, and the optional linked-account feature ("Onyx Mini," accessed via `#pair`).
 
@@ -15,6 +15,7 @@ The Bot provides automated WhatsApp functionality, including:
 * **Community access** — registration (`#register`, `#unregister`), staff ranks and role-based permissions, the TEAM menu (`#team`, `#teamlist`, `#teamstatus`, `#teamset`), member XP/levels and cosmetic member titles (`#level`, `#mystats`, `#leaderboard`), badges (`#badges`), thanks (`#thanks`, `#tophelpers`), profile lookup (`#whois`, self or Mod+), deletion of your own counters (`#resetstats`) and self-service data export/deletion (`#mydata`, `#forgetai`, `#forgetme`).
 * **Support & reports** — `#ticket` / `#support` to open a ticket, `#report` to escalate an issue, and owner configuration via `#setsupportgroup` / `#setticketdelivery` (`group`, `dm`, `both`, `off`), `#setticketroute` (per-category groups) and `#setsla` (unanswered-ticket reminders). Support staff reply with `#answer <text>` in the support or routed category group; the answer goes to the reporter and is reposted there with the ticket content and the responder's registered name. Users can check `#mytickets` and close with `#closeticket`.
 * **Group moderation** — `#antilink`, `#antispam`, `#antibot`, `#warn`, `#mute`, `#kick`, `#ban`, welcome/goodbye and other group management tools.
+* **Group access** — `#pr` / `#dm` (Mod+ requests self-promotion/demotion, decided by a group admin), `#apr` / `#adm` (sudo promotion/demotion), `#setrequestreceive` / `#request` / `#rq` (bot-join requests decided by Team+) and `#setupaccept` (one-time team setup token in the target group). The Bot must be a group admin for role changes.
 * **AI chat** (`#chat`, `#aiclear`, `#aiprompt`) via a connected AI backend.
 * **Media processing** (`#sticker`, `#toimg`, `#tomp3`, `#removebg`, `#tiktok`, `#ig`, `#fb`, `#yt`, `#vv`) and search/utilities (`#anime`, `#github`, `#movie`, `#lyrics`, `#translate`, `#img`).
 * **Personal utilities** — notes, to-dos, reminders, polls.
@@ -51,6 +52,8 @@ You agree **not** to use the Bot to:
 * Impersonate other users, operators, or support staff; file false reports or abuse the ticket/support system.
 * Use media/download commands to infringe copyright or redistribute content you do not have rights to.
 * Use owner/administrative commands without authorization, or attempt to exploit, overload, or disrupt the Bot or its infrastructure.
+* Abuse the bot-join request flow (`#request`): submit fake, expired or revoked invite links, mass-request after a decision, or link a group you are not allowed to add the Bot to. Only one request per person may be open at a time.
+* Pressure, bribe or impersonate group admins/Team+ into approving a `#pr` / `#dm` action or an `#rq` decision, or share a `#setupaccept` token with anyone not authorized to finish that group's setup.
 * Use an Onyx Mini session for any activity violating WhatsApp's own Terms of Service.
 
 Group admins remain responsible for moderation decisions made with the Bot's tools in their own groups.
@@ -60,6 +63,7 @@ Group admins remain responsible for moderation decisions made with the Bot's too
 ## 5. Community Features
 
 * **Ranks** are assigned by the operator and grant tier-dependent permissions. Ranks can be reviewed and changed by the operator; having a rank is a privilege, not a right.
+* **Group access approvals** belong to the group's admins (`#pr` / `#dm`) and to Team+ in the receiver group (`#rq`). A role change is applied only after an explicit approval reply to the Bot's card. Approving is a privilege: decisions may be withheld, revoked or reversed by group admins or the operator, and the operator may disable or limit these commands at any time.
 * **Reports** (`#report`) and **support tickets** are forwarded to the configured support group or a routed category group. You must provide truthful information; repeatedly submitting false or abusive reports is a violation of Section 4. Unanswered tickets may trigger one automated SLA reminder to that support/category group; it contains only the ticket ID, category, age and subject.
 * **Community statistics / leaderboard** (`#mystats`, `#leaderboard`) are derived from activity counters (messages, commands, reports, tickets, points). They are informational only and may be inaccurate or reset at any time. You can delete your own counters with `#resetstats`. See the Privacy Policy for what is stored.
 * **Thanks & badges** are cosmetic: `#thanks @user` can be used once per recipient within 24 hours and grants the recipient 8 helpful XP. `#tophelpers` and `#badges` only display derived counters. They never grant staff permissions and may be reset or removed at any time.
@@ -139,6 +143,7 @@ We may, at our sole discretion and without prior notice:
 * Suspend or terminate an Onyx Mini session (Section 6).
 * Reject, close, or ignore reports/tickets that are abusive or false.
 * Remove ranks, leaderboard entries, or stored user data where permitted.
+* Reject, expire or invalidate a pending group-access request, role approval or setup token, including where it was obtained by misleading an approver.
 * Refuse service to anyone for any lawful reason.
 
 ---
