@@ -27,6 +27,7 @@ Commands:
   --status          Offline status: platform, database, stored settings.
   --platform        Show detected host / supervisor / runtime.
   --import-rangban  Import community ranks + bans from a JSON data file.
+  --push-kv         Copy missing local BotKV settings to the external backend (remote wins).
   --help, -h        Show this help.
 
 Options:
@@ -35,7 +36,7 @@ Options:
   --file <path>     Source JSON for --import-rangban (required).
   --dry-run         Preview --prune / --reset-settings / --import-rangban, touch nothing.
   --local           Limit --prune / --reset-settings to local SQLite settings.
-  --external        Limit --prune / --reset-settings to external Postgres settings.
+  --external        Limit --prune / --reset-settings to external settings backend (Postgres or Supabase REST).
 
 Examples:
   node clear.js --status
@@ -126,6 +127,12 @@ function maskUrl(url) {
   return String(url).replace(/\/\/[^@/]*@/, "//***@");
 }
 
+function externalBackend() {
+  return config.SUPABASE_REST_ENABLED
+    ? { enabled: true, label: "Supabase REST" }
+    : { enabled: !!config.USE_POSTGRES, label: "Postgres" };
+}
+
 async function sqliteStatus() {
   const dbPath = config.SQLITE_PATH;
   console.log(`• SQLite: ${dbPath}`);
@@ -175,11 +182,28 @@ async function postgresStatus() {
   }
 }
 
+async function supabaseStatus() {
+  console.log(`• Supabase REST: ${config.SUPABASE_REST_URL}`);
+  console.log("• Credentials: service_role key from .env (not shown).");
+  try {
+    const { inspectBotKv } = await import("./src/database/kvMaintenance.js");
+    const snapshot = await inspectBotKv();
+    printKvRows(snapshot.rows, "Remote settings");
+    if (snapshot.localRows.length) printKvRows(snapshot.localRows, "Local cache");
+  } catch (err) {
+    console.log(`• Could not read Supabase settings: ${err?.message || err}`);
+  }
+}
+
 async function statusAction() {
   printPlatform();
   console.log("");
   console.log("🗄️  Database");
-  if (config.USE_POSTGRES) {
+  if (config.SUPABASE_REST_ENABLED) {
+    await supabaseStatus();
+    console.log("• Mode: hybrid (session local, settings Supabase REST first)");
+    console.log(`• Local session DB: ${config.LOCAL_DB_PATH}`);
+  } else if (config.USE_POSTGRES) {
     await postgresStatus();
     if (config.HYBRID_ENABLED) {
       console.log("• Mode: hybrid (session local, settings Postgres first)");
@@ -209,15 +233,16 @@ async function kvMaintenanceAction(opts, mode) {
   const local = has(opts, "--local");
   const external = has(opts, "--external");
   const { pruneBotKv } = await import("./src/database/kvMaintenance.js");
+  const backend = externalBackend();
   const label = mode === "reset" ? "every saved setting" : "growing history/cache keys";
   const scope = local && !external
     ? "local SQLite only"
     : external && !local
-      ? "external Postgres only"
+      ? `external ${backend.label} only`
       : "both backends";
 
-  if (external && !local && !config.USE_POSTGRES) {
-    console.log("ℹ️  No external Postgres backend configured — nothing to do.");
+  if (external && !local && !backend.enabled) {
+    console.log("ℹ️  No external settings backend configured — nothing to do.");
     return;
   }
 
@@ -245,7 +270,7 @@ async function kvMaintenanceAction(opts, mode) {
 }
 
 async function wipeAction(opts) {
-  if (config.USE_POSTGRES) {
+  if (config.USE_POSTGRES && !config.SUPABASE_REST_ENABLED) {
     if (!has(opts, "--yes", "-y")) {
       console.log("⚠️  This clears the Postgres auth state.");
       if (!(await confirm("Wipe the auth state?"))) {
@@ -399,6 +424,22 @@ async function importRangbanAction(opts) {
   console.log(`✅ Imported ${banEntries.length} ban(s) and ${rankCount} rank(s).`);
 }
 
+async function pushKvAction(opts) {
+  const dryRun = has(opts, "--dry-run");
+  const { pushLocalBotKvToRemote } = await import("./src/database/kvMaintenance.js");
+  const result = await pushLocalBotKvToRemote({ dryRun });
+  if (!result.backend) {
+    console.log("ℹ️  No external settings backend configured — nothing to do.");
+    return;
+  }
+  console.log(
+    `${dryRun ? "🔍 Dry run" : "✅ Push"} (${result.backend}) — ` +
+      `${result.copied} of ${result.scanned} local key(s) ${dryRun ? "would be copied" : "copied"}, ` +
+      `${result.kept} already present remotely.`
+  );
+  if (dryRun) console.log("ℹ️  Nothing was written.");
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -416,6 +457,7 @@ async function main() {
   if (has(opts, "--status")) return statusAction();
   if (has(opts, "--platform")) return printPlatform();
   if (has(opts, "--import-rangban")) return importRangbanAction(opts);
+  if (has(opts, "--push-kv")) return pushKvAction(opts);
 
   console.error(`Unknown command. Run \`node clear.js --help\` for usage.`);
   process.exitCode = 1;

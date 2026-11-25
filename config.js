@@ -27,6 +27,10 @@ export function getSqlitePath(url = DATABASE_URL) {
 const LOCAL_DB_PATH = (process.env.ONYX_LOCAL_DB_PATH || "./database.db").trim() || "./database.db";
 const HYBRID_ENABLED =
   USE_POSTGRES && String(process.env.ONYX_HYBRID || "on").trim().toLowerCase() !== "off";
+const SUPABASE_REST_URL = (process.env.SUPABASE_URL || "").trim();
+const SUPABASE_REST_ENABLED =
+  /^https?:\/\//i.test(SUPABASE_REST_URL) &&
+  !!(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
 const config = {
   DATABASE_URL,
@@ -34,6 +38,8 @@ const config = {
   SQLITE_PATH: USE_POSTGRES ? LOCAL_DB_PATH : getSqlitePath(DATABASE_URL),
   LOCAL_DB_PATH,
   HYBRID_ENABLED,
+  SUPABASE_REST_ENABLED,
+  SUPABASE_REST_URL,
   LOG_LEVEL: process.env.LOG_LEVEL || "warn",
 };
 

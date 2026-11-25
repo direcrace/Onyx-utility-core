@@ -178,7 +178,7 @@ Samples host/bot CPU, RAM, disk, RSS every 15 s. Warn (log-group 🟡, once, ded
 
 ### 1.4 Dev Console — terminal + chat + web (`src/enterprise/devConsole.js`, `devTerm.js`, `src/utils/consoleRing.js`)
 
-- **Terminal**: removed — no interactive TTY console. Maintenance runs through `clear.js` (`--prune`, `--reset-settings`, `--auth`, `--wipedb`, `--status`, `--platform`, `--restart`, `--shutdown`; `--dry-run` previews, `--local`/`--external` limit the target backend) or the owner chat commands. The dev command bus (`status`, `minis`, `flags`, `logs`, `sendtest`, `panic`, `reboot`, `shutdown`) is available via chat (`#dev`) and the web console.
+- **Terminal**: removed — no interactive TTY console. Maintenance runs through `clear.js` (`--prune`, `--reset-settings`, `--auth`, `--wipedb`, `--status`, `--platform`, `--restart`, `--shutdown`, `--push-kv`; `--dry-run` previews, `--local`/`--external` limit the target backend) or the owner chat commands. The dev command bus (`status`, `minis`, `flags`, `logs`, `sendtest`, `panic`, `reboot`, `shutdown`) is available via chat (`#dev`) and the web console.
 - **Chat**: `#dev` (overview), `#minilog <number> [lines]` (tail a Mini's console).
 - **Web**: `src/enterprise/dashboard/` SPA at `GET /ui`, JSON API (`GET /api/status`, `/api/dashboard`, `/api/stats`, `/api/bans`, `/api/help`) and SSE live log stream (`GET /api/events`), all driven by one `runDevAction(action, params)` action bus (40 actions).
 - `consoleRing.js` intercepts `console.*` into a bounded ring (default 2000 lines, env `DEV_CONSOLE_LOG_MAX`).
@@ -396,10 +396,24 @@ New default settings: `antilinkAction`, `antispamAction` (now `delete|warn|stric
     <tr><td><code>MEDIA_MAX_MB</code>, <code>MEDIA_TOTAL_MB</code></td><td>Temporal media cache budget</td></tr>
     <tr><td><code>INVITE_TTL_MS</code>, <code>INVITE_MAX_USES</code>, <code>INVITE_MAX_IP_ATTEMPTS</code>, <code>INVITE_IP_WINDOW_MS</code></td><td>Invite-link onboarding</td></tr>
     <tr><td><code>CORE_PANIC*</code>, <code>WATCHDOG</code>, <code>SYSTEM_WATCH*</code></td><td>Safety monitors</td></tr>
+    <tr><td><code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Supabase Data API backend for BotKV/settings (service_role key is a secret)</td></tr>
+    <tr><td><code>SUPABASE_REST_TIMEOUT_MS</code>, <code>SUPABASE_REST_ROW_LIMIT</code></td><td>REST request timeout (default 10000 ms) and row scan limit (default 1000)</td></tr>
     <tr><td><code>MINI_MONITOR*</code>, <code>USER_MONITOR*</code></td><td>ToS monitor thresholds</td></tr>
     <tr><td><code>CRASHED_WHITELIST</code></td><td>Crashed plugin access</td></tr>
   </tbody>
 </table>
+
+With `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, BotKV/settings are stored through the Supabase Data API (`/rest/v1/BotKV`) using Node's built-in `fetch`. WhatsApp auth/session always stays in local `database.db`; the REST backend takes precedence over a Postgres `DATABASE_URL`, so keep `DATABASE_URL=./database.db` unless you want the legacy Sequelize backend. Create the table once in the Supabase SQL editor:
+
+```sql
+create table if not exists public."BotKV" (
+  key text primary key,
+  value text
+);
+alter table public."BotKV" enable row level security;
+```
+
+The `service_role` key bypasses RLS and is a secret — set it only in the panel `.env`, never in code or logs. The public `anon` key is not used. `clear.js --status`, `--prune`, `--reset-settings` and `#communitymetrics` use the same backend, and `--local` / `--external` still select the target. To seed a fresh project from the local cache, run `node clear.js --push-kv` (with `--dry-run` first); existing remote values are never overwritten. No extra npm package is needed.
 
 ---
 

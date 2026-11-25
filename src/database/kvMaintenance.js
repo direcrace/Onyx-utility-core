@@ -35,6 +35,12 @@ function localPath(cfg) {
   return String(cfg.LOCAL_DB_PATH || cfg.SQLITE_PATH || "").trim();
 }
 
+function externalBackend(cfg) {
+  return cfg.SUPABASE_REST_ENABLED
+    ? { enabled: true, label: "Supabase REST", rest: true }
+    : { enabled: !!cfg.USE_POSTGRES, label: "Postgres", rest: false };
+}
+
 async function sqliteRows(dbPath) {
   if (!dbPath) return [];
   const { default: Database } = await import("better-sqlite3");
@@ -102,6 +108,16 @@ async function postgresHandle(cfg) {
 }
 
 export async function inspectBotKv(cfg = config) {
+  if (cfg.SUPABASE_REST_ENABLED) {
+    const { createSupabaseRestBotKv } = await import("./supabaseRest.js");
+    const rows = await createSupabaseRestBotKv().rows();
+    return {
+      backend: "supabase-rest",
+      rows,
+      localRows: await sqliteRows(localPath(cfg)),
+    };
+  }
+
   if (cfg.USE_POSTGRES) {
     const { sequelize, model } = await postgresHandle(cfg);
     try {
@@ -119,33 +135,106 @@ export async function inspectBotKv(cfg = config) {
   return { backend: "sqlite", rows: await sqliteRows(cfg.SQLITE_PATH), localRows: [] };
 }
 
-export function resolveKvScope({ local = false, external = false, usePostgres = false } = {}) {
+export async function remoteBotKvBackend(cfg = config) {
+  if (cfg.SUPABASE_REST_ENABLED) {
+    const { createSupabaseRestBotKv } = await import("./supabaseRest.js");
+    const backend = createSupabaseRestBotKv();
+    const existingKeys = new Set((await backend.rows()).map((row) => String(row.key)));
+    return { label: "Supabase REST", backend, existingKeys };
+  }
+  if (cfg.USE_POSTGRES) {
+    const { createPostgresSequelize, usePostgresBotKv } = await import("./authPostgres.js");
+    const sequelize = await createPostgresSequelize(cfg.DATABASE_URL);
+    await sequelize.authenticate();
+    const backend = await usePostgresBotKv(sequelize);
+    const rows = await sequelize.models.BotKV.findAll({
+      attributes: ["key"],
+      raw: true,
+    });
+    return {
+      label: "Postgres",
+      backend,
+      existingKeys: new Set(rows.map((row) => String(row.key))),
+      close: () => sequelize.close(),
+    };
+  }
+  return null;
+}
+
+export async function pushLocalBotKvToRemote({ cfg = config, dryRun = false } = {}) {
+  const remote = await remoteBotKvBackend(cfg);
+  if (!remote) return { backend: null, scanned: 0, copied: 0, kept: 0, dryRun };
+
+  const rows = await sqliteRows(localPath(cfg));
+  let copied = 0;
+  let kept = 0;
+  try {
+    for (const row of rows) {
+      const key = String(row?.key || "");
+      if (!key) continue;
+      let value = row.value;
+      if (typeof value === "string") {
+        try { value = JSON.parse(value); } catch { continue; }
+      }
+      if (value === null || value === undefined) continue;
+      if (remote.existingKeys.has(key)) {
+        kept += 1;
+        continue;
+      }
+      if (!dryRun) await remote.backend.set(key, value);
+      copied += 1;
+    }
+  } finally {
+    await remote.close?.();
+  }
+  return { backend: remote.label, scanned: rows.length, copied, kept, dryRun };
+}
+
+export function resolveKvScope({
+  local = false,
+  external = false,
+  usePostgres = false,
+  externalEnabled = null,
+  externalLabel = "Postgres",
+} = {}) {
+  const enabled = externalEnabled === null ? !!usePostgres : !!externalEnabled;
   const both = (!local && !external) || (local && external);
-  const useLocal = both || local || (!usePostgres && !external);
-  const useExternal = (both || external) && usePostgres;
+  const useLocal = both || local || (!enabled && !external);
+  const useExternal = (both || external) && enabled;
   const label = useLocal && useExternal
     ? "both backends"
     : useLocal
       ? "local SQLite only"
       : useExternal
-        ? "external Postgres only"
+        ? `external ${externalLabel} only`
         : "no matching backend";
   return { useLocal, useExternal, label };
 }
 
 export async function deleteBotKvKeys(keys, { cfg = config, local = false, external = false } = {}) {
   const targets = [...new Set((keys || []).map(String))].filter(Boolean);
-  const scope = resolveKvScope({ local, external, usePostgres: !!cfg.USE_POSTGRES });
+  const backend = externalBackend(cfg);
+  const scope = resolveKvScope({
+    local,
+    external,
+    externalEnabled: backend.enabled,
+    externalLabel: backend.label,
+  });
 
   let removedRemote = 0;
   let removedLocal = 0;
 
   if (scope.useExternal && targets.length) {
-    const { sequelize, model } = await postgresHandle(cfg);
-    try {
-      removedRemote = await model.destroy({ where: { key: { [Op.in]: targets } } });
-    } finally {
-      await sequelize.close();
+    if (backend.rest) {
+      const { createSupabaseRestBotKv } = await import("./supabaseRest.js");
+      removedRemote = await createSupabaseRestBotKv().delMany(targets);
+    } else {
+      const { sequelize, model } = await postgresHandle(cfg);
+      try {
+        removedRemote = await model.destroy({ where: { key: { [Op.in]: targets } } });
+      } finally {
+        await sequelize.close();
+      }
     }
   }
   if (scope.useLocal && targets.length) {
@@ -167,11 +256,17 @@ export async function pruneBotKv({
   local = false,
   external = false,
 } = {}) {
-  const scope = resolveKvScope({ local, external, usePostgres: !!cfg.USE_POSTGRES });
+  const backend = externalBackend(cfg);
+  const scope = resolveKvScope({
+    local,
+    external,
+    externalEnabled: backend.enabled,
+    externalLabel: backend.label,
+  });
   const snapshot = await inspectBotKv(cfg);
   const remoteRows = scope.useExternal ? snapshot.rows : [];
   const localRows = scope.useLocal
-    ? cfg.USE_POSTGRES ? snapshot.localRows : snapshot.rows
+    ? backend.enabled ? snapshot.localRows : snapshot.rows
     : [];
   const sourceKeys = [...new Set([...remoteRows, ...localRows].map((row) => row.key))];
   const targets = resetAll ? sourceKeys : sourceKeys.filter(isPrunableKey);

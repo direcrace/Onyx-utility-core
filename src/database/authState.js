@@ -52,7 +52,16 @@ async function copyRemoteAuthState(sequelize, dbPath) {
 async function initBackend() {
   let kvAttached = false;
 
-  if (config.USE_POSTGRES && !config.HYBRID_ENABLED) {
+  if (config.SUPABASE_REST_ENABLED) {
+    const { useBetterSqliteAuthState } = await import("./authSqlite.js");
+    activeBackend = await useBetterSqliteAuthState(config.SQLITE_PATH);
+    console.log(`✅ Auth backend: better-sqlite3 (${config.SQLITE_PATH})`);
+
+    const { createSupabaseRestBotKv } = await import("./supabaseRest.js");
+    attachHybridBotKv(createSupabaseRestBotKv(), activeBackend.botKv);
+    kvAttached = true;
+    console.log("✅ Settings backend: Supabase REST, local SQLite cache");
+  } else if (config.USE_POSTGRES && !config.HYBRID_ENABLED) {
     const { createPostgresSequelize, usePostgresAuthState } = await import(
       "./authPostgres.js"
     );
