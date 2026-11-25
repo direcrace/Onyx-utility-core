@@ -13,7 +13,7 @@ import {
 } from "./src/system/platform.js";
 
 const HELP = `
-YumBot — maintenance CLI
+Onyx — maintenance CLI
 
 Usage: node clear.js <command> [options]
 

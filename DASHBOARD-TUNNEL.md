@@ -55,7 +55,7 @@ curl -s "http://127.0.0.1:${SERVER_PORT}/health"
 Erwartung (JSON, ohne Token erreichbar):
 
 ```json
-{"ok":true,"name":"YumBot","version":"...","mode":"public","ffmpeg":true,"setup":true,"logGroup":true,"queue":...,"uptime":...}
+{"ok":true,"name":"Onyx","version":"...","mode":"public","ffmpeg":true,"setup":true,"logGroup":true,"queue":...,"uptime":...}
 ```
 
 3. Im Bot (Owner) prüfen:

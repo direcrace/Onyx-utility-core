@@ -1,7 +1,7 @@
 
 
 let _prefix = (process.env.BOT_PREFIX || "").replace(/\s+/g, "") || "#";
-let _botName = (process.env.BOT_NAME || "YumBot").trim();
+let _botName = (process.env.BOT_NAME || "Onyx").trim();
 
 export function getPrefix() {
   return _prefix;

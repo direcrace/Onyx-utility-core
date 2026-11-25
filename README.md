@@ -1,38 +1,38 @@
 <!--
   ============================================================================
   USAGE EXAMPLE — read this box first.
-  Everything below is the original YumBot documentation.
+  Everything below is the original Onyx documentation.
   ============================================================================
 -->
 
-# 🧩 YumBot — Usage Example
+# 🧩 Onyx Community Core
 
-This repository is a **usage example** built on top of
-[**YumBot**](https://github.com/direcrace/Onyx-utility-core) (v5.0.5).
-It shows how to extend the core **without editing its internals**, by dropping
-community features in as self-contained plugins, and how to deploy the bot on
-[bot-hosting.net](https://bot-hosting.net) straight from this repo.
+**Onyx Community Core** is the community-focused edition built on top of
+[**Onyx Utility Core**](https://github.com/direcrace/Onyx-utility-core) (v5.0.5).
+It extends the core with full community management, support ticketing, consent/data-rights compliance, approval-gated group access, and deployment support for [bot-hosting.net](https://bot-hosting.net).
 
-> **Everything below this section is the original Onyx documentation** and
-> applies unchanged. This section only documents what this example adds.
+> **Everything below this section is the original Onyx Utility Core documentation** and
+> applies unless noted here. This section documents what Onyx Community Core adds and changes.
 
-## What this example adds
+## What makes Community Core different from Onyx Utility Core
 
-- **Community ranks** — `src/utils/ranks.js` + `src/plugins/ranks.js`
-  - `/rank [@user]` — show a user's rank
-  - `/ranks` — list ranked users
-  - `/setrank <@user|number> <rank>` — assign a rank (owner only)
-  - Rank ladder: `user < mod < admin < team < co-owner`. `owner` and `root`
-    are reserved (driven by `OWNER_NUMBER` / `CREATOR_NUMBERS`) and cannot be
-    assigned. Stored in the `BotKV` table under `community:ranks`.
-  - `#setrank` and `#rank` prefer the registered name instead of printing a
-    raw number/JID; `#whoami` resolves the rank live from `community:ranks`.
-- **Ban reasons** — `src/utils/globalBan.js`, `src/plugins/moderation.js`,
-  `src/multi/miniMonitor.js`
-  - `/ban <@user|number> [reason]` · `/unban` · `/banlist`
-  - Bans are stored in `BotKV` under `botbans` as `{ number, reason, date }`
-    (backward compatible with the plain-number list). The auto-ban in
-    `miniMonitor` now records its reason too.
+- **Community & Support System** — `src/plugins/community.js`, `src/utils/supportTickets.js`, `src/utils/communityStats.js`
+  - Tracked support tickets and reports (`#ticket`, `#support`, `#report`, `#mytickets`, `#closeticket`, `#answer` from the support group)
+  - Per-category routing (`#setticketroute`), configurable delivery (`#setticketdelivery group|dm|both|off`), and unanswered-ticket SLA reminders (`#setsla`)
+  - Member XP progression & cosmetic levels (`#level`, `#mystats`, `#leaderboard`, `#resetstats`), karma & badges (`#thanks`, `#tophelpers`, `#badges`), and `#whois`
+- **Community Ranks & Team Menu** — `src/utils/ranks.js`, `src/plugins/ranks.js`, `src/plugins/team.js`
+  - `/rank [@user]`, `/ranks`, `/setrank <@user|number> <rank>` with ladder `user < mod < admin < team < co-owner` (`owner` and `root` reserved for `OWNER_NUMBER` / `CREATOR_NUMBERS`)
+  - Dedicated `TEAM` menu (`#team`, `#teamlist`, `#teamstatus`, `#teamset`) with rank-ceiling protection for co-owners
+- **Approval-Gated Group Access & Self-Roles** — `src/plugins/groupAccess.js`, `src/utils/groupRequests.js`
+  - Admin-approved self-promotion/demotion requests and bot-join requests with setup tokens and invite-link cards
+- **Legal, Consent & Self-Service Data Rights** — `src/plugins/legal.js`, `src/utils/consent.js`, `terms-of-service.md`, `privacy-policy.md`, `community-guidelines.md`
+  - Version-hashed ToS/Privacy consent renewal via `#register`, full legal docs (`#terms`/`#tos`, `#privacy`/`#dsgvo`, `#guidelines`), and GDPR data export/deletion (`#mydata`, `#mydata delete`, `#forgetme`, `#forgetai`)
+- **Community Edition Branding** — `src/utils/messageFooter.js`
+  - Outgoing bot text messages and media captions carry the `Onyx | Community edition` footer at the socket level
+- **Ban Reasons, Storage & Hardened Image Search** — `src/utils/globalBan.js`, `src/modules/imageResolver/`, `src/database/supabaseRest.js`, `src/utils/communityMetrics.js`
+  - Structured ban reasons (`{ number, reason, date }`) in `BotKV` (`botbans`)
+  - Modular free image resolver (`Pinterest → Openverse → Wikimedia Commons`) with SSRF/redirect checks and block cooldowns
+  - Optional Supabase REST `BotKV` settings backend, aggregate `#communitymetrics`, and extended `clear.js` maintenance flags (`--prune`, `--reset-settings`, `--import-rangban`, `--push-kv`)
 - **Data import CLI** — `clear.js --import-rangban`
   - `node clear.js --import-rangban --file path/to/data.json [--dry-run]`
   - Imports ranks + bans from a JSON file shaped like:
@@ -84,7 +84,7 @@ Both routes keep `database.db` untouched across updates — no re-pairing.
 
 <div align="center">
 
-## <span style="color:#d4af37;">⬢</span> YumBot
+## <span style="color:#d4af37;">⬢</span> Onyx
 
 **Changelog: X-Asena → Onyx Core** — source-available WhatsApp bot on [Baileys](https://github.com/WhiskeySockets/Baileys) **7.0.0-rc13** · [N-SAL v1.0](LICENSE) (derived from MIT-licensed X-Asena)
 
@@ -138,8 +138,8 @@ This changelog documents **everything that is different in `onyx-core`** compare
   <tbody>
     <tr><td><b>package name</b></td><td><code>x-asena</code></td><td><code>onyx-utility-core</code></td></tr>
     <tr><td><b>version</b></td><td><code>4.0.0</code></td><td><code>5.0.5</code></td></tr>
-    <tr><td><b>description</b></td><td>Open Source WhatsApp Bot (Baileys ^7.x.x)</td><td>"YumBot - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API"</td></tr>
-    <tr><td><b>bot name</b></td><td><code>X-Asena</code></td><td><code>YumBot</code> (runtime-changeable)</td></tr>
+    <tr><td><b>description</b></td><td>Open Source WhatsApp Bot (Baileys ^7.x.x)</td><td>"Onyx - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API"</td></tr>
+    <tr><td><b>bot name</b></td><td><code>X-Asena</code></td><td><code>Onyx</code> (runtime-changeable)</td></tr>
     <tr><td><b>default sticker pack</b></td><td><code>X-Asena</code></td><td><code>Onyx</code></td></tr>
     <tr><td><b>languages</b></td><td><code>en</code> / <code>id</code> / <code>hi</code></td><td><code>en</code> / <code>de</code></td></tr>
   </tbody>
@@ -240,7 +240,7 @@ Always-on rule engine to protect against WhatsApp ToS violations, in **two scope
 
 ### Branding (`src/utils/messageFooter.js`)
 
-- All outgoing bot text messages and media captions get the footer `YumBot | Built on Onyx`. It is applied at the socket level, so direct `conn.sendMessage(...)` calls are covered too. Reactions, polls and other non-text payloads are unchanged; the wrapper is idempotent on reconnect and for Onyx Mini sessions.
+- All outgoing bot text messages and media captions get the footer `Onyx | Community edition`. It is applied at the socket level, so direct `conn.sendMessage(...)` calls are covered too. Reactions, polls and other non-text payloads are unchanged; the wrapper is idempotent on reconnect and for Onyx Mini sessions.
 
 ### Legal (`src/plugins/legal.js`)
 

@@ -58,3 +58,6 @@ _stormy-legacy/
 
 # Hosting panel metadata
 .bothosting/
+
+# Local diagnostic reports
+REPORT-*.md

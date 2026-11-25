@@ -56,7 +56,7 @@ test("clear.js exposes the maintenance flags", () => {
 });
 
 test("prune removes caches and keeps settings plus auth state", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yumbot-kv-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "onyx-kv-"));
   const dbPath = path.join(dir, "database.db");
   const setup = new Database(dbPath);
   setup.exec(`
@@ -123,7 +123,7 @@ test("resolveKvScope selects the requested backend", () => {
 });
 
 test("local reset clears settings but keeps the session", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yumbot-kv-reset-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "onyx-kv-reset-"));
   const dbPath = path.join(dir, "database.db");
   const setup = new Database(dbPath);
   setup.exec(`
@@ -154,7 +154,7 @@ test("local reset clears settings but keeps the session", async () => {
 });
 
 test("external-only scope leaves a local-only database untouched", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yumbot-kv-scope-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "onyx-kv-scope-"));
   const dbPath = path.join(dir, "database.db");
   const setup = new Database(dbPath);
   setup.exec(`

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "yum-supabase-rest-"));
+const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "onyx-supabase-rest-"));
 const localDbPath = path.join(tmp, "database.db");
 process.env.DATABASE_URL = `file:${localDbPath}`;
 process.env.ONYX_LOCAL_DB_PATH = localDbPath;

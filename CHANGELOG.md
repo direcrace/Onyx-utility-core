@@ -8,8 +8,8 @@ This changelog documents **everything that is different in `onyx-core`** compare
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | package name         | `x-asena`                                 | `onyx-utility-core`                                                                               |
 | version              | `4.0.0`                                   | `5.0.5`                                                                                           |
-| description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "YumBot - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
-| bot name             | `X-Asena`                                 | `YumBot` (runtime-changeable)                                                          |
+| description          | Open Source WhatsApp Bot (Baileys ^7.x.x) | "Onyx - WhatsApp Bot Using Baileys 7.x.x with LM Studio AI integration AND groq API" |
+| bot name             | `X-Asena`                                 | `Onyx` (runtime-changeable)                                                          |
 | default sticker pack | `X-Asena`                                 | `Onyx`                                                                                            |
 | languages            | `en` / `id` / `hi`                        | `en` / `de`                                                                                       |
 
@@ -34,7 +34,7 @@ This changelog documents **everything that is different in `onyx-core`** compare
 - Aliases `#tos` / `#dsgvo`; ToS/Privacy updated with the Impressum (WhatsApp +49 15679 830332, Meros.Basement@gmx.net, postal address on request).
 - Update fix: `#update` and the web `git.update` action now pull with an explicit remote/branch (`git pull --ff-only origin <branch>`) and restore upstream tracking, so panel clones without tracking no longer fail with "There is no tracking information for the current branch".
 - Panel dashboard access: `startAdminHttp()` now prefers the injected `SERVER_PORT` over `ADMIN_HTTP_PORT` and binds `0.0.0.0` in panel mode (configurable via `ADMIN_HTTP_HOST`), fixing the proxy error "got nothing back on its port". `#control` shows the effective bind; fleet peers map `0.0.0.0` to localhost. New `DASHBOARD-TUNNEL.md` walkthrough covers the panel proxy, cloudflared quick tunnels and troubleshooting.
-- Global outgoing message footer: every bot text message and media caption ends with `YumBot | Built on Onyx`; reactions, polls and other non-text payloads are untouched, and the wrapper is idempotent across reconnects/sub-sessions.
+- Global outgoing message footer: every bot text message and media caption ends with `Onyx | Community edition`; reactions, polls and other non-text payloads are untouched, and the wrapper is idempotent across reconnects/sub-sessions.
 - Ticket categories and routing: `#setticketroute <category> here|<jid>|clear` plus `[category] subject | body` syntax; `#answer` also works in routed category groups.
 - Ticket SLA: `#setsla <minutes|off>` (default 360 min via `TICKET_SLA_MINUTES`, 5-minute checks via `TICKET_SLA_INTERVAL_MS`) sends one-shot reminders to the responsible support/category group and persists `slaNotifiedAt` for restart-safe deduplication.
 - Karma/badges: `#thanks @user` (24 h cooldown, 8 helpful XP), `#tophelpers`, `#badges`; earned badges appear in `#level`, `#mystats` and `#whois`.

@@ -1,6 +1,6 @@
 # Deployment
 
-YumBot läuft ohne PM2, ohne TTY und ohne Shell-Befehle. Es unterstützt
+Onyx läuft ohne PM2, ohne TTY und ohne Shell-Befehle. Es unterstützt
 Docker, Pterodactyl-artige Panels (bot-hosting.net), systemd und lokale Windows-
 Installationen.
 
@@ -179,7 +179,7 @@ Fehlerbehebung: [`DASHBOARD-TUNNEL.md`](DASHBOARD-TUNNEL.md).
 
 ```ini
 [Unit]
-Description=YumBot
+Description=Onyx
 After=network-online.target
 
 [Service]

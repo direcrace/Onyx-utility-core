@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const auditDir = await fs.mkdtemp(path.join(os.tmpdir(), "yum-group-access-"));
+const auditDir = await fs.mkdtemp(path.join(os.tmpdir(), "onyx-group-access-"));
 process.env.AUDIT_LOG_DIR = auditDir;
 
 const { attachBotKv } = await import("../src/database/botKv.js");

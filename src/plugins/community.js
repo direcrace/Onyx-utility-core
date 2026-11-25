@@ -889,13 +889,13 @@ function chunkText(text, max = 3500) {
 async function sendDataExport(conn, message, number, data) {
   const json = JSON.stringify(data, null, 2);
   const caption = await tr(
-    "🔒 Your YumBot data export. Keep this file private.",
-    "🔒 Dein YumBot-Datenexport. Bitte privat aufbewahren."
+    "🔒 Your Onyx data export. Keep this file private.",
+    "🔒 Dein Onyx-Datenexport. Bitte privat aufbewahren."
   );
   try {
     await sendMessage(conn, message.from, {
       document: Buffer.from(json, "utf8"),
-      fileName: `yumbot-mydata-${number}.json`,
+      fileName: `onyx-mydata-${number}.json`,
       mimetype: "application/json",
       caption,
     }, { quoted: { key: message.key, message: message.message } });

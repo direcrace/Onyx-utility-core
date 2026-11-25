@@ -1,6 +1,6 @@
 # Security Policy
 
-YumBot runs real WhatsApp accounts. A bug here isn't a to-do-app bug: it can hand an attacker a live session, a second-hand account, or someone's chats. Please read this before reporting anything.
+Onyx runs real WhatsApp accounts. A bug here isn't a to-do-app bug: it can hand an attacker a live session, a second-hand account, or someone's chats. Please read this before reporting anything.
 
 ## Reporting a vulnerability
 

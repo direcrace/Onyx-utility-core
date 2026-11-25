@@ -1,4 +1,4 @@
-export const BOT_UA = "YumBot/1.0 (WhatsApp community bot; contact via #terms) Node/20+";
+export const BOT_UA = "Onyx/1.0 (WhatsApp community bot; contact via #terms) Node/20+";
 
 export function imageHeaders(ua = BOT_UA) {
   return {

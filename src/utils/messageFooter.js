@@ -1,5 +1,5 @@
-const FOOTER = "YumBot | Built on Onyx";
-const PATCHED = Symbol.for("yumbot.messageFooterPatched");
+const FOOTER = "Onyx | Community edition";
+const PATCHED = Symbol.for("onyx.messageFooterPatched");
 
 function withFooter(value) {
   if (typeof value !== "string" || !value.trim()) return value;

@@ -231,7 +231,7 @@ export async function archiveOutgoing({ jid, content, result, session = "main" }
   return true;
 }
 
-const OUT_PATCH = Symbol("yumbotLogOutPatched");
+const OUT_PATCH = Symbol("onyxLogOutPatched");
 
 export function armOutgoingCapture(conn, { session = "main" } = {}) {
   if (!conn || conn[OUT_PATCH] || typeof conn.sendMessage !== "function") return conn;

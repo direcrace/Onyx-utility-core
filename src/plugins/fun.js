@@ -122,7 +122,7 @@ command(
         const axios = (await import("axios")).default;
         const res = await axios.get("https://shizoapi.onrender.com/api/texts/flirt?apikey=shizo", {
           timeout: 15000,
-          headers: { "User-Agent": "YumBot/1.0", Accept: "application/json" },
+          headers: { "User-Agent": "Onyx/1.0", Accept: "application/json" },
         });
         await reply(conn, message, res.data?.result || "Connection error.");
       } catch (err) {
@@ -188,7 +188,7 @@ for (const reaction of REACTIONS) {
           const axios = (await import("axios")).default;
           const { data } = await axios.get(
             `https://nekos.best/api/v2/${encodeURIComponent(category)}`,
-            { timeout: 15000, headers: { "User-Agent": "YumBot/1.0", Accept: "application/json" } }
+            { timeout: 15000, headers: { "User-Agent": "Onyx/1.0", Accept: "application/json" } }
           );
           const url = data?.results?.[0]?.url;
           if (!url) throw new Error("no result from nekos.best");

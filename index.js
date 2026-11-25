@@ -28,7 +28,7 @@ const readAndRequireFiles = async (directory) => {
 
 const initialize = async () => {
   console.log("\n╔══════════════════════════════╗");
-  console.log("║        YUMBOT v5.0.5         ║");
+  console.log("║         ONYX v5.0.5          ║");
   console.log("║   Baileys 7.0.0-rc13         ║");
   console.log("╚══════════════════════════════╝\n");
 
@@ -66,7 +66,7 @@ const initialize = async () => {
     try {
       const { loadRuntimeConfig } = await import("./src/config/constants.js");
       const rc = await loadRuntimeConfig();
-      if (rc.botName !== (process.env.BOT_NAME || "YumBot")) {
+      if (rc.botName !== (process.env.BOT_NAME || "Onyx")) {
         console.log(`ℹ️  Bot name: ${rc.botName} · prefix: ${rc.prefix}`);
       }
     } catch (err) {

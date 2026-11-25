@@ -1,6 +1,6 @@
-# Contributing to YumBot
+# Contributing to Onyx
 
-YumBot is a one-person, long-running WhatsApp bot project, not a company product. It is built around a few ideas that you should understand before you poke at the code:
+Onyx is a one-person, long-running WhatsApp bot project, not a company product. It is built around a few ideas that you should understand before you poke at the code:
 
 - **Lean and self-protecting.** The runtime watches itself (core panic, system watch) and would rather stop than spam your phone. Respect that instinct; don't write code that fights the guards.
 - **Defensive by default.** Errors degrade to a short, friendly message in the chat. Diagnostics, stacks and redacted traces go to the system log group — never to end users.
@@ -84,7 +84,7 @@ There's no automated suite yet — it's on the horizon, honest. Until then, veri
 
 Open a bug report (use the template) and include:
 
-- YumBot version / commit, Node version, OS
+- Onyx version / commit, Node version, OS
 - Baileys version as installed (`npm ls baileys`)
 - Reproduce steps, expected vs actual
 - Whether the failure shows up in the **system log group**
