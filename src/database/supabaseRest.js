@@ -4,14 +4,14 @@ const TABLE = "BotKV";
 
 function settings() {
   return {
-    url: String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, ""),
-    key: String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim(),
+    url: String(config.SUPABASE_REST_URL || "").replace(/\/+$/, ""),
+    key: String(config.SUPABASE_REST_KEY || ""),
+    legacyJwt: !!config.SUPABASE_REST_KEY_IS_JWT,
   };
 }
 
 export function supabaseRestConfigured() {
-  const { url, key } = settings();
-  return /^https?:\/\//i.test(url) && !!key;
+  return /^https?:\/\//i.test(config.SUPABASE_REST_URL || "") && !!config.SUPABASE_REST_KEY;
 }
 
 function endpoint(query) {
@@ -23,15 +23,15 @@ function timeoutMs() {
   return Math.max(1000, Math.min(60000, value));
 }
 
-async function request(query, { method = "GET", headers = {}, body } = {}) {
-  const { key } = settings();
+async function request(query, { method = "GET", headers: extraHeaders = {}, body } = {}) {
+  const { key, legacyJwt } = settings();
   const response = await fetch(endpoint(query), {
     method,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      ...(legacyJwt ? { Authorization: `Bearer ${key}` } : {}),
       "Content-Type": "application/json",
-      ...headers,
+      ...extraHeaders,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs()),

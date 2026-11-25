@@ -28,9 +28,14 @@ const LOCAL_DB_PATH = (process.env.ONYX_LOCAL_DB_PATH || "./database.db").trim()
 const HYBRID_ENABLED =
   USE_POSTGRES && String(process.env.ONYX_HYBRID || "on").trim().toLowerCase() !== "off";
 const SUPABASE_REST_URL = (process.env.SUPABASE_URL || "").trim();
+const SUPABASE_REST_KEY = (
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  ""
+).trim();
+const SUPABASE_REST_KEY_IS_JWT = /^eyJ/.test(SUPABASE_REST_KEY);
 const SUPABASE_REST_ENABLED =
-  /^https?:\/\//i.test(SUPABASE_REST_URL) &&
-  !!(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  /^https?:\/\//i.test(SUPABASE_REST_URL) && !!SUPABASE_REST_KEY;
 
 const config = {
   DATABASE_URL,
@@ -40,6 +45,8 @@ const config = {
   HYBRID_ENABLED,
   SUPABASE_REST_ENABLED,
   SUPABASE_REST_URL,
+  SUPABASE_REST_KEY,
+  SUPABASE_REST_KEY_IS_JWT,
   LOG_LEVEL: process.env.LOG_LEVEL || "warn",
 };
 

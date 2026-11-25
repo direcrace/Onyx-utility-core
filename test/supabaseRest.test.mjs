@@ -9,7 +9,7 @@ const localDbPath = path.join(tmp, "database.db");
 process.env.DATABASE_URL = `file:${localDbPath}`;
 process.env.ONYX_LOCAL_DB_PATH = localDbPath;
 process.env.SUPABASE_URL = "https://example.supabase.co";
-process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+process.env.SUPABASE_SECRET_KEY = "test-secret-key";
 
 const config = (await import("../config.js")).default;
 const { createSupabaseRestBotKv, supabaseRestConfigured } = await import(
@@ -73,6 +73,7 @@ test("Supabase REST is enabled by env variables", () => {
   assert.equal(config.SUPABASE_REST_ENABLED, true);
   assert.equal(supabaseRestConfigured(), true);
   assert.equal(config.SUPABASE_REST_URL, "https://example.supabase.co");
+  assert.equal(config.SUPABASE_REST_KEY_IS_JWT, false);
 });
 
 test("REST botkv reads, writes and deletes through fetch", async () => {
@@ -85,8 +86,8 @@ test("REST botkv reads, writes and deletes through fetch", async () => {
   const post = calls.find((call) => call.options.method === "POST");
   assert.match(post.url.pathname, /\/rest\/v1\/BotKV$/);
   assert.equal(post.url.searchParams.get("on_conflict"), "key");
-  assert.equal(post.options.headers.apikey, "test-service-role-key");
-  assert.equal(post.options.headers.Authorization, "Bearer test-service-role-key");
+  assert.equal(post.options.headers.apikey, "test-secret-key");
+  assert.equal(post.options.headers.Authorization, undefined);
   assert.equal(post.options.headers.Prefer, "resolution=merge-duplicates,return=minimal");
 
   const getCall = calls.find(
@@ -184,9 +185,11 @@ test("docs describe the Supabase REST variables", async () => {
   const readme = await fs.readFile(new URL("../README.md", import.meta.url), "utf8");
   const envExample = await fs.readFile(new URL("../.env.example", import.meta.url), "utf8");
   assert.match(readme, /SUPABASE_URL/);
+  assert.match(readme, /SUPABASE_SECRET_KEY/);
   assert.match(readme, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(readme, /create table if not exists public\."BotKV"/);
   assert.match(readme, /--push-kv/);
   assert.match(envExample, /SUPABASE_URL=/);
+  assert.match(envExample, /SUPABASE_SECRET_KEY=/);
   assert.match(envExample, /SUPABASE_SERVICE_ROLE_KEY=/);
 });

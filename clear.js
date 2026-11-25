@@ -184,7 +184,7 @@ async function postgresStatus() {
 
 async function supabaseStatus() {
   console.log(`• Supabase REST: ${config.SUPABASE_REST_URL}`);
-  console.log("• Credentials: service_role key from .env (not shown).");
+  console.log("• Credentials: Supabase secret key from .env (not shown).");
   try {
     const { inspectBotKv } = await import("./src/database/kvMaintenance.js");
     const snapshot = await inspectBotKv();
