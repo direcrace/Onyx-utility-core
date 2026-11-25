@@ -412,9 +412,11 @@ create table if not exists public."BotKV" (
   value text
 );
 alter table public."BotKV" enable row level security;
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public."BotKV" to service_role;
 ```
 
-The secret key bypasses RLS and is a secret — set it only in the panel `.env`, never in code or logs. The public `anon`/publishable key is not used. `clear.js --status`, `--prune`, `--reset-settings` and `#communitymetrics` use the same backend, and `--local` / `--external` still select the target. To seed a fresh project from the local cache, run `node clear.js --push-kv` (with `--dry-run` first); existing remote values are never overwritten. No extra npm package is needed.
+Both secret and legacy service_role keys resolve to the `service_role` Postgres role. Grants are checked before RLS, so without the `GRANT` line the Data API returns `42501 permission denied for table BotKV` even though `service_role` bypasses RLS. The secret key bypasses RLS and is a secret — set it only in the panel `.env`, never in code or logs. The public `anon`/publishable key is not used. `clear.js --status`, `--prune`, `--reset-settings` and `#communitymetrics` use the same backend, and `--local` / `--external` still select the target. To seed a fresh project from the local cache, run `node clear.js --push-kv` (with `--dry-run` first); existing remote values are never overwritten. No extra npm package is needed.
 
 ---
 

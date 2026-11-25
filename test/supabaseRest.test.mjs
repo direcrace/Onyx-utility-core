@@ -188,6 +188,7 @@ test("docs describe the Supabase REST variables", async () => {
   assert.match(readme, /SUPABASE_SECRET_KEY/);
   assert.match(readme, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(readme, /create table if not exists public\."BotKV"/);
+  assert.match(readme, /grant select, insert, update, delete on public\."BotKV" to service_role;/);
   assert.match(readme, /--push-kv/);
   assert.match(envExample, /SUPABASE_URL=/);
   assert.match(envExample, /SUPABASE_SECRET_KEY=/);
